@@ -1,0 +1,267 @@
+@font-face {
+	font-family: 'Bitsy';
+	src: url('../font/bitsy_ascii_small.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+:root {
+	--bg-0: #07080c;
+	--bg-1: #10131a;
+	--text: #f4f1ea;
+	--muted: #9aa3b5;
+	--line: #262c38;
+	--chili: #ff3b3b;
+	--chili-hot: #ff6b35;
+	--phosphor: #7dffb3;
+	--bitsy-color-main-1: var(--bg-1);
+	--bitsy-color-main-2: var(--chili);
+	--bitsy-color-accent-1: #181c26;
+	--bitsy-color-accent-2: var(--bg-0);
+	--bitsy-color-neutral-1: var(--bg-0);
+	--bitsy-color-neutral-2: var(--muted);
+}
+
+html {
+	background:
+		radial-gradient(circle at top right, rgba(255, 59, 59, 0.14), transparent 32%),
+		linear-gradient(180deg, #0b0d12, var(--bg-0) 28%);
+	color: var(--text);
+	font-family: 'Bitsy', monospace;
+	font-size: 16px;
+	line-height: 1.35;
+	-webkit-font-smoothing: none;
+	-moz-osx-font-smoothing: grayscale;
+	scrollbar-color: var(--chili) var(--bg-0);
+}
+
+body {
+	background: transparent;
+	color: var(--text);
+}
+
+#bitsyLogo {
+	display: none;
+}
+
+#bitsyTitle {
+	font-family: 'Bitsy', monospace;
+	letter-spacing: 0.04em;
+	text-transform: lowercase;
+	color: var(--text);
+}
+
+.bitsy-card {
+	background: var(--bg-1);
+	border: 1px solid var(--line);
+	border-bottom: 3px solid var(--chili);
+	border-radius: 0;
+	color: var(--text);
+}
+
+.bitsy-card-titlebar {
+	background: #181c26;
+	color: var(--text);
+	font-family: 'Bitsy', monospace;
+}
+
+button,
+input[type='checkbox'] + label,
+input[type='radio'] + label {
+	background: #181c26;
+	color: var(--text);
+	border: 1px solid var(--line);
+	border-radius: 0;
+}
+
+button:active,
+input:checked + label {
+	background: var(--chili);
+	color: #140407;
+	border-color: var(--chili);
+}
+
+input[type='text'],
+input[type='number'],
+textarea,
+select {
+	color: var(--text);
+	background: var(--bg-0);
+	border: 1px solid var(--line);
+	border-radius: 0;
+	font-family: 'Bitsy', monospace;
+}
+
+input[type='text']:not([readonly]),
+input[type='text']:focus:not([readonly]) {
+	color: var(--text);
+	background: var(--bg-0);
+	border-color: var(--line);
+	text-decoration: none;
+}
+
+input[type='text']:focus:not([readonly]),
+textarea:focus {
+	border-color: var(--chili-hot);
+}
+
+#topbar {
+	background: color-mix(in srgb, var(--bg-0) 88%, transparent);
+	border-bottom: 1px solid var(--line);
+	color: var(--text);
+}
+
+#playModeCheck + label {
+	border-color: color-mix(in srgb, var(--phosphor) 45%, transparent);
+	color: var(--phosphor);
+}
+
+#playModeCheck:checked + label {
+	background: var(--phosphor);
+	color: #07140c;
+	border-color: var(--phosphor);
+}
+
+.titleWidgetContainer {
+	margin-bottom: 0.75rem;
+}
+
+.titleWidget .textInputField {
+	width: 100%;
+	font-family: 'Bitsy', monospace;
+	font-size: 1rem;
+}
+
+@media (min-width: 960px) {
+	#appRoot {
+		flex-flow: row;
+	}
+
+	#editorWindow {
+		order: 0;
+		flex: 1 1 auto;
+		min-width: 0;
+		height: 100%;
+	}
+
+	#topbar {
+		order: 1;
+		display: flex;
+		flex-direction: column;
+		width: 13rem;
+		flex: 0 0 13rem;
+		height: 100%;
+		min-height: 0;
+		overflow: hidden;
+		border-bottom: 0;
+		border-left: 1px solid var(--line);
+		padding: 0.75rem 0.6rem;
+	}
+
+	#topbarMain {
+		flex: 0 0 auto;
+		overflow: visible;
+	}
+
+	#topbarFlexContainer {
+		flex-flow: column;
+		align-items: stretch;
+		gap: 0.45rem;
+		overflow: visible;
+	}
+
+	#logoFlexItem,
+	#toolsCheckLabel,
+	#playModeCheck + label {
+		width: 100%;
+	}
+
+	#toolsCheckLabel,
+	#playModeCheck + label {
+		box-sizing: border-box;
+		justify-content: flex-start;
+		margin: 0;
+	}
+
+	#toolsPanel {
+		flex: 1 1 auto;
+		min-height: 0;
+		flex-direction: column;
+		flex-wrap: nowrap;
+		align-items: stretch;
+		gap: 0.35rem;
+		padding-top: 0.75rem;
+		overflow-y: auto;
+	}
+
+	#toolsPanel > span,
+	#toolsPanel > label {
+		display: flex;
+		width: 100%;
+	}
+
+	#toolsPanel label,
+	#toolsCheckLabel,
+	#playModeCheck + label {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		box-sizing: border-box;
+		width: 100%;
+		justify-content: flex-start;
+		margin: 0;
+		padding: 0.45rem 0.5rem;
+	}
+
+	/* Closed menu keeps play and the tools toggle, and gives the width back. */
+	#appRoot:not(.bitsy-toolbar-open) #topbar {
+		width: auto;
+		flex-basis: auto;
+		padding-left: 0.4rem;
+		padding-right: 0.4rem;
+	}
+
+	#appRoot:not(.bitsy-toolbar-open) #bitsyTitle,
+	#appRoot:not(.bitsy-toolbar-open) #toolsCheckLabelText,
+	#appRoot:not(.bitsy-toolbar-open) #playModeText {
+		display: none;
+	}
+}
+
+@media (max-width: 959px) {
+	#editorWindow {
+		overflow-x: hidden;
+		overflow-y: auto;
+	}
+
+	#editorContent {
+		flex-direction: column;
+		align-items: stretch;
+		white-space: normal;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.bitsy-card {
+		display: flex;
+		width: auto;
+		max-width: calc(100% - var(--bitsy-space-m));
+		margin-right: var(--bitsy-space-m);
+	}
+
+	.bitsy-card-main,
+	.bitsy-card-xs .bitsy-card-main,
+	.bitsy-card-s .bitsy-card-main,
+	.bitsy-card-m .bitsy-card-main,
+	.bitsy-card-l .bitsy-card-main {
+		width: auto;
+		min-width: 0;
+		max-width: 100%;
+		resize: none;
+	}
+
+	.bitsy-toolbar-open #editorWindow {
+		display: flex;
+	}
+}
