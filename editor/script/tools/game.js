@@ -41,6 +41,142 @@ function makeGameTool() {
 		var isGameSettingsGroupOpen = true;
 		var isExportSettingsGroupOpen = true;
 
+		var projectsBuilt = false;
+		var projectModal;
+		var projectModalList;
+		var latestProjects = [];
+
+		function closeLoadModal() {
+			if (projectModal) {
+				projectModal.hidden = true;
+			}
+		}
+
+		function openLoadModal() {
+			if (!projectModal) {
+				return;
+			}
+			ChiliProjects.refresh();
+			projectModal.hidden = false;
+		}
+
+		function paintModal(projects, open) {
+			if (!projectModalList) {
+				return;
+			}
+			projectModalList.innerHTML = "";
+			if (!projects.length) {
+				var empty = document.createElement("p");
+				empty.className = "bitsy-menu-label";
+				empty.textContent = "No saved games yet.";
+				projectModalList.appendChild(empty);
+				return;
+			}
+			projects.forEach(function(project) {
+				var row = document.createElement("button");
+				row.type = "button";
+				row.className = "chili-project-row";
+				if (open && String(open.id) === String(project.id)) {
+					row.classList.add("is-current");
+				}
+				row.textContent = "#" + project.id + "  " + project.title;
+				row.onclick = function() {
+					closeLoadModal();
+					if (!open || String(open.id) !== String(project.id)) {
+						ChiliProjects.open(project.id);
+					}
+				};
+				projectModalList.appendChild(row);
+			});
+		}
+
+		function paintProjects(state) {
+			var open = state.current;
+			latestProjects = state.projects || [];
+			if (open && tool.setTitlebar) {
+				tool.setTitlebar("save", open.title);
+			} else if (tool.resetTitlebar) {
+				tool.resetTitlebar();
+			}
+			paintModal(latestProjects, open);
+		}
+
+		var projectHost = null;
+
+		function mountProjects() {
+			if (!tool.menuElement || !window.ChiliProjects) {
+				return;
+			}
+			if (!projectsBuilt) {
+				projectsBuilt = true;
+				projectHost = document.createElement("div");
+				projectHost.className = "bitsy-menu-group";
+				var host = projectHost;
+
+			host.appendChild(createLabelElement({
+				text: "profile",
+				icon: "save",
+				style: "bitsy-menu-header",
+				elementType: "span",
+			}));
+
+			host.appendChild(createButtonElement({
+				text: "save game",
+				icon: "download",
+				description: "save this game on your Chili account",
+				onclick: function() {
+					ChiliProjects.save({ confirmTitle: true }).catch(function(err) {
+						window.alert(err && err.message ? err.message : "save failed");
+					});
+				},
+			}));
+
+			host.appendChild(createButtonElement({
+				text: "load game",
+				icon: "upload",
+				description: "open a game saved on your Chili account",
+				onclick: openLoadModal,
+			}));
+
+			projectModal = document.createElement("div");
+			projectModal.className = "chili-project-modal";
+			projectModal.hidden = true;
+			projectModal.onclick = function(event) {
+				if (event.target === projectModal) {
+					closeLoadModal();
+				}
+			};
+
+			var dialog = document.createElement("div");
+			dialog.className = "chili-project-dialog";
+
+			var heading = createLabelElement({
+				text: "saved games",
+				icon: "save",
+				style: "bitsy-menu-header",
+				elementType: "span",
+			});
+
+			var closeButton = document.createElement("button");
+			closeButton.type = "button";
+			closeButton.textContent = "close";
+			closeButton.onclick = closeLoadModal;
+
+			projectModalList = document.createElement("div");
+			projectModalList.className = "chili-project-list";
+
+			dialog.appendChild(heading);
+			dialog.appendChild(projectModalList);
+			dialog.appendChild(closeButton);
+			projectModal.appendChild(dialog);
+			document.body.appendChild(projectModal);
+
+			ChiliProjects.watch(paintProjects);
+			ChiliProjects.refresh();
+			}
+			tool.menuElement.appendChild(projectHost);
+		}
+
 		tool.menuUpdate = function() {
 			tool.menu.push({ control: "group" });
 			tool.menu.push({
@@ -91,6 +227,7 @@ function makeGameTool() {
 		};
 
 		function updateFileMenu() {
+			mountProjects();
 			tool.menu.push({
 				control: "group",
 				text: ".html", // todo : localize
@@ -215,8 +352,13 @@ function makeGameTool() {
 			var resetMessage = localization.GetStringOrFallback("reset_game_message", "Starting a new game will erase your old data. Consider exporting your work first! Are you sure you want to start over?");
 			// todo : move the confirm dialog into tool.menu code?
 			if (confirm(resetMessage)) {
-				// todo : move into file.js
-				resetGameData();
+				if (window.ChiliProjects) {
+					ChiliProjects.startNew().catch(function (err) {
+						window.alert(err && err.message ? err.message : "could not create a new game");
+					});
+				} else {
+					resetGameData();
+				}
 			}
 		}
 

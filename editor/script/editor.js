@@ -957,6 +957,71 @@ function start() {
 
 	// about tool
 	initAbout();
+
+	fitToolContents();
+	window.addEventListener("resize", fitToolContents);
+}
+
+function fitToolContents() {
+	var mains = document.querySelectorAll("#editorContent .bitsy-card-main");
+	for (var i = 0; i < mains.length; i++) {
+		var main = mains[i];
+		var card = main.parentElement;
+		if (!card || card.style.display === "none") {
+			continue;
+		}
+
+		var wrap = main.firstElementChild;
+		if (!wrap || !wrap.classList.contains("tool-fit")) {
+			wrap = document.createElement("div");
+			wrap.className = "tool-fit";
+			while (main.firstChild) {
+				wrap.appendChild(main.firstChild);
+			}
+			main.appendChild(wrap);
+		}
+
+		wrap.style.transform = "none";
+		wrap.style.width = "100%";
+
+		if (card.id === "roomPanel") {
+			main.style.overflow = "hidden";
+			fitRoomCanvas(main, wrap);
+			continue;
+		}
+
+		main.style.overflow = "";
+	}
+}
+
+function fitRoomCanvas(main, wrap) {
+	var canvas = wrap.querySelector("canvas");
+	if (!canvas) {
+		return;
+	}
+
+	main.style.width = "";
+	main.style.minWidth = "";
+	var boxWidth = main.clientWidth;
+	canvas.style.width = "0px";
+	canvas.style.height = "0px";
+	var used = 0;
+	var children = wrap.children;
+	for (var i = 0; i < children.length; i++) {
+		if (children[i] === canvas || getComputedStyle(children[i]).display === "none") {
+			continue;
+		}
+		used += children[i].offsetHeight;
+	}
+	var canvasStyle = getComputedStyle(canvas);
+	var margin = (parseFloat(canvasStyle.marginTop) || 0) + (parseFloat(canvasStyle.marginBottom) || 0);
+	var size = Math.max(0, Math.floor(main.clientHeight - used - margin));
+	canvas.style.width = size + "px";
+	canvas.style.height = size + "px";
+	if (size > boxWidth) {
+		main.style.width = size + "px";
+		main.style.minWidth = size + "px";
+	}
 }
 
 function newDrawing() {
@@ -1349,6 +1414,14 @@ function reloadItem() {
 function deleteDrawing() {
 	paintTool.deleteDrawing();
 	events.Raise("select_drawing", { id: drawing.id, type: drawing.type });
+}
+
+function toggleToolbarLabels() {
+	var bar = document.getElementById("topbar");
+	var open = bar.classList.toggle("is-expanded");
+	var button = document.getElementById("toolbarUnfold");
+	button.textContent = open ? "›" : "‹";
+	button.title = open ? "hide tool names" : "show tool names";
 }
 
 function toggleToolBar(e) {
@@ -1982,9 +2055,8 @@ function showPanel(id, insertNextToId) {
 }
 
 function hidePanel(id) {
-	// animate panel and tools button
+	// animate panel
 	document.getElementById(id).classList.add("close");
-	document.getElementById("toolsCheckLabel").classList.add("flash");
 
 	setTimeout(
 		function() {
@@ -1993,7 +2065,6 @@ function hidePanel(id) {
 
 			// reset animations
 			document.getElementById(id).classList.remove("close");
-			document.getElementById("toolsCheckLabel").classList.remove("flash");
 		},
 		400
 	);
@@ -2033,6 +2104,7 @@ function togglePanelUI(id, visible, insertNextToId) {
 	}
 
 	document.getElementById(id).style.display = visible ? "inline-flex" : "none";
+	fitToolContents();
 
 	if (visible) {
 		cardElement.scrollIntoView();

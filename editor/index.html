@@ -72,6 +72,7 @@
 		<script src="script/tools/blip.js"></script>
 		<script src="script/tools/game.js"></script>
 		<script src="../citsy/citsy-player.js"></script>
+		<script src="../citsy/chili-projects.js"></script>
 
 		<!-- FONTS -->
 		<link href="style/googleNunito.css" rel="stylesheet">
@@ -83,36 +84,30 @@
 
 		<div id="topbar">
 
-			<div id="topbarMain" style="width:100%;display:block;overflow:auto;">
+			<div id="topbarMain">
 
 				<div id="topbarFlexContainer">
 
-					<div id="logoFlexItem">
-						<span title="Chili creator" id="bitsyLogoTitle">
-							<img id="bitsyLogo" src="image/cat.svg" alt="" />
-							<span id="bitsyTitle" class="localize bitsy_title">creator</span>
-						</span>
-					</div>
+					<button type="button" id="toolbarUnfold" title="show tool names" onclick="toggleToolbarLabels();">‹</button>
 
-					<!-- show tools -->
-					<input type="checkbox" value="toolsPanel" id="toolsCheck" onclick="toggleToolBar(event);" autocomplete="off" />
-					<label title="show / hide toolbar" for="toolsCheck" id="toolsCheckLabel" class="bitsy-menu-label">
-						<span class="bitsy_icon">tool</span>
-						<span id="toolsCheckLabelText" class="localize tools_label">tools</span>
-					</label>
-
-					<!-- play -->
-					<input type="checkbox" id="playModeCheck" onclick="togglePlayMode(event);" autocomplete="off" />
-					<label title="play / pause game" for="playModeCheck" class="bitsy-menu-label">
-						<span id="playModeIcon" class="bitsy_icon">play</span>
-						<span id="playModeText" class="localize play_game">play</span> <!-- TODO LOCALIZE: also stop_game -->
-					</label>
+					<!-- tools list is always open; this toggle is unused -->
+					<input type="checkbox" value="toolsPanel" id="toolsCheck" autocomplete="off" hidden />
 
 				</div>
 
 			</div>
 
 			<div id="toolsPanel">
+
+				<input type="checkbox" id="playModeCheck" onclick="togglePlayMode(event);" autocomplete="off" />
+				<label title="play / pause game" for="playModeCheck" class="bitsy-menu-label">
+					<span id="playModeIcon" class="bitsy_icon">play</span>
+					<span id="playModeText" class="localize play_game">play</span>
+				</label>
+
+				<button type="button" id="captureCoverButton" class="bitsy-playmode-show" title="save this frame as the game image" onclick="ChiliProjects.captureCover();">
+					save image
+				</button>
 
 				<input type="checkbox" value="aboutPanel" id="aboutCheck" onclick="togglePanelAnimated(event);" autocomplete="off" checked/>
 				<label title="show / hide documentation" for="aboutCheck">
