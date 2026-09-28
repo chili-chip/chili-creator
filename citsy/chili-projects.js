@@ -269,7 +269,7 @@
 
   function refresh() {
     return meName().then(function (username) {
-      return apiFetch("/games/?username=" + encodeURIComponent(username));
+      return apiFetch("/games/?username=" + encodeURIComponent(username) + "&released=false");
     }).then(function (response) {
       if (!response.ok) {
         throw new Error("could not load projects");
