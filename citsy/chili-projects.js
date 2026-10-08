@@ -80,6 +80,15 @@
     });
   }
 
+  // Show feedback in the app's toast stack when embedded; fall back to an alert.
+  function notify(kind, message) {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: "chili-toast", kind: kind, message: message }, window.location.origin);
+    } else {
+      window.alert(message);
+    }
+  }
+
   function titleOfGame() {
     var title = typeof getTitle === "function" ? getTitle() : "";
     title = String(title || "").split("\n")[0].trim();
@@ -253,6 +262,9 @@
         statusText = "Saved";
         emit();
       }).catch(function () {
+        if (statusText !== "Could not save") {
+          notify("error", "Could not save your game. Changes will retry on your next edit.");
+        }
         statusText = "Could not save";
         emit();
       });
@@ -347,7 +359,7 @@
       return refresh();
     }).catch(function (err) {
       booted = true;
-      window.alert(err && err.message ? err.message : "could not open this project");
+      notify("error", err && err.message ? err.message : "Could not open this project.");
       emit();
     });
   };
@@ -373,7 +385,7 @@
     }
     var canvas = document.querySelector("#roomPanel canvas");
     if (!canvas) {
-      window.alert("Nothing is playing yet.");
+      notify("info", "Nothing is playing yet.");
       return;
     }
     var image = canvas.toDataURL("image/png");
@@ -383,16 +395,16 @@
         return patch({ cover: image });
       })
       .then(function () {
-        window.alert("Saved this frame as the game image.");
+        notify("success", "Saved this frame as the game image.");
       })
       .catch(function (err) {
-        window.alert(err && err.message ? err.message : "could not save the image");
+        notify("error", err && err.message ? err.message : "Could not save the image.");
       });
   }
 
   function remove() {
     if (!projectId) {
-      window.alert("This game is not on your profile yet.");
+      notify("info", "This game is not on your profile yet.");
       return;
     }
     if (!confirm("Remove this game from your profile?")) {
@@ -411,9 +423,10 @@
       });
       statusText = "Removed";
       emit();
+      notify("success", "Game removed from your profile.");
       window.parent.postMessage({ type: "chili-project-removed" }, window.location.origin);
     }).catch(function (err) {
-      window.alert(err && err.message ? err.message : "could not remove this game");
+      notify("error", err && err.message ? err.message : "Could not remove this game.");
     });
   }
 
