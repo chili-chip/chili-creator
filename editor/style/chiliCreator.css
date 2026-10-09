@@ -479,17 +479,22 @@ textarea:focus {
 }
 
 #saveStatus[data-state='saving'] .save-status-dot {
-	background: var(--chili-hot);
-	animation: save-status-pulse 0.9s steps(2, jump-none) infinite;
+	box-sizing: border-box;
+	width: 0.7rem;
+	height: 0.7rem;
+	background: transparent;
+	border: 2px solid var(--chili-hot);
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation: save-status-spin 0.8s linear infinite;
 }
 
 #saveStatus[data-state='error'] .save-status-dot {
 	background: var(--chili);
 }
 
-@keyframes save-status-pulse {
-	from { opacity: 1; }
-	to { opacity: 0.25; }
+@keyframes save-status-spin {
+	to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {

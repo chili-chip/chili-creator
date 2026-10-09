@@ -300,9 +300,11 @@
       return;
     }
     editRevision++;
-    // After a failed save the error stays up until a save goes through.
-    if (!inFlight && saveState !== "error") {
-      setSaveState("unsaved");
+    // Like a docs app, edits show as saving straight away: the save follows
+    // once typing pauses. After a failed save the error stays up until a
+    // save goes through.
+    if (saveState !== "error") {
+      setSaveState("saving");
     }
     scheduleSave();
   }
@@ -335,8 +337,11 @@
       }
       savedRevision = revision;
       if (isDirty()) {
-        setSaveState("unsaved");
-        scheduleSave();
+        // More edits came in during the save; the next one is already queued.
+        setSaveState("saving");
+        if (!saveTimer) {
+          scheduleSave();
+        }
       } else {
         setSaveState("saved");
       }
