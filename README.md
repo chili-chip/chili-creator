@@ -20,7 +20,7 @@ The platform frontend depends on a tagged release of this repository:
 "@chili-chip/creator": "github:chili-chip/chili-creator#v0.1.0"
 ```
 
-Its build copies `editor/` and `citsy/` to `/creator/editor` and `/creator/citsy`, so the editor runs on the platform's own origin. The platform's `/creator` page loads `/creator/editor/index.html?api=<API URL>&project=<id>` in an iframe. The editor reads the signed-in user's tokens from `localStorage` (`chili.accessToken`, `chili.refreshToken`), calls the API given in `api`, and talks to the page with `postMessage` (`chili-toast`, `chili-project`, `chili-project-new`, `chili-project-removed`).
+Its build copies `editor/` and `citsy/` to `/creator/editor` and `/creator/citsy`, so the editor runs on the platform's own origin. The platform's `/creator` page loads `/creator/editor/index.html?api=<API URL>&project=<id>` in an iframe. The editor reads the signed-in user's tokens from `localStorage` (`chili.accessToken`, `chili.refreshToken`), calls the API given in `api`, and talks to the page with `postMessage` (`chili-toast`, `chili-project`, `chili-project-new`, `chili-project-removed`, and `chili-save-state` with `{ state, unsaved }` so the page can warn before leaving with unsaved work).
 
 ## Developing
 
