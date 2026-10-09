@@ -6,12 +6,19 @@
   var owner = "";
   var me = "";
   var projects = [];
-  var statusText = "Changes save automatically.";
   var listeners = [];
   var booted = false;
   var applying = false;
   var refreshing = false;
   var saveTimer = null;
+  // Save status: "saved", "unsaved", "saving" or "error". Every edit bumps
+  // editRevision; a save that finishes records the revision it sent, so edits
+  // made while a save is in flight still count as unsaved.
+  var saveState = "saved";
+  var saveError = "";
+  var editRevision = 0;
+  var savedRevision = 0;
+  var inFlight = null;
 
   function token() {
     return localStorage.getItem("chili.accessToken");
@@ -115,11 +122,41 @@
     var snapshot = {
       current: current,
       projects: projects.slice(),
-      status: statusText,
+      save: { state: saveState, error: saveError, isNew: !projectId },
     };
     listeners.forEach(function (listener) {
       listener(snapshot);
     });
+  }
+
+  function isDirty() {
+    return editRevision !== savedRevision;
+  }
+
+  function hasUnsavedWork() {
+    return isDirty() || !!inFlight;
+  }
+
+  // Updates the save status and tells the platform page, which warns before
+  // leaving the creator while work is unsaved.
+  function setSaveState(state, error) {
+    saveState = state;
+    saveError = error || "";
+    emit();
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(
+        { type: "chili-save-state", state: state, unsaved: hasUnsavedWork() },
+        window.location.origin
+      );
+    }
+  }
+
+  // Marks everything in the editor as saved, after a load or a fresh save.
+  function markClean() {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    savedRevision = editRevision;
+    setSaveState("saved");
   }
 
   function meName() {
@@ -251,33 +288,108 @@
   }
 
   function scheduleSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      saveTimer = null;
+      flush().catch(function () {});
+    }, 700);
+  }
+
+  function markEdited() {
     if (!booted || applying || refreshing || (typeof isPlayMode !== "undefined" && isPlayMode)) {
       return;
     }
-    statusText = "Saving…";
-    emit();
+    editRevision++;
+    // After a failed save the error stays up until a save goes through.
+    if (!inFlight && saveState !== "error") {
+      setSaveState("unsaved");
+    }
+    scheduleSave();
+  }
+
+  // Saves the latest edits now. Waits for a save already in flight, so two
+  // requests never race (a racing POST would create the game twice).
+  // `options.force` saves even with no new edits; the rest go to save().
+  function flush(options) {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(function () {
-      save().then(function () {
-        statusText = "Saved";
-        emit();
-      }).catch(function () {
-        if (statusText !== "Could not save") {
-          notify("error", "Could not save your game. Changes will retry on your next edit.");
-        }
-        statusText = "Could not save";
-        emit();
+    saveTimer = null;
+    if (inFlight) {
+      return inFlight.catch(function () {}).then(function () {
+        return flush(options);
       });
-    }, 700);
+    }
+    if (!isDirty() && !(options && options.force)) {
+      return Promise.resolve(null);
+    }
+    var revision = editRevision;
+    var wasFailing = saveState === "error";
+    setSaveState("saving");
+    inFlight = Promise.resolve().then(function () {
+      return save(options);
+    }).then(function (game) {
+      inFlight = null;
+      if (!game) {
+        // A new game whose title is already taken waits for an explicit save.
+        setSaveState(isDirty() ? "unsaved" : "saved");
+        return null;
+      }
+      savedRevision = revision;
+      if (isDirty()) {
+        setSaveState("unsaved");
+        scheduleSave();
+      } else {
+        setSaveState("saved");
+      }
+      return game;
+    }, function (err) {
+      inFlight = null;
+      var message = err && err.message ? err.message : "save failed";
+      if (!wasFailing) {
+        notify("error", "Could not save your game: " + message);
+      }
+      setSaveState("error", message);
+      throw err;
+    });
+    return inFlight;
+  }
+
+  // Before swapping the game in the editor, save what is there. If that save
+  // fails, ask before throwing the edits away.
+  function settle() {
+    if (!hasUnsavedWork()) {
+      return Promise.resolve(true);
+    }
+    return flush().then(function () {
+      return !isDirty() || confirm("Your latest changes are not saved yet. Discard them?");
+    }, function () {
+      return confirm("Your latest changes could not be saved. Discard them?");
+    });
   }
 
   var editorRefresh = refreshGameData;
   refreshGameData = function () {
     editorRefresh();
     if (!refreshing) {
-      scheduleSave();
+      markEdited();
     }
   };
+
+  // Warn when the editor page itself is closed or reloaded with unsaved work.
+  // Embedded in the platform, the page around it warns too.
+  window.addEventListener("beforeunload", function (event) {
+    if (!hasUnsavedWork()) {
+      return;
+    }
+    flush().catch(function () {});
+    event.preventDefault();
+    event.returnValue = "";
+  });
+
+  window.addEventListener("online", function () {
+    if (saveState === "error") {
+      flush().catch(function () {});
+    }
+  });
 
   function refresh() {
     return meName().then(function (username) {
@@ -296,12 +408,16 @@
   }
 
   function open(id) {
-    applying = true;
-    return load(id).then(function () {
-      statusText = "Saved";
-      emit();
-    }).finally(function () {
-      applying = false;
+    return settle().then(function (ok) {
+      if (!ok) {
+        return;
+      }
+      applying = true;
+      return load(id).then(function () {
+        markClean();
+      }).finally(function () {
+        applying = false;
+      });
     });
   }
 
@@ -316,6 +432,12 @@
   }
 
   function startNew() {
+    return settle().then(function (ok) {
+      return ok ? createAndSave() : null;
+    });
+  }
+
+  function createAndSave() {
     applying = true;
     clearTimeout(saveTimer);
     projectId = null;
@@ -326,14 +448,16 @@
       on_game_data_change();
     }
     applying = false;
-    return save({ forceNew: true, notify: false }).then(function (game) {
+    editRevision++;
+    return flush({ forceNew: true, notify: false }).then(function (game) {
       if (!game || !game.id) {
         return null;
       }
       applying = true;
       syncTitle("game #" + game.id);
       applying = false;
-      return save();
+      editRevision++;
+      return flush();
     });
   }
 
@@ -344,7 +468,7 @@
       setDefaultGameState();
     }
     applying = false;
-    statusText = "New project. Edits will be saved to your profile.";
+    markClean();
     window.parent.postMessage({ type: "chili-project-new" }, window.location.origin);
     emit();
   }
@@ -355,7 +479,7 @@
     var pending = projectId ? load(projectId) : Promise.resolve();
     pending.then(function () {
       booted = true;
-      statusText = projectId ? "Saved" : "New project. Edits will be saved to your profile.";
+      markClean();
       return refresh();
     }).catch(function (err) {
       booted = true;
@@ -389,7 +513,7 @@
       return;
     }
     var image = canvas.toDataURL("image/png");
-    var ready = projectId ? Promise.resolve() : save();
+    var ready = projectId ? Promise.resolve() : flush({ force: true });
     ready
       .then(function () {
         return patch({ cover: image });
@@ -421,8 +545,7 @@
       projects = projects.filter(function (project) {
         return String(project.id) !== String(removedId);
       });
-      statusText = "Removed";
-      emit();
+      markClean();
       notify("success", "Game removed from your profile.");
       window.parent.postMessage({ type: "chili-project-removed" }, window.location.origin);
     }).catch(function (err) {
@@ -432,6 +555,13 @@
 
   window.ChiliProjects = {
     save: save,
+    // Saves now, asking before saving a new game under a title already used.
+    saveNow: function () {
+      return flush({ confirmTitle: true, force: true });
+    },
+    saveState: function () {
+      return saveState;
+    },
     remove: remove,
     captureCover: captureCover,
     open: open,
