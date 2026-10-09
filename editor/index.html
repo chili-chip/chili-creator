@@ -73,6 +73,7 @@
 		<script src="script/tools/game.js"></script>
 		<script src="../citsy/citsy-player.js"></script>
 		<script src="../citsy/chili-projects.js"></script>
+		<script src="script/save_status.js"></script>
 
 		<!-- FONTS -->
 		<link href="style/googleNunito.css" rel="stylesheet">
@@ -89,6 +90,11 @@
 				<div id="topbarFlexContainer">
 
 					<button type="button" id="toolbarUnfold" title="show tool names" onclick="toggleToolbarLabels();">‹</button>
+
+					<button type="button" id="saveStatus" data-state="saved" title="All changes are saved">
+						<span class="save-status-dot" aria-hidden="true"></span>
+						<span class="save-status-text" aria-live="polite">saved</span>
+					</button>
 
 					<!-- tools list is always open; this toggle is unused -->
 					<input type="checkbox" value="toolsPanel" id="toolsCheck" autocomplete="off" hidden />

@@ -125,9 +125,8 @@ function makeGameTool() {
 				icon: "download",
 				description: "save this game on your Chili account",
 				onclick: function() {
-					ChiliProjects.save({ confirmTitle: true }).catch(function(err) {
-						window.alert(err && err.message ? err.message : "save failed");
-					});
+					// failures show in the save status, which offers a retry
+					ChiliProjects.saveNow().catch(function() {});
 				},
 			}));
 
