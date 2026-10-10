@@ -1,6 +1,6 @@
 {
   "name": "@chili-chip/creator",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Bitsy-based game creator for Chili Platform, with the citsy runtime",
   "license": "MIT",
   "repository": "github:chili-chip/chili-creator",

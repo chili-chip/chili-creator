@@ -8,12 +8,14 @@ function getDocsRoot() {
 		return "http://localhost:3000/docs/";
 	}
 
-	return "https://make.bitsy.org/docs/";
+	// chilichip's own Bitsy guides, written for the Chili Creator
+	return "https://chilichip.eu/docs/bitsy/";
 }
 
 function setAboutPage(pagePath) {
 	var docsFrame = document.getElementById('docsFrame');
-	var url = new URL(pagePath.includes('.html') ? pagePath : `${pagePath}/index.html`, getDocsRoot());
+	// pages are folders ("./tools/paint" -> ".../tools/paint/"), so keep the trailing slash
+	var url = new URL(pagePath.includes('.html') || pagePath.endsWith('/') ? pagePath : `${pagePath}/`, getDocsRoot());
 	var src = url.href;
 	docsFrame.src = src;
 }
