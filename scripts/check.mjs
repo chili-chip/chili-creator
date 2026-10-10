@@ -1,11 +1,12 @@
 // Checks the static editor without a browser:
-// every local script and stylesheet in editor/index.html exists and carries
-// the package version (see stamp-version.mjs), and every JavaScript file parses.
+// every local script and stylesheet in editor/index.html exists, is left
+// unstamped (the installed copy gets `?v=`, see stamp-version.mjs) and is
+// stamped by stampVersion, and every JavaScript file parses.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assetRefs } from './asset-refs.mjs';
+import { assetRefs, stampVersion } from './asset-refs.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const editorDir = join(root, 'editor');
@@ -24,8 +25,14 @@ for (const [, ref] of html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)="([^"
 
 const { version } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 for (const { ref } of assetRefs(html)) {
+  if (ref.includes('?v=')) {
+    console.error(`editor/index.html loads ${ref}; keep it unstamped (git checkout editor/index.html)`);
+    failures++;
+  }
+}
+for (const { ref } of assetRefs(stampVersion(html, version))) {
   if (!ref.endsWith(`?v=${version}`)) {
-    console.error(`editor/index.html loads ${ref} without ?v=${version}; run npm run stamp`);
+    console.error(`stampVersion leaves ${ref} without ?v=${version}`);
     failures++;
   }
 }

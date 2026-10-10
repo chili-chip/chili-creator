@@ -12,6 +12,6 @@
     "start": "node scripts/serve.mjs",
     "check": "node scripts/check.mjs",
     "stamp": "node scripts/stamp-version.mjs",
-    "version": "node scripts/stamp-version.mjs && git add editor/index.html"
+    "prepare": "node scripts/stamp-version.mjs"
   }
 }
