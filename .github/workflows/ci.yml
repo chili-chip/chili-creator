@@ -1,6 +1,7 @@
 # Checks the editor on every pull request and push.
-# A pushed tag like v0.2.0 also publishes a GitHub release; the platform
-# picks a release up by pinning that tag in its package.json.
+# A push to main whose package.json version has no tag yet tags it (v0.2.1)
+# and publishes a GitHub release; a tag pushed by hand publishes one too.
+# The platform picks a release up by pinning that tag in its package.json.
 name: CI
 
 on:
@@ -32,5 +33,27 @@ jobs:
       - uses: actions/checkout@v4
       - run: npm pack
       - run: gh release create "$GITHUB_REF_NAME" chili-chip-creator-*.tgz --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  # Tags created with the workflow token do not start other workflows, so
+  # this job publishes the release itself instead of leaving it to `release`.
+  tag:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag and release a new version
+        run: |
+          tag="v$(node -p "require('./package.json').version")"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" > /dev/null; then
+            echo "$tag already exists, nothing to release."
+            exit 0
+          fi
+          npm pack
+          gh release create "$tag" chili-chip-creator-*.tgz --target "$GITHUB_SHA" --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
