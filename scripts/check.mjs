@@ -1,10 +1,11 @@
 // Checks the static editor without a browser:
-// every local script and stylesheet in editor/index.html exists,
-// and every JavaScript file parses.
+// every local script and stylesheet in editor/index.html exists and carries
+// the package version (see stamp-version.mjs), and every JavaScript file parses.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { assetRefs } from './asset-refs.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const editorDir = join(root, 'editor');
@@ -17,6 +18,14 @@ for (const [, ref] of html.matchAll(/<(?:script|link)\b[^>]*\b(?:src|href)="([^"
   }
   if (!existsSync(join(editorDir, ref.split(/[?#]/)[0]))) {
     console.error(`editor/index.html references a missing file: ${ref}`);
+    failures++;
+  }
+}
+
+const { version } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+for (const { ref } of assetRefs(html)) {
+  if (!ref.endsWith(`?v=${version}`)) {
+    console.error(`editor/index.html loads ${ref} without ?v=${version}; run npm run stamp`);
     failures++;
   }
 }
