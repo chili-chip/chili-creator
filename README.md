@@ -33,7 +33,7 @@ To try a change inside the platform before releasing, point the platform's depen
 
 ## Releasing
 
-Feature branches merge into `dev`; `dev` merges into `main`. To release, bump the version in a pull request with `npm version patch --no-git-tag-version`, which also stamps it onto every script and stylesheet in `editor/index.html` (`?v=0.2.1`) so browsers never mix files from two releases.
+Feature branches merge into `dev`; `dev` merges into `main`. To release, bump the version in a pull request with `npm version patch --no-git-tag-version`. When the platform installs a release, the package's `prepare` script stamps the version onto every script and stylesheet in the installed `editor/index.html` (`?v=0.3.0`) so browsers never mix files from two releases; the file in this repository stays unstamped.
 
 When that version reaches `main`, CI tags it and publishes a GitHub release. Then bump the tag in the platform's `package.json`; its own deploys ship the new editor.
 

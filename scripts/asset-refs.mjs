@@ -18,3 +18,13 @@ export function assetRefs(html) {
   }
   return refs;
 }
+
+// Returns the html with `?v=<version>` on every local script and stylesheet.
+export function stampVersion(html, version) {
+  let next = html;
+  for (const { attr, ref } of assetRefs(html).reverse()) {
+    const stamped = `${ref.split(/[?#]/)[0]}?v=${version}`;
+    next = next.slice(0, attr.index) + attr.text.replace(ref, stamped) + next.slice(attr.index + attr.text.length);
+  }
+  return next;
+}
