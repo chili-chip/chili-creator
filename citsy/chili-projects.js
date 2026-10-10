@@ -124,8 +124,13 @@
       projects: projects.slice(),
       save: { state: saveState, error: saveError, isNew: !projectId },
     };
+    // One broken listener must not stop saving, loading or the other listeners.
     listeners.forEach(function (listener) {
-      listener(snapshot);
+      try {
+        listener(snapshot);
+      } catch (err) {
+        console.error(err);
+      }
     });
   }
 

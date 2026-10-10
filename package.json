@@ -1,6 +1,6 @@
 {
   "name": "@chili-chip/creator",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "Bitsy-based game creator for Chili Platform, with the citsy runtime",
   "license": "MIT",
   "repository": "github:chili-chip/chili-creator",
@@ -10,6 +10,8 @@
   ],
   "scripts": {
     "start": "node scripts/serve.mjs",
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "stamp": "node scripts/stamp-version.mjs",
+    "version": "node scripts/stamp-version.mjs && git add editor/index.html"
   }
 }
