@@ -42,7 +42,10 @@
 			ChiliProjects.saveNow().catch(function () {});
 		};
 		ChiliProjects.watch(function (state) {
-			paint(button, state.save);
+			// A chili-projects.js from before v0.2.0 reports no save status.
+			if (state && state.save) {
+				paint(button, state.save);
+			}
 		});
 	});
 })();

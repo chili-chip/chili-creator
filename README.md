@@ -33,10 +33,10 @@ To try a change inside the platform before releasing, point the platform's depen
 
 ## Releasing
 
-Feature branches merge into `dev`; `dev` merges into `main`. To release, bump `version` in `package.json` on `main`, then push a matching tag:
+Feature branches merge into `dev`; `dev` merges into `main`. To release, bump the version on `main` with `npm version`, which also stamps it onto every script and stylesheet in `editor/index.html` (`?v=0.2.1`) so browsers never mix files from two releases, then push the tag it makes:
 
 ```bash
-git tag v0.2.0 && git push origin v0.2.0
+npm version patch && git push origin main v0.2.1
 ```
 
 CI checks the tag matches `package.json` and publishes a GitHub release. Then bump the tag in the platform's `package.json`; its own deploys ship the new editor.
