@@ -11,6 +11,10 @@ on:
     branches: [dev, main]
     tags: ['v*']
 
+# Jobs only read the repository unless they say otherwise (release, tag).
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
