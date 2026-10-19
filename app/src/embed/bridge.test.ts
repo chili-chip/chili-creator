@@ -51,6 +51,31 @@ describe('createEmbedBridge', () => {
     bridge.dispose();
   });
 
+  it('reuses the token it was given until the API turns it down', async () => {
+    const parent = fakeParent();
+    const bridge = createEmbedBridge({ win: window, parent, origin: ORIGIN });
+    const first = bridge.requestToken();
+    const request = parent.posted[0]!.message as { id: string };
+    answer({ type: 'chili-auth', v: 2, id: request.id, access: 'abc' });
+    await first;
+    await expect(bridge.requestToken()).resolves.toBe('abc');
+    expect(parent.posted).toHaveLength(1);
+    void bridge.requestToken('expired');
+    expect(parent.posted).toHaveLength(2);
+    bridge.dispose();
+  });
+
+  it('asks again after a signed-out answer', async () => {
+    const parent = fakeParent();
+    const bridge = createEmbedBridge({ win: window, parent, origin: ORIGIN });
+    const first = bridge.requestToken();
+    answer({ type: 'chili-auth', v: 2, id: (parent.posted[0]!.message as { id: string }).id, signedOut: true });
+    await expect(first).resolves.toBeNull();
+    void bridge.requestToken();
+    expect(parent.posted).toHaveLength(2);
+    bridge.dispose();
+  });
+
   it('passes the reason, so the parent refreshes an expired token', () => {
     const parent = fakeParent();
     const bridge = createEmbedBridge({ win: window, parent, origin: ORIGIN });

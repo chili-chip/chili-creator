@@ -54,6 +54,9 @@ describe('createTransport', () => {
       [404, { detail: 'Not found.' }, 'not-found'],
       [409, { detail: 'This game has been bought.' }, 'conflict'],
       [400, { title: ['This field may not be blank.'] }, 'validation'],
+      [400, { detail: 'You can keep 30 projects. Delete one before saving another.' }, 'project-limit'],
+      [400, { data: ['Game data must be 1.5 MB or smaller.'] }, 'too-large'],
+      [429, { detail: 'Request was throttled. Expected available in 3 seconds.' }, 'rate-limited'],
       [500, {}, 'server'],
     ];
     for (const [status, body, kind] of cases) {
@@ -77,6 +80,20 @@ describe('createTransport', () => {
     const error = (await transport.request('/games/').catch((err: unknown) => err)) as ApiError;
     expect(error.fields).toEqual({ title: ['This field may not be blank.'] });
     expect(error.message).toBe('This field may not be blank.');
+  });
+
+  it('follows an absolute pagination URL under the base path', async () => {
+    const fetch = vi.fn(async () => json(200, {}));
+    const transport = createTransport({ baseUrl: 'https://api.test/api', tokens: tokens('t'), fetch });
+    await transport.request('https://api.test/api/games/?page=2&released=false');
+    expect((fetch.mock.calls[0] as unknown as [string])[0]).toBe('https://api.test/api/games/?page=2&released=false');
+  });
+
+  it('refuses a URL outside the API', async () => {
+    const fetch = vi.fn(async () => json(200, {}));
+    const transport = createTransport({ baseUrl: 'https://api.test/api', tokens: tokens('t'), fetch });
+    await expect(transport.request('https://evil.test/api/games/')).rejects.toMatchObject({ kind: 'network' });
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it('reports a network failure', async () => {

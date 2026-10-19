@@ -1,0 +1,205 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { parse, serialize } from '../bitsy';
+import {
+  createLocalProjects,
+  createMemoryStore,
+  createPlatformProjects,
+  createProfileService,
+  createTransport,
+} from '../chili-api';
+import { createFakePlatform, type FakePlatform } from '../chili-api/fake-platform';
+import type { EmbedMessage } from '../embed/bridge';
+import { createProjectStore } from './store';
+
+const game = (title: string) => `${title}\n\n# BITSY VERSION 8.12\n\n! ROOM_FORMAT 1\n`;
+
+let platform: FakePlatform;
+
+function setup({ signedIn = true } = {}) {
+  const transport = createTransport({
+    baseUrl: 'https://api.test/api',
+    tokens: { getToken: async () => (signedIn ? 'good-token' : null) },
+    fetch: platform.fetch,
+  });
+  const posted: EmbedMessage[] = [];
+  const notices: { kind: string; message: string }[] = [];
+  const store = createProjectStore({
+    profile: createProfileService(transport),
+    platform: createPlatformProjects(transport),
+    local: createLocalProjects(createMemoryStore()),
+    post: (message) => posted.push(message),
+    notify: (kind, message) => notices.push({ kind, message }),
+  });
+  return { store, posted, notices };
+}
+
+beforeEach(() => {
+  platform = createFakePlatform();
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+});
+afterEach(() => vi.useRealTimers());
+
+describe('createProjectStore', () => {
+  it('lists projects and released games for a signed-in user', async () => {
+    platform.addGame({ title: 'draft' });
+    platform.addGame({ title: 'out', released: true });
+    const { store } = setup();
+    await store.start();
+    const state = store.getState();
+    expect(state.mode).toBe('platform');
+    expect(state.username).toBe('kacper');
+    expect(state.profile).toEqual({ username: 'kacper', displayName: 'Kacper' });
+    expect(state.list.status).toBe('ready');
+    expect(state.list.projects.map((p) => p.title)).toEqual(['draft']);
+    expect(state.list.released.map((p) => p.title)).toEqual(['out']);
+  });
+
+  it('keeps games on this device when nobody is signed in', async () => {
+    const { store } = setup({ signedIn: false });
+    await store.start();
+    expect(store.getState().mode).toBe('local');
+    await store.create();
+    expect(store.getState().list.projects).toHaveLength(1);
+    expect(store.getState().open.status).toBe('ready');
+    expect(platform.requests.filter((r) => r.path.startsWith('/games'))).toEqual([]);
+  });
+
+  it('opens the project named in the URL and tells the platform', async () => {
+    const saved = platform.addGame({ title: 'mossland', data: game('mossland') });
+    const { store, posted } = setup();
+    await store.start(String(saved.id));
+    const open = store.getState().open;
+    expect(open.status).toBe('ready');
+    if (open.status !== 'ready') return;
+    expect(open.project.title).toBe('mossland');
+    expect(open.world.title).toBe('mossland');
+    expect(store.data()).toBe(game('mossland'));
+    expect(posted).toContainEqual({ type: 'chili-project', id: String(saved.id) });
+  });
+
+  it('shows why a project could not open', async () => {
+    const { store } = setup();
+    await store.start('999');
+    expect(store.getState().open).toEqual({ status: 'error', id: '999', message: 'No Game matches the given query.' });
+  });
+
+  it('creates a new game on the platform and opens it', async () => {
+    const { store, posted } = setup();
+    await store.start();
+    await store.create();
+    expect(platform.games).toHaveLength(1);
+    const data = platform.games[0]!.data;
+    expect(parse(data).world.rooms).toHaveLength(1);
+    expect(platform.games[0]!.title).toBe('Untitled game');
+    expect(store.getState().open.status).toBe('ready');
+    expect(posted).toContainEqual({ type: 'chili-project', id: String(platform.games[0]!.id) });
+  });
+
+  it('autosaves a rename and reports the save state to the platform', async () => {
+    const saved = platform.addGame({ title: 'old', data: game('old') });
+    const { store, posted } = setup();
+    await store.start(String(saved.id));
+    store.setTitle('New name');
+    expect(store.getState().save).toEqual({ state: 'saving', unsaved: true });
+    await vi.advanceTimersByTimeAsync(800);
+    await store.flush();
+    expect(platform.games[0]!.title).toBe('New name');
+    expect(platform.games[0]!.data).toBe(game('New name'));
+    expect(store.getState().save).toEqual({ state: 'saved', unsaved: false });
+    expect(store.getState().list.projects[0]!.title).toBe('New name');
+    expect(posted).toContainEqual({ type: 'chili-save-state', state: 'saving', unsaved: true });
+    expect(posted.at(-1)).toEqual({ type: 'chili-save-state', state: 'saved', unsaved: false });
+  });
+
+  it('saves edits made to the world', async () => {
+    const saved = platform.addGame({ title: 'old', data: game('old') });
+    const { store } = setup();
+    await store.start(String(saved.id));
+    store.updateWorld((world) => {
+      world.flags.TXT_MODE = '1';
+    });
+    await store.flush();
+    expect(platform.games[0]!.data).toBe(`${game('old')}`.replace('! ROOM_FORMAT 1\n', '! ROOM_FORMAT 1\n! TXT_MODE 1\n'));
+    // The open world is a new object, so React sees the change.
+    const open = store.getState().open;
+    expect(open.status === 'ready' && serialize(open.world)).toBe(platform.games[0]!.data);
+  });
+
+  it('tells the user once when saving fails', async () => {
+    const saved = platform.addGame({ title: 'old', data: game('old') });
+    const { store, notices } = setup();
+    await store.start(String(saved.id));
+    platform.failNext(2);
+    store.setTitle('a');
+    await store.flush().catch(() => {});
+    store.setTitle('ab');
+    await store.flush().catch(() => {});
+    expect(store.getState().save.state).toBe('error');
+    expect(notices).toEqual([{ kind: 'error', message: 'Could not save your game: Server error.' }]);
+    await store.retrySave();
+    expect(store.getState().save.state).toBe('saved');
+    expect(platform.games[0]!.title).toBe('ab');
+  });
+
+  it('saves the open game before opening another', async () => {
+    const a = platform.addGame({ title: 'a', data: game('a') });
+    const b = platform.addGame({ title: 'b', data: game('b') });
+    const { store } = setup();
+    await store.start(String(a.id));
+    store.setTitle('a2');
+    await store.open(String(b.id));
+    expect(platform.games.find((g) => g.id === a.id)!.title).toBe('a2');
+    const open = store.getState().open;
+    expect(open.status === 'ready' && open.project.id).toBe(String(b.id));
+  });
+
+  it('removes a project, closing it when it is open', async () => {
+    const a = platform.addGame({ title: 'a', data: game('a') });
+    const { store, posted } = setup();
+    await store.start(String(a.id));
+    await store.remove(String(a.id));
+    expect(platform.games).toEqual([]);
+    expect(store.getState().open).toEqual({ status: 'none' });
+    expect(store.getState().list.projects).toEqual([]);
+    expect(posted.at(-1)).toEqual({ type: 'chili-project-new' });
+  });
+
+  it('passes on why a project cannot be removed', async () => {
+    const a = platform.addGame({ title: 'a' });
+    platform.markBought(a.id);
+    const { store } = setup();
+    await store.start();
+    await expect(store.remove(String(a.id))).rejects.toMatchObject({ kind: 'conflict' });
+    expect(store.getState().list.projects).toHaveLength(1);
+  });
+
+  it('duplicates a project', async () => {
+    platform.addGame({ title: 'a', data: game('a') });
+    const { store } = setup();
+    await store.start();
+    await store.duplicate(store.getState().list.projects[0]!.id);
+    expect(store.getState().list.projects.map((p) => p.title)).toEqual(['a (copy)', 'a']);
+  });
+
+  it('counts released games against the limit', async () => {
+    platform.addGame({ title: 'a' });
+    platform.addGame({ title: 'b', released: true });
+    const { store } = setup();
+    await store.start();
+    expect(store.gamesUsed()).toBe(2);
+  });
+
+  it('starts once, however often it is asked', async () => {
+    const { store } = setup();
+    await Promise.all([store.start(), store.start()]);
+    expect(platform.requests.filter((r) => r.path === '/profiles/me/')).toHaveLength(1);
+  });
+
+  it('notifies subscribers', async () => {
+    const { store } = setup();
+    const listener = vi.fn();
+    store.subscribe(listener);
+    await store.start();
+    expect(listener).toHaveBeenCalled();
+  });
+});

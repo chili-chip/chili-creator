@@ -41,7 +41,9 @@ npm run build         # new creator into dist/
 npm run check         # classic editor: every file index.html loads exists, every script parses
 ```
 
-New code goes in `app/src`, one folder per module: `plugin-api/` (registries for tools and commands), `embed/` (the platform page), `chili-api/` (platform API client), `shell/` (frame, workspace, command palette), `ui/` (design system), `tools/` (one folder per tool, registered in `tools/index.ts`).
+New code goes in `app/src`, one folder per module: `plugin-api/` (registries for tools and commands), `embed/` (the platform page), `bitsy/` (the typed `.bitsy` world model: `parse` and `serialize`, byte for byte on unchanged parts), `player/` (citsy in a Web Worker), `chili-api/` (platform API client, project repositories for the platform and this browser, autosave), `project/` (the open project and project lists every tool shares), `shell/` (frame, workspace, command palette), `ui/` (design system), `tools/` (one folder per tool, registered in `tools/index.ts`).
+
+The player loads `citsy/citsy.js` and `citsy/citsy.wasm` into the build (`dist/assets/`), so the new creator does not need the platform's `/creator/citsy/` copy.
 
 To try a change inside the platform before releasing, point the platform's dependency at your branch (`github:chili-chip/chili-creator#my-branch`) or run `npm link` from this folder and `npm link @chili-chip/creator` in the platform.
 

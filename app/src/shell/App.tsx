@@ -1,19 +1,40 @@
 import type { DockviewApi } from 'dockview-react';
 import { Command, ExternalLink, UserRound } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Toaster } from 'sonner';
 import type { Creator } from '../creator';
 import { Button } from '../ui/button';
 import { classicEditorUrl } from './classic';
 import { CommandPalette } from './CommandPalette';
+import { CreatorProvider, useProjects } from './creator-context';
 import { clearLayout } from './layout-storage';
-import { useProfile } from './use-profile';
+import { ProjectBar } from './ProjectBar';
 import { useRegistry } from './use-registry';
 import { openDefaultTools, openTool, Workspace } from './Workspace';
 
 export function App({ creator }: { creator: Creator }) {
+  return (
+    <CreatorProvider value={creator}>
+      <Shell creator={creator} />
+    </CreatorProvider>
+  );
+}
+
+function Account() {
+  const projects = useProjects();
+  return (
+    <span className="flex min-w-0 items-center gap-2 border-l border-line pl-3 text-xs whitespace-nowrap text-muted">
+      <UserRound className="size-4" />
+      {projects.profile && <span className="max-w-32 truncate text-text">{projects.profile.displayName}</span>}
+      {projects.mode === 'local' && <span>Not signed in</span>}
+      {projects.mode === 'unknown' && <span>…</span>}
+    </span>
+  );
+}
+
+function Shell({ creator }: { creator: Creator }) {
   const tools = useRegistry(creator.tools);
   const commands = useRegistry(creator.commands);
-  const profile = useProfile(creator.profile);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const dock = useRef<DockviewApi | null>(null);
 
@@ -51,6 +72,25 @@ export function App({ creator }: { creator: Creator }) {
     return () => unregister.forEach((fn) => fn());
   }, [creator, tools]);
 
+  // Load projects (and the one the platform asked for), and keep work safe.
+  useEffect(() => {
+    void creator.projects.start(creator.initialProject);
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      if (!creator.projects.hasUnsavedWork()) return;
+      creator.projects.flush().catch(() => {});
+      event.preventDefault();
+    }
+    function onOnline() {
+      if (creator.projects.getState().save.state === 'error') creator.projects.retrySave().catch(() => {});
+    }
+    window.addEventListener('beforeunload', onBeforeUnload);
+    window.addEventListener('online', onOnline);
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      window.removeEventListener('online', onOnline);
+    };
+  }, [creator]);
+
   useEffect(() => {
     function onKeydown(event: KeyboardEvent) {
       if (creator.commands.handleKeydown(event)) {
@@ -70,7 +110,8 @@ export function App({ creator }: { creator: Creator }) {
         <span className="hidden rounded border border-amber/40 px-1.5 py-0.5 text-[10px] tracking-widest text-amber sm:inline">
           PREVIEW
         </span>
-        <div className="ml-auto flex items-center gap-2">
+        <ProjectBar />
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -86,14 +127,7 @@ export function App({ creator }: { creator: Creator }) {
               <span className="hidden sm:inline">Classic editor</span>
             </a>
           </Button>
-          <span className="flex min-w-0 items-center gap-2 border-l border-line pl-3 text-xs whitespace-nowrap text-muted">
-            <UserRound className="size-4" />
-            {profile.status === 'signed-in' && (
-              <span className="max-w-32 truncate text-text">{profile.profile.displayName}</span>
-            )}
-            {profile.status === 'signed-out' && <span>Not signed in</span>}
-            {profile.status === 'loading' && <span>…</span>}
-          </span>
+          <Account />
         </div>
       </header>
 
@@ -123,6 +157,8 @@ export function App({ creator }: { creator: Creator }) {
         <span>{creator.bridge.embedded ? 'In Chili Platform' : 'Standalone'}</span>
         <span className="ml-auto hidden sm:inline">Ctrl+K for commands</span>
       </footer>
+
+      {!creator.bridge.embedded && <Toaster theme="dark" position="bottom-right" />}
 
       {paletteOpen && (
         <CommandPalette
