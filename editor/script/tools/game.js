@@ -80,6 +80,13 @@ function makeGameTool() {
 					row.classList.add("is-current");
 				}
 				row.textContent = "#" + project.id + "  " + project.title;
+				if (project.released) {
+					// Edits to a released game change the game players see.
+					var tag = document.createElement("span");
+					tag.className = "chili-project-released";
+					tag.textContent = "released";
+					row.appendChild(tag);
+				}
 				row.onclick = function() {
 					closeLoadModal();
 					if (!open || String(open.id) !== String(project.id)) {

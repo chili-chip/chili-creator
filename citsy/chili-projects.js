@@ -188,6 +188,7 @@
       slug: game.slug,
       owner: game.owner,
       cover: game.cover || "",
+      released: !!game.released,
       updated_at: game.updated_at,
     };
     var index = projects.findIndex(function (project) {
@@ -401,16 +402,22 @@
     }
   });
 
-  function refresh() {
-    return meName().then(function (username) {
-      return apiFetch("/games/?username=" + encodeURIComponent(username) + "&released=false");
-    }).then(function (response) {
+  function fetchJson(path) {
+    return apiFetch(path).then(function (response) {
       if (!response.ok) {
         throw new Error("could not load projects");
       }
       return response.json();
-    }).then(function (payload) {
-      projects = payload.results || payload;
+    });
+  }
+
+  // Drafts and released games, every page (chili-project-list.js, #15). When
+  // a request fails the list keeps what it showed before.
+  function refresh() {
+    return meName().then(function (username) {
+      return window.ChiliProjectList.loadAll(fetchJson, username);
+    }).then(function (games) {
+      projects = games;
       emit();
     }).catch(function () {
       emit();
