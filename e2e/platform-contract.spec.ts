@@ -32,6 +32,6 @@ test('when the API turns a token down, the creator asks the page for a fresh one
 test('a signed-out platform page leaves the creator signed out', async ({ page }) => {
   const seen = await fakeProfileApi(page, 'unused');
   const creator = await openInFakePlatform(page, []);
-  await expect(creator.getByText('Not signed in')).toBeVisible();
+  await expect(creator.getByRole('banner').getByText('Not signed in')).toBeVisible();
   expect(seen).toEqual([]);
 });

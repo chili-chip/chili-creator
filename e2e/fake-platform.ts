@@ -1,14 +1,15 @@
 import type { Page, Route } from '@playwright/test';
+import { createFakePlatform, type FakePlatform } from '../app/src/chili-api/fake-platform';
 
 /**
  * A stand-in for the platform's /creator page: an iframe on the same origin
  * that answers the creator's token requests like CreatorComponent does, and
  * records every message the creator sends.
  */
-export async function openInFakePlatform(page: Page, tokens: string[]) {
+export async function openInFakePlatform(page: Page, tokens: string[], src = '/index.html?api=/api') {
   const html = `<!doctype html>
 <html><body style="margin:0">
-<iframe id="creator" src="/index.html?api=/api" style="border:0;width:100vw;height:100vh"></iframe>
+<iframe id="creator" src="${src}" style="border:0;width:100vw;height:100vh"></iframe>
 <script>
   window.received = [];
   const tokens = ${JSON.stringify(tokens)};
@@ -33,9 +34,38 @@ export async function openInFakePlatform(page: Page, tokens: string[]) {
   return page.frameLocator('#creator');
 }
 
-/** Serves GET /api/profiles/me/ for one accepted token; 401 for anything else. */
+/** What the creator posted to the fake platform page. */
+export function received<T = { type: string }>(page: Page): Promise<T[]> {
+  return page.evaluate(() => (window as unknown as { received: unknown[] }).received) as Promise<T[]>;
+}
+
+/** Serves /api/ from the in-memory platform the unit tests use. */
+export async function servePlatform(page: Page, platform: FakePlatform = createFakePlatform()) {
+  await page.route('**/api/**', async (route: Route) => {
+    const request = route.request();
+    const body = request.postData();
+    const response = await platform.handle(
+      new Request(request.url(), {
+        method: request.method(),
+        headers: request.headers(),
+        ...(body !== null ? { body } : {}),
+      }),
+    );
+    await route.fulfill({
+      status: response.status,
+      headers: { 'content-type': 'application/json' },
+      body: await response.text(),
+    });
+  });
+  return platform;
+}
+
+/** Serves GET /api/profiles/me/ for one accepted token; 401 for anything else. Lists are empty. */
 export async function fakeProfileApi(page: Page, acceptedToken: string) {
   const seen: (string | null)[] = [];
+  await page.route('**/api/games/**', (route: Route) =>
+    route.fulfill({ json: { count: 0, next: null, previous: null, results: [] } }),
+  );
   await page.route('**/api/profiles/me/', (route: Route) => {
     const auth = route.request().headers()['authorization'] ?? null;
     seen.push(auth);
