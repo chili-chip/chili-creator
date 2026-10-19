@@ -63,15 +63,18 @@ jobs:
 
   # Playwright against the production build, including the creator inside a
   # stand-in for the platform page (e2e/fake-platform.ts).
+  # Runs in Playwright's own image, pinned to the @playwright/test version in
+  # package.json: the browsers are already there, whatever Ubuntu the runner has.
   e2e:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - if: failure()
         uses: actions/upload-artifact@v4
