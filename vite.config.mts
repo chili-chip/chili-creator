@@ -21,11 +21,11 @@ export default defineConfig({
     root: '.',
     environment: 'jsdom',
     globals: true,
-    include: ['app/src/**/*.test.{ts,tsx}'],
+    include: ['app/src/**/*.test.{ts,tsx}', 'citsy/**/*.test.ts'],
     setupFiles: ['app/src/test/setup.ts'],
     coverage: {
       provider: 'v8',
-      include: ['app/src/**/*.{ts,tsx}'],
+      include: ['app/src/**/*.{ts,tsx}', 'citsy/chili-project-list.js'],
       exclude: ['app/src/**/*.test.{ts,tsx}', 'app/src/test/**', 'app/src/main.tsx'],
       reporter: ['text', 'json-summary', 'html'],
     },
