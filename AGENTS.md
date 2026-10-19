@@ -17,10 +17,12 @@ Write the tests before the code they test. This applies to every change in behav
 - Never skip, disable or weaken an existing test to get to green.
 - Name the tests you wrote first in the PR description.
 - **Code coverage: we aim for 80% of lines.** It is a target, not a gate: a pull request below 80% is not refused. Do not lower coverage without a reason in the PR.
-- This repo has no coverage report yet. The change that adds the first tests also adds an informational coverage step to CI, like chili-platform's `coverage` job.
+- Coverage is reported on every pull request by the `coverage` job in CI (Vitest with v8; summary page and a notice on the checks). It never blocks the PR. Locally: `npm run test:coverage`.
 
 ## Tests in this repo
 
-- `npm run check` (`scripts/check.mjs`) checks the editor's files without a browser; CI runs it.
-- **Unit:** write tests for new or changed logic in `scripts/` and `editor/` with Node's built-in test runner (`node:test`, no new dependency) and run them from `npm run check`, so CI runs them too.
-- **End to end:** there is no browser test yet. Open the editor with `npm start`, and test it inside the platform's creator page on platform-dev.chilichip.eu; list the steps in the PR.
+- **Unit and component (new creator):** Vitest with Testing Library, in a `*.test.ts(x)` file next to the code in `app/src`. Run `npm test`.
+- **Integration with the platform:** the API client (`app/src/chili-api`) is tested against the response shapes in chili-platform's `docs/openapi.yaml`; the platform page contract (`app/src/embed`) has unit tests and an end-to-end test.
+- **End to end:** Playwright in `e2e/`, against the production build, on desktop and phone sizes. `e2e/fake-platform.ts` stands in for the platform's `/creator` page. Run `npm run test:e2e`. For changes that need the real platform, also test on platform-dev.chilichip.eu and list the steps in the PR.
+- **Classic editor:** `npm run check` (`scripts/check.mjs`) checks its files without a browser. It has no unit tests; changes there list manual steps in the PR.
+- Run `npm run typecheck`, `npm test`, `npm run test:e2e` and `npm run check` before you push; CI runs them all.

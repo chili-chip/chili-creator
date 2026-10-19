@@ -1,0 +1,101 @@
+@import 'tailwindcss';
+@import 'dockview-react/dist/styles/dockview.css';
+
+/* The platform's fonts. Inside the platform they load from its origin; on
+   their own (npm run dev) the fallbacks are used. */
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-mono-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-mono-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Syne';
+  font-display: swap;
+  src: url('/fonts/syne.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Press Start 2P';
+  font-display: swap;
+  src: url('/fonts/press-start-2p-400.woff2') format('woff2');
+}
+
+/* Design tokens, matching chili-platform-frontend src/styles/_tokens.scss
+   so the creator reads as part of the platform. */
+@theme {
+  --color-bg-0: #07080c;
+  --color-bg-1: #10131a;
+  --color-bg-2: #0c0f14;
+  --color-bg-3: #171b24;
+  --color-text: #f4f1ea;
+  --color-muted: #9aa3b5;
+  --color-line: #262c38;
+  --color-chili: #ff3b3b;
+  --color-chili-hot: #ff6b35;
+  --color-chili-deep: #4c0710;
+  --color-phosphor: #7dffb3;
+  --color-amber: #ffb347;
+  --color-on-accent: #140407;
+
+  --font-display: 'Syne', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-pixel: 'Press Start 2P', monospace;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--color-bg-0);
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-phosphor);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}
+
+/* Dockview, in the platform's colours. */
+.dockview-theme-chili {
+  --dv-background-color: var(--color-bg-0);
+  --dv-group-view-background-color: var(--color-bg-1);
+  --dv-tabs-and-actions-container-background-color: var(--color-bg-2);
+  --dv-activegroup-visiblepanel-tab-background-color: var(--color-bg-1);
+  --dv-activegroup-hiddenpanel-tab-background-color: var(--color-bg-2);
+  --dv-inactivegroup-visiblepanel-tab-background-color: var(--color-bg-1);
+  --dv-inactivegroup-hiddenpanel-tab-background-color: var(--color-bg-2);
+  --dv-activegroup-visiblepanel-tab-color: var(--color-text);
+  --dv-activegroup-hiddenpanel-tab-color: var(--color-muted);
+  --dv-inactivegroup-visiblepanel-tab-color: var(--color-muted);
+  --dv-inactivegroup-hiddenpanel-tab-color: var(--color-muted);
+  --dv-separator-border: var(--color-line);
+  --dv-paneview-header-border-color: var(--color-line);
+  --dv-tab-divider-color: var(--color-line);
+  --dv-drag-over-background-color: rgb(255 59 59 / 0.18);
+  --dv-drag-over-border-color: var(--color-chili);
+  --dv-tabs-container-scrollbar-color: var(--color-line);
+  --dv-icon-hover-background-color: var(--color-bg-3);
+  --dv-floating-box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
+  --dv-active-sash-color: var(--color-chili);
+  --dv-tabs-and-actions-container-font-size: 12px;
+  --dv-tabs-and-actions-container-height: 32px;
+}

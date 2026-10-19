@@ -8,7 +8,8 @@ It moved here from `chili-platform-frontend` (`public/creator`), history include
 
 | Path | What |
 |---|---|
-| `editor/` | The Bitsy editor. `index.html` is the entry point |
+| `app/` | The new creator (preview): React, TypeScript, Vite, Dockview, Tailwind. Builds to `dist/`. See the [overhaul plan](docs/overhaul-plan.md) |
+| `editor/` | The classic Bitsy editor. `index.html` is the entry point. It stays until the new creator can do everything it does |
 | `citsy/citsy.js`, `citsy.wasm`, `citsy-player.js` | citsy runtime and web player, also used by the platform's `/play` page |
 | `citsy/chili-projects.js` | Platform glue: the project list, save, and publish through the platform API |
 
@@ -20,14 +21,27 @@ The platform frontend depends on a tagged release of this repository:
 "@chili-chip/creator": "github:chili-chip/chili-creator#v0.1.0"
 ```
 
-Its build copies `editor/` and `citsy/` to `/creator/editor` and `/creator/citsy`, so the editor runs on the platform's own origin. The platform's `/creator` page loads `/creator/editor/index.html?api=<API URL>&project=<id>` in an iframe. The editor reads the signed-in user's tokens from `localStorage` (`chili.accessToken`, `chili.refreshToken`), calls the API given in `api`, and talks to the page with `postMessage` (`chili-toast`, `chili-project`, `chili-project-new`, `chili-project-removed`, and `chili-save-state` with `{ state, unsaved }` so the page can warn before leaving with unsaved work).
+Its build copies `editor/`, `citsy/` and `dist/` to `/creator/editor`, `/creator/citsy` and `/creator/app`, so both creators run on the platform's own origin. Installing the package runs `prepare`, which builds `dist/`. The platform's `/creator` page loads `/creator/editor/index.html?api=<API URL>&project=<id>` in an iframe. The editor reads the signed-in user's tokens from `localStorage` (`chili.accessToken`, `chili.refreshToken`), calls the API given in `api`, and talks to the page with `postMessage` (`chili-toast`, `chili-project`, `chili-project-new`, `chili-project-removed`, and `chili-save-state` with `{ state, unsaved }` so the page can warn before leaving with unsaved work).
+
+### The new creator and the platform page
+
+The new creator (`/creator/app/index.html?api=<API URL>&project=<id>`) sends the same messages, each with `v: 2`. It never reads or uses the refresh token: it asks the page for an access token with `{ type: "chili-auth-request", id, reason? }`, and the page answers `{ type: "chili-auth", v: 2, id, access }` or `{ ..., signedOut: true }`. `reason: "expired"` means the API turned the last token down, so the page should refresh first. Until the page answers, the creator falls back to reading `chili.accessToken` after 1.5 s. The contract is in `app/src/embed/bridge.ts` and tested end to end in `e2e/platform-contract.spec.ts`.
 
 ## Developing
 
 ```bash
-npm start        # http://localhost:4300/editor/index.html
-npm run check    # every file index.html loads exists, every script parses
+npm ci
+npm start             # classic editor at http://localhost:4300/editor/index.html
+npm run dev           # new creator at http://localhost:4301/
+npm test              # unit tests (Vitest)
+npm run test:coverage # with line coverage in coverage/
+npm run test:e2e      # Playwright against the production build
+npm run typecheck
+npm run build         # new creator into dist/
+npm run check         # classic editor: every file index.html loads exists, every script parses
 ```
+
+New code goes in `app/src`, one folder per module: `plugin-api/` (registries for tools and commands), `embed/` (the platform page), `chili-api/` (platform API client), `shell/` (frame, workspace, command palette), `ui/` (design system), `tools/` (one folder per tool, registered in `tools/index.ts`).
 
 To try a change inside the platform before releasing, point the platform's dependency at your branch (`github:chili-chip/chili-creator#my-branch`) or run `npm link` from this folder and `npm link @chili-chip/creator` in the platform.
 
