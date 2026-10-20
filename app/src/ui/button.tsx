@@ -11,6 +11,7 @@ const buttonVariants = cva(
         primary: 'bg-chili text-on-accent hover:bg-chili-hot',
         secondary: 'border border-line bg-bg-1 text-text hover:bg-bg-3',
         ghost: 'text-muted hover:bg-bg-3 hover:text-text',
+        destructive: 'border border-chili/60 bg-chili-deep text-text hover:bg-chili hover:text-on-accent',
       },
       size: {
         sm: 'h-8 px-3',

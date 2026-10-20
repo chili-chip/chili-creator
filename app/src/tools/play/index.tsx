@@ -1,0 +1,201 @@
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  CirclePlay,
+  Play as PlayIcon,
+  RotateCcw,
+  Square,
+} from 'lucide-react';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { defineTool } from '../../plugin-api';
+import { Button as Key, buttonForKey, type Player, type PlayerState } from '../../player';
+import { useCreator, useProjects } from '../../shell/creator-context';
+import { Button } from '../../ui/button';
+
+const SIZE = 128;
+
+// Reads the ref on every frame: the canvas mounts only once a game is open.
+function paintInto(canvas: RefObject<HTMLCanvasElement | null>) {
+  let image: ImageData | null = null;
+  return (pixels: Uint8ClampedArray) => {
+    const context = canvas.current?.getContext('2d');
+    if (!context) return;
+    image ??= context.createImageData(SIZE, SIZE);
+    image.data.set(pixels);
+    context.putImageData(image, 0, 0);
+  };
+}
+
+function usePlayer(canvas: RefObject<HTMLCanvasElement | null>) {
+  const creator = useCreator();
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [state, setState] = useState<PlayerState>({ status: 'idle' });
+  useEffect(() => {
+    const created = creator.createPlayer(paintInto(canvas));
+    setPlayer(created);
+    const unsubscribe = created.subscribe(setState);
+    return () => {
+      unsubscribe();
+      created.dispose();
+    };
+  }, [creator, canvas]);
+  return { player, state };
+}
+
+function TouchButton({ label, button, player, children }: { label: string; button: Key; player: Player | null; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      className="grid size-12 touch-none place-items-center rounded-lg border border-line bg-bg-3 text-text select-none active:bg-chili active:text-on-accent [&_svg]:size-5"
+      onPointerDown={(event) => {
+        event.preventDefault();
+        player?.press(button, true);
+      }}
+      onPointerUp={() => player?.press(button, false)}
+      onPointerLeave={() => player?.press(button, false)}
+      onPointerCancel={() => player?.press(button, false)}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Play() {
+  const creator = useCreator();
+  const projects = useProjects();
+  const canvas = useRef<HTMLCanvasElement | null>(null);
+  const screen = useRef<HTMLDivElement | null>(null);
+  const { player, state } = usePlayer(canvas);
+  const ready = projects.open.status === 'ready';
+  const running = state.status === 'playing' || state.status === 'loading';
+
+  function start() {
+    player?.play(creator.projects.data());
+    screen.current?.focus();
+  }
+
+  // A different game was opened: stop the old one.
+  const openId = projects.open.status === 'ready' ? projects.open.project.id : null;
+  useEffect(() => {
+    player?.stop();
+  }, [player, openId]);
+
+  function onKey(event: KeyboardEvent, down: boolean) {
+    const button = buttonForKey(event.key);
+    if (button === undefined || !running) return;
+    event.preventDefault();
+    if (!event.repeat) player?.press(button, down);
+  }
+
+  if (!ready) {
+    return (
+      <div className="grid h-full place-items-center p-6 text-center text-sm text-muted">
+        <div className="space-y-2">
+          <CirclePlay className="mx-auto size-8" aria-hidden />
+          <p>Open a game to play it.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col gap-3 overflow-auto p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {running ? (
+          <Button size="sm" onClick={() => player?.stop()}>
+            <Square />
+            Stop
+          </Button>
+        ) : (
+          <Button size="sm" variant="primary" onClick={start}>
+            <PlayIcon />
+            Play game
+          </Button>
+        )}
+        <Button size="sm" variant="ghost" onClick={start} disabled={!running}>
+          <RotateCcw />
+          Restart
+        </Button>
+        <span className="ml-auto text-xs text-muted">
+          {state.status === 'loading' && 'Starting…'}
+          {state.status === 'playing' && 'Arrows or WASD to move, Space to talk'}
+          {state.status === 'ended' && 'The end.'}
+        </span>
+      </div>
+
+      <div
+        ref={screen}
+        role="application"
+        aria-label="Game screen"
+        tabIndex={0}
+        className="relative mx-auto aspect-square w-full max-w-[min(100%,512px)] overflow-hidden rounded-lg border border-line bg-black focus-visible:outline-2 focus-visible:outline-phosphor"
+        onKeyDown={(event) => onKey(event, true)}
+        onKeyUp={(event) => onKey(event, false)}
+        onPointerDown={() => running && player?.tap()}
+      >
+        <canvas
+          ref={canvas}
+          width={SIZE}
+          height={SIZE}
+          className="size-full [image-rendering:pixelated]"
+        />
+        {!running && state.status !== 'ended' && (
+          <button
+            type="button"
+            onClick={start}
+            className="absolute inset-0 grid place-items-center bg-black/60 text-sm text-text"
+            tabIndex={-1}
+            aria-hidden
+          >
+            <span className="flex items-center gap-2">
+              <PlayIcon className="size-5" /> Play
+            </span>
+          </button>
+        )}
+      </div>
+
+      {state.status === 'error' && (
+        <p role="alert" className="text-sm text-chili">
+          {state.message}
+        </p>
+      )}
+
+      <div className="flex items-center justify-center gap-6 pointer-fine:hidden" aria-label="Touch controls">
+        <div className="grid grid-cols-3 gap-1">
+          <span />
+          <TouchButton label="Up" button={Key.Up} player={player}>
+            <ArrowUp />
+          </TouchButton>
+          <span />
+          <TouchButton label="Left" button={Key.Left} player={player}>
+            <ArrowLeft />
+          </TouchButton>
+          <span />
+          <TouchButton label="Right" button={Key.Right} player={player}>
+            <ArrowRight />
+          </TouchButton>
+          <span />
+          <TouchButton label="Down" button={Key.Down} player={player}>
+            <ArrowDown />
+          </TouchButton>
+          <span />
+        </div>
+        <TouchButton label="Ok" button={Key.Ok} player={player}>
+          <span className="font-pixel text-[10px]">A</span>
+        </TouchButton>
+      </div>
+    </div>
+  );
+}
+
+export default defineTool({
+  id: 'play',
+  title: 'Play',
+  icon: PlayIcon,
+  component: Play,
+  defaultPosition: 'right',
+  openByDefault: true,
+});

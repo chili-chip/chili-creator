@@ -7,6 +7,11 @@ export type ApiErrorKind =
   | 'not-found'
   | 'conflict'
   | 'validation'
+  /** The account already has the most games the platform keeps (30). */
+  | 'project-limit'
+  /** Game data over the platform's 1.5 MB. */
+  | 'too-large'
+  | 'rate-limited'
   | 'server'
   | 'network';
 
@@ -56,7 +61,14 @@ function toError(status: number, body: unknown): ApiError {
   }
   if (status === 404) return new ApiError('not-found', message, status);
   if (status === 409) return new ApiError('conflict', message, status);
-  if (status === 400) return new ApiError('validation', message, status, fields);
+  if (status === 429) return new ApiError('rate-limited', message, status);
+  if (status === 400) {
+    if (/you can keep \d+ projects/i.test(detail)) return new ApiError('project-limit', message, status);
+    if (fields.data?.some((text) => /MB or smaller/i.test(text))) {
+      return new ApiError('too-large', message, status, fields);
+    }
+    return new ApiError('validation', message, status, fields);
+  }
   return new ApiError('server', message, status);
 }
 
@@ -72,6 +84,16 @@ async function readBody(response: Response): Promise<unknown> {
 
 export function createTransport({ baseUrl, tokens, fetch: fetchImpl = fetch }: TransportOptions): Transport {
   const base = baseUrl.replace(/\/+$/, '');
+  const absoluteBase = new URL(base, globalThis.location?.href ?? 'http://localhost/').href;
+
+  // Paths are relative to the base; DRF's pagination links are absolute.
+  function urlFor(path: string): string {
+    if (!/^https?:/i.test(path)) return `${base}${path}`;
+    if (!path.startsWith(`${absoluteBase}/`)) {
+      throw new ApiError('network', `Refusing to call outside the API: ${path}`);
+    }
+    return path;
+  }
 
   async function send(path: string, init: RequestInit, token: string) {
     const headers = new Headers(init.headers);
@@ -80,14 +102,16 @@ export function createTransport({ baseUrl, tokens, fetch: fetchImpl = fetch }: T
       headers.set('Content-Type', 'application/json');
     }
     try {
-      return await fetchImpl(`${base}${path}`, { ...init, headers });
+      return await fetchImpl(urlFor(path), { ...init, headers });
     } catch (err) {
+      if (err instanceof ApiError) throw err;
       throw new ApiError('network', err instanceof Error ? err.message : 'Network error');
     }
   }
 
   return {
     async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+      urlFor(path);
       let token = await tokens.getToken();
       if (!token) {
         throw new ApiError('unauthorized', 'Sign in to continue.', 401);

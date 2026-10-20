@@ -4,7 +4,7 @@ import { afterEach } from 'vitest';
 
 afterEach(() => {
   cleanup();
-  localStorage.clear();
+  globalThis.localStorage?.clear();
 });
 
 // jsdom has no layout; Dockview only needs these to exist.

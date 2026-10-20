@@ -8,6 +8,7 @@ const params = new URLSearchParams(location.search);
 const embedded = window.parent !== window;
 
 const creator = createCreator({
+  initialProject: params.get('project') ?? undefined,
   apiBase: params.get('api') || '/api',
   parent: embedded ? window.parent : null,
   // The platform serves the creator from its own origin.

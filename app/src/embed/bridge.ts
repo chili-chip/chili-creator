@@ -70,6 +70,8 @@ export function createEmbedBridge({
 }: EmbedBridgeOptions): EmbedBridge {
   const pending = new Map<string, (token: string | null) => void>();
   let inFlight: Promise<string | null> | null = null;
+  // The last token the page handed over, kept until the API turns it down.
+  let current: string | null = null;
   let counter = 0;
 
   function onMessage(event: MessageEvent) {
@@ -98,6 +100,11 @@ export function createEmbedBridge({
       if (!parent) {
         return Promise.resolve(storedToken());
       }
+      if (reason === 'expired') {
+        current = null;
+      } else if (current) {
+        return Promise.resolve(current);
+      }
       if (inFlight) {
         return inFlight;
       }
@@ -108,6 +115,7 @@ export function createEmbedBridge({
           win.clearTimeout(timer);
           pending.delete(id);
           inFlight = null;
+          current = token;
           resolve(token);
         }
         pending.set(id, finish);
