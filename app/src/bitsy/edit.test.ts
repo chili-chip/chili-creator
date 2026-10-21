@@ -4,6 +4,7 @@ import {
   addDrawing,
   addPalette,
   addRoom,
+  removePalette,
   contentAt,
   duplicateRoom,
   AVATAR,
@@ -281,5 +282,18 @@ describe('rooms', () => {
     expect(contentAt(w, '0', 0, 0)).toEqual({ kind: 'tiles', id: w.tiles[0]!.id });
     w.rooms[0]!.tilemap[5]![5] = '0';
     expect(contentAt(w, '0', 5, 5)).toBeNull();
+  });
+});
+
+describe('removePalette', () => {
+  it('removes a palette and gives its rooms the first one left, but keeps the last palette', () => {
+    const w = createWorld({ title: 'Test' });
+    const first = w.palettes[0]!.id;
+    const id = addPalette(w, first);
+    w.rooms[0]!.palette = id;
+    expect(removePalette(w, id)).toBe(true);
+    expect(byId(w.palettes, id)).toBeUndefined();
+    expect(w.rooms[0]!.palette).toBe(first);
+    expect(removePalette(w, first)).toBe(false);
   });
 });

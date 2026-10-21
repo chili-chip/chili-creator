@@ -190,6 +190,16 @@ describe('createProjectStore', () => {
     expect(store.getState().list.projects.map((p) => p.title)).toEqual(['a (copy)', 'a']);
   });
 
+  it('sets the open game\'s cover', async () => {
+    const saved = platform.addGame({ title: 'a', data: game('a') });
+    const { store } = setup();
+    await store.start(String(saved.id));
+    await store.setCover('data:image/png;base64,AAAA');
+    expect(platform.games[0]!.cover).toMatch(/cover\.png$/);
+    const open = store.getState().open;
+    expect(open.status === 'ready' && open.project.cover).toMatch(/cover\.png$/);
+  });
+
   it('counts released games against the limit', async () => {
     platform.addGame({ title: 'a' });
     platform.addGame({ title: 'b', released: true });

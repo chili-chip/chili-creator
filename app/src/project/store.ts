@@ -247,6 +247,22 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
       set({ list: { ...state.list, projects: state.list.projects.filter((p) => p.id !== id) } });
     },
 
+    /** Sets the open game's cover from a PNG data URL, or removes it with null. */
+    async setCover(cover: string | null) {
+      const project = openProject();
+      if (!project) return;
+      const saved = await repo(project.id).update(project.id, { cover });
+      if (openProject()?.id === saved.id && state.open.status === 'ready') {
+        set({ open: { ...state.open, project: { ...state.open.project, cover: saved.cover } } });
+      }
+      set({
+        list: {
+          ...state.list,
+          projects: state.list.projects.map((p) => (p.id === saved.id ? { ...p, cover: saved.cover } : p)),
+        },
+      });
+    },
+
     /** Changes the open world on a copy, keeps the old one for undo, and autosaves. */
     updateWorld(recipe: (world: World) => void, { group }: EditOptions = {}) {
       if (state.open.status !== 'ready') return;

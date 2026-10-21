@@ -3,8 +3,10 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
+  Camera,
   Circle,
   CirclePlay,
+  ImageUp,
   Play as PlayIcon,
   RotateCcw,
   Square,
@@ -12,6 +14,7 @@ import {
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { download, fileName } from '../../export/files';
 import { encodeGif } from '../../export/gif';
+import { encodePng, pngDataUrl } from '../../export/png';
 import { createRecorder, type Recorder } from '../../export/recorder';
 import { defineTool } from '../../plugin-api';
 import { Button as Key, buttonForKey, type Player, type PlayerState } from '../../player';
@@ -20,11 +23,21 @@ import { Button } from '../../ui/button';
 
 const SIZE = 128;
 
+/** The latest frame, for pictures, and a call when the first one comes. */
+interface Shot {
+  pixels: Uint8ClampedArray | null;
+  onFirst(): void;
+}
+
 // Reads the ref on every frame: the canvas mounts only once a game is open.
-function paintInto(canvas: RefObject<HTMLCanvasElement | null>, recorder: Recorder) {
+function paintInto(canvas: RefObject<HTMLCanvasElement | null>, recorder: Recorder, shot: Shot) {
   let image: ImageData | null = null;
   return (pixels: Uint8ClampedArray) => {
     recorder.frame(pixels);
+    if (!shot.pixels) {
+      shot.pixels = new Uint8ClampedArray(pixels);
+      shot.onFirst();
+    } else shot.pixels.set(pixels);
     const context = canvas.current?.getContext('2d');
     if (!context) return;
     image ??= context.createImageData(SIZE, SIZE);
@@ -33,19 +46,19 @@ function paintInto(canvas: RefObject<HTMLCanvasElement | null>, recorder: Record
   };
 }
 
-function usePlayer(canvas: RefObject<HTMLCanvasElement | null>, recorder: Recorder) {
+function usePlayer(canvas: RefObject<HTMLCanvasElement | null>, recorder: Recorder, shot: Shot) {
   const creator = useCreator();
   const [player, setPlayer] = useState<Player | null>(null);
   const [state, setState] = useState<PlayerState>({ status: 'idle' });
   useEffect(() => {
-    const created = creator.createPlayer(paintInto(canvas, recorder));
+    const created = creator.createPlayer(paintInto(canvas, recorder, shot));
     setPlayer(created);
     const unsubscribe = created.subscribe(setState);
     return () => {
       unsubscribe();
       created.dispose();
     };
-  }, [creator, canvas, recorder]);
+  }, [creator, canvas, recorder, shot]);
   return { player, state };
 }
 
@@ -75,7 +88,10 @@ function Play() {
   const screen = useRef<HTMLDivElement | null>(null);
   const [recorder] = useState(() => createRecorder());
   const [recording, setRecording] = useState(false);
-  const { player, state } = usePlayer(canvas, recorder);
+  const [elapsed, setElapsed] = useState(0);
+  const [hasPicture, setHasPicture] = useState(false);
+  const [shot] = useState<Shot>(() => ({ pixels: null, onFirst: () => setHasPicture(true) }));
+  const { player, state } = usePlayer(canvas, recorder, shot);
   const ready = projects.open.status === 'ready';
   const running = state.status === 'playing' || state.status === 'loading';
 
@@ -84,8 +100,24 @@ function Play() {
     const frames = recorder.stop();
     setRecording(false);
     if (frames.length === 0) return;
-    const title = projects.open.status === 'ready' ? projects.open.world.title.split('\n')[0] ?? '' : '';
-    download(fileName(title, 'gif'), encodeGif(frames, { scale: 2 }), 'image/gif');
+    download(fileName(title(), 'gif'), encodeGif(frames, { scale: 2 }), 'image/gif');
+  }
+
+  function title() {
+    return projects.open.status === 'ready' ? (projects.open.world.title.split('\n')[0] ?? '') : '';
+  }
+
+  function picture(scale: number) {
+    return encodePng(shot.pixels!, SIZE, SIZE, { scale });
+  }
+
+  async function useAsCover() {
+    try {
+      await creator.projects.setCover(pngDataUrl(picture(2)));
+      creator.notify('success', 'Cover set.');
+    } catch (err) {
+      creator.notify('error', `Could not set the cover: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   // A recording ends with the game, or at its longest.
@@ -95,7 +127,10 @@ function Play() {
       stopRecording();
       return;
     }
-    const timer = setInterval(() => recorder.full() && stopRecording(), 500);
+    const timer = setInterval(() => {
+      setElapsed(recorder.elapsedMs());
+      if (recorder.full()) stopRecording();
+    }, 500);
     return () => clearInterval(timer);
   });
 
@@ -159,6 +194,7 @@ function Play() {
               title="Records up to 30 seconds as a GIF"
               onClick={() => {
                 recorder.start();
+                setElapsed(0);
                 setRecording(true);
                 screen.current?.focus();
               }}
@@ -167,6 +203,31 @@ function Play() {
               Record GIF
             </Button>
           ))}
+        {recording && (
+          <progress
+            aria-label="Recording"
+            className="h-2 w-20 accent-chili"
+            max={recorder.maxMs / 1000}
+            value={Math.floor(elapsed / 1000)}
+            title={`${Math.floor(elapsed / 1000)} of ${recorder.maxMs / 1000} seconds`}
+          />
+        )}
+        {hasPicture && (
+          <>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => download(fileName(title(), 'png'), picture(4), 'image/png')}
+            >
+              <Camera />
+              Save picture
+            </Button>
+            <Button size="sm" variant="ghost" title="Show this picture with your game on the platform" onClick={useAsCover}>
+              <ImageUp />
+              Use as cover
+            </Button>
+          </>
+        )}
         <span className="ml-auto text-xs text-muted">
           {state.status === 'loading' && 'Starting…'}
           {state.status === 'playing' && 'Arrows or WASD to move, Space to talk'}

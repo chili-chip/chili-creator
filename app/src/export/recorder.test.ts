@@ -46,4 +46,16 @@ describe('recorder', () => {
     expect(frames).toHaveLength(1);
     expect(frames[0]!.delayMs).toBe(1000);
   });
+
+  it('says how far a recording has got', () => {
+    let now = 0;
+    const recorder = createRecorder({ now: () => now, maxMs: 1000 });
+    expect(recorder.elapsedMs()).toBe(0);
+    recorder.start();
+    now = 400;
+    expect(recorder.elapsedMs()).toBe(400);
+    expect(recorder.maxMs).toBe(1000);
+    now = 2000;
+    expect(recorder.elapsedMs()).toBe(1000);
+  });
 });

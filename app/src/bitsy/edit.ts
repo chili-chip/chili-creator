@@ -238,3 +238,12 @@ export function contentAt(world: World, roomId: Id, x: number, y: number): { kin
   const tile = room?.tilemap[y]?.[x];
   return tile && tile !== EMPTY_TILE ? { kind: 'tiles', id: tile } : null;
 }
+
+/** Removes a palette; its rooms take the first palette left. The last palette stays. */
+export function removePalette(world: World, id: Id): boolean {
+  if (world.palettes.length < 2 || !byId(world.palettes, id)) return false;
+  world.palettes = world.palettes.filter((p) => p.id !== id);
+  const fallback = world.palettes[0]!.id;
+  for (const room of world.rooms) if (room.palette === id) room.palette = fallback;
+  return true;
+}

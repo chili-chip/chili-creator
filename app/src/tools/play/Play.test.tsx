@@ -19,7 +19,7 @@ async function withOpenGame() {
   const view = renderCreator({ platform, initialProject: String(saved.id) });
   await screen.findByRole('textbox', { name: 'Game title' });
   showPlay();
-  return view;
+  return { ...view, platform };
 }
 
 /** Play opens as a tab behind Paint; the launcher brings it to the front. */
@@ -101,5 +101,36 @@ describe('Play', () => {
     expect(saved.files[0]!.name).toBe('Mossland.gif');
     expect(saved.files[0]!.type).toBe('image/gif');
     expect(String.fromCharCode(...saved.files[0]!.content.slice(0, 6))).toBe('GIF89a');
+  });
+
+  it('shows how long a recording has run', async () => {
+    const user = userEvent.setup();
+    await withOpenGame();
+    await user.click(screen.getByRole('button', { name: 'Play game' }));
+    await user.click(screen.getByRole('button', { name: 'Record GIF' }));
+    expect(screen.getByRole('progressbar', { name: 'Recording' })).toHaveAttribute('max', '30');
+  });
+
+  it('saves a picture of the screen', async () => {
+    const user = userEvent.setup();
+    const { player } = await withOpenGame();
+    expect(screen.queryByRole('button', { name: 'Save picture' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Play game' }));
+    act(() => player.paint(new Uint8ClampedArray(128 * 128 * 4).fill(200)));
+    await user.click(screen.getByRole('button', { name: 'Save picture' }));
+    const file = saved.files.at(-1)!;
+    expect(file.name).toBe('Mossland.png');
+    expect(file.type).toBe('image/png');
+    expect([...file.content.slice(1, 4)]).toEqual([80, 78, 71]);
+  });
+
+  it('uses the screen as the game\'s cover', async () => {
+    const user = userEvent.setup();
+    const { player, platform } = await withOpenGame();
+    await user.click(screen.getByRole('button', { name: 'Play game' }));
+    act(() => player.paint(new Uint8ClampedArray(128 * 128 * 4).fill(200)));
+    await user.click(screen.getByRole('button', { name: 'Use as cover' }));
+    expect(await screen.findByText('Cover set.')).toBeInTheDocument();
+    expect(platform.games[0]!.cover).toMatch(/cover\.png$/);
   });
 });

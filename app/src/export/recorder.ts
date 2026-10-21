@@ -38,6 +38,9 @@ export function createRecorder({ now = () => performance.now(), maxMs = 30_000 }
     },
     recording: () => frames !== null,
     full: () => frames !== null && now() - started >= maxMs,
+    /** How long the recording has run, up to its longest. */
+    elapsedMs: () => (frames ? Math.min(now() - started, maxMs) : 0),
+    maxMs,
     stop(): GifFrame[] {
       const done = frames ?? [];
       close(now());

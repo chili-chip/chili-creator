@@ -4,7 +4,7 @@ import { litPixels, newGame } from './helpers';
 
 const read = async (download: Download) => readFileSync((await download.path())!);
 
-test('export: the game downloads as .bitsy, as a web page that plays it, and as a GIF', async ({ page }) => {
+test('export: the game downloads as .bitsy, as a web page that plays it, as a GIF and as a picture', async ({ page }) => {
   const { platform, creator } = await newGame(page);
   const tools = creator.getByRole('navigation', { name: 'Tools' });
   await creator.getByRole('textbox', { name: 'Game title' }).fill('Tea time');
@@ -37,6 +37,13 @@ test('export: the game downloads as .bitsy, as a web page that plays it, and as 
   const [gif] = await Promise.all([page.waitForEvent('download'), creator.getByRole('button', { name: 'Stop recording' }).click()]);
   expect(gif.suggestedFilename()).toBe('Tea time.gif');
   expect((await read(gif)).subarray(0, 6).toString('latin1')).toBe('GIF89a');
+
+  // A still picture, saved or set as the game's cover.
+  const [png] = await Promise.all([page.waitForEvent('download'), creator.getByRole('button', { name: 'Save picture' }).click()]);
+  expect(png.suggestedFilename()).toBe('Tea time.png');
+  expect((await read(png)).subarray(1, 4).toString('latin1')).toBe('PNG');
+  await creator.getByRole('button', { name: 'Use as cover' }).click();
+  await expect.poll(() => platform.games[0]!.cover).toMatch(/cover\.png$/);
 
   // The web page imports back as a new game.
   await tools.getByRole('button', { name: 'Projects' }).click();
