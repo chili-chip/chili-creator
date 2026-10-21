@@ -10,6 +10,8 @@ import {
 import { createEmbedBridge } from './embed/bridge';
 import { createCommandRegistry, createToolRegistry } from './plugin-api';
 import { createPlayer, type Player } from './player';
+import { editingCommands } from './project/commands';
+import { createEditorState } from './project/editor';
 import { createProjectStore, type NoticeKind } from './project/store';
 import { builtInTools } from './tools';
 
@@ -61,18 +63,32 @@ export function createCreator({
     notify,
   });
 
+  // A newly opened game starts where its avatar is.
+  const editor = createEditorState();
+  let shown: string | null = null;
+  projects.subscribe(() => {
+    const { open } = projects.getState();
+    const id = open.status === 'ready' ? open.project.id : null;
+    if (id === shown) return;
+    shown = id;
+    if (open.status === 'ready') editor.reset(open.world);
+  });
+
   const tools = createToolRegistry();
   builtInTools.forEach((tool) => tools.register(tool));
+  const commands = createCommandRegistry();
+  editingCommands({ projects, editor }).forEach((command) => commands.register(command));
   return {
     bridge,
     transport,
     profile,
     projects,
+    editor,
     notify,
     createPlayer: makePlayer,
     initialProject,
     tools,
-    commands: createCommandRegistry(),
+    commands,
   };
 }
 

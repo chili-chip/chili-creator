@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CommandDefinition } from '../plugin-api';
+import { keybindingsOf, type CommandDefinition } from '../plugin-api';
 import { cn } from '../ui/cn';
 
 interface CommandPaletteProps {
   commands: readonly CommandDefinition[];
   onRun: (id: string) => void;
   onClose: () => void;
+}
+
+/** "mod+shift+z" as people read it: "Ctrl+Shift+Z". */
+export function shortcutLabel(binding: string): string {
+  return binding
+    .split('+')
+    .map((part) => (part === 'mod' ? 'Ctrl' : part.length === 1 ? part.toUpperCase() : part[0]!.toUpperCase() + part.slice(1)))
+    .join('+');
 }
 
 function label(command: CommandDefinition) {
@@ -87,8 +95,8 @@ export function CommandPalette({ commands, onRun, onClose }: CommandPaletteProps
               )}
             >
               <span>{label(command)}</span>
-              {command.keybinding && (
-                <kbd className="text-[11px] text-muted">{command.keybinding.replace('mod', 'Ctrl')}</kbd>
+              {keybindingsOf(command)[0] && (
+                <kbd className="text-[11px] text-muted">{shortcutLabel(keybindingsOf(command)[0]!)}</kbd>
               )}
             </li>
           ))}

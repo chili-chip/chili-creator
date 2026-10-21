@@ -196,6 +196,8 @@ export default defineTool({
   title: 'Play',
   icon: PlayIcon,
   component: Play,
-  defaultPosition: 'right',
+  defaultPosition: 'within',
+  defaultReference: 'paint',
   openByDefault: true,
+  openInBackground: true,
 });

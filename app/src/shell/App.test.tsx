@@ -2,7 +2,7 @@ import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { createFakePlatform } from '../chili-api/fake-platform';
-import { renderCreator } from '../test/creator';
+import { blankGame, renderCreator } from '../test/creator';
 
 const game = (title: string) => `${title}\n\n# BITSY VERSION 8.12\n\n! ROOM_FORMAT 1\n`;
 
@@ -13,6 +13,9 @@ describe('App', () => {
     const tools = screen.getByRole('navigation', { name: 'Tools' });
     expect(within(tools).getByRole('button', { name: 'Projects' })).toBeInTheDocument();
     expect(within(tools).getByRole('button', { name: 'Play' })).toBeInTheDocument();
+    for (const name of ['Room', 'Paint', 'Library', 'Colors']) {
+      expect(within(tools).getByRole('button', { name })).toBeInTheDocument();
+    }
   });
 
   it('shows who is signed in', async () => {
@@ -78,5 +81,58 @@ describe('App', () => {
     const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
     renderCreator({ platform, initialProject: String(saved.id) });
     expect(await screen.findByRole('textbox', { name: 'Game title' })).toHaveValue('Mossland');
+  });
+
+  it('brings the room to the front when a game opens', async () => {
+    const platform = createFakePlatform();
+    const saved = platform.addGame({ title: 'Test game', data: blankGame });
+    renderCreator({ platform, initialProject: String(saved.id) });
+    expect(await screen.findByRole('application', { name: 'Room example room' })).toBeInTheDocument();
+    expect(screen.getByRole('application', { name: 'Drawing avatar' })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Sprites' })).toBeInTheDocument();
+  });
+
+  it('shows the dashboard first when no game is open', async () => {
+    renderCreator();
+    expect(await screen.findByRole('heading', { name: 'Your games' })).toBeInTheDocument();
+  });
+
+  it('goes back to the dashboard when the open game is closed', async () => {
+    const platform = createFakePlatform();
+    const saved = platform.addGame({ title: 'Test game', data: blankGame });
+    const { creator } = renderCreator({ platform, initialProject: String(saved.id) });
+    await screen.findByRole('application', { name: 'Room example room' });
+    await act(() => creator.projects.close());
+    expect(await screen.findByRole('heading', { name: 'Your games' })).toBeInTheDocument();
+  });
+
+  it('undoes and redoes from the top bar', async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    const saved = platform.addGame({ title: 'Test game', data: blankGame });
+    renderCreator({ platform, initialProject: String(saved.id) });
+    const title = await screen.findByRole('textbox', { name: 'Game title' });
+    const undo = screen.getByRole('button', { name: 'Undo' });
+    const redo = screen.getByRole('button', { name: 'Redo' });
+    expect(undo).toBeDisabled();
+    await user.type(title, '!');
+    expect(undo).toBeEnabled();
+    await user.click(undo);
+    expect(title).toHaveValue('Test game');
+    expect(redo).toBeEnabled();
+    await user.click(redo);
+    expect(title).toHaveValue('Test game!');
+  });
+
+  it('undoes with Ctrl+Z outside text fields', async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    const saved = platform.addGame({ title: 'Test game', data: blankGame });
+    renderCreator({ platform, initialProject: String(saved.id) });
+    const title = await screen.findByRole('textbox', { name: 'Game title' });
+    await user.type(title, '!');
+    act(() => title.blur());
+    await user.keyboard('{Control>}z{/Control}');
+    expect(title).toHaveValue('Test game');
   });
 });

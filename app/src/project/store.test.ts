@@ -202,4 +202,97 @@ describe('createProjectStore', () => {
     await store.start();
     expect(listener).toHaveBeenCalled();
   });
+
+  describe('undo and redo', () => {
+    async function opened() {
+      const saved = platform.addGame({ title: 'old', data: game('old') });
+      const other = platform.addGame({ title: 'other', data: game('other') });
+      const setupResult = setup();
+      await setupResult.store.start(String(saved.id));
+      return { ...setupResult, other: String(other.id) };
+    }
+    const flag = (store: ReturnType<typeof setup>['store']) => {
+      const open = store.getState().open;
+      return open.status === 'ready' ? open.world.flags.TXT_MODE : 'not open';
+    };
+    const setFlag = (value: string) => (world: { flags: Record<string, string> }) => {
+      world.flags.TXT_MODE = value;
+    };
+
+    it('undoes and redoes an edit, and saves each', async () => {
+      const { store } = await opened();
+      expect(store.getState().history).toEqual({ canUndo: false, canRedo: false });
+      store.updateWorld(setFlag('1'));
+      expect(store.getState().history).toEqual({ canUndo: true, canRedo: false });
+
+      expect(store.undo()).toBe(true);
+      expect(flag(store)).toBeUndefined();
+      expect(store.getState().history).toEqual({ canUndo: false, canRedo: true });
+      await store.flush();
+      expect(platform.games[0]!.data).toBe(game('old'));
+
+      expect(store.redo()).toBe(true);
+      expect(flag(store)).toBe('1');
+      await store.flush();
+      expect(platform.games[0]!.data).toContain('! TXT_MODE 1');
+    });
+
+    it('has nothing to undo or redo at first', async () => {
+      const { store } = await opened();
+      expect(store.undo()).toBe(false);
+      expect(store.redo()).toBe(false);
+    });
+
+    it('makes one step of the edits in a group, like one paint stroke', async () => {
+      const { store } = await opened();
+      store.updateWorld(setFlag('1'), { group: 'stroke-1' });
+      store.updateWorld(setFlag('2'), { group: 'stroke-1' });
+      store.updateWorld(setFlag('3'), { group: 'stroke-2' });
+      store.updateWorld(setFlag('4'));
+      store.updateWorld(setFlag('5'));
+      store.undo();
+      expect(flag(store)).toBe('4');
+      store.undo();
+      expect(flag(store)).toBe('3');
+      store.undo();
+      expect(flag(store)).toBe('2');
+      store.undo();
+      expect(flag(store)).toBeUndefined();
+    });
+
+    it('typing a title is one step', async () => {
+      const { store } = await opened();
+      store.setTitle('n');
+      store.setTitle('ne');
+      store.setTitle('new');
+      store.undo();
+      const open = store.getState().open;
+      expect(open.status === 'ready' && open.world.title).toBe('old');
+    });
+
+    it('forgets what was undone once something new is done', async () => {
+      const { store } = await opened();
+      store.updateWorld(setFlag('1'));
+      store.undo();
+      store.updateWorld(setFlag('2'));
+      expect(store.redo()).toBe(false);
+      expect(store.getState().history.canRedo).toBe(false);
+    });
+
+    it('starts over when another game opens', async () => {
+      const { store, other } = await opened();
+      store.updateWorld(setFlag('1'));
+      await store.open(other);
+      expect(store.getState().history).toEqual({ canUndo: false, canRedo: false });
+    });
+
+    it('keeps the last 100 steps', async () => {
+      const { store } = await opened();
+      for (let i = 1; i <= 105; i++) store.updateWorld(setFlag(String(i)));
+      let steps = 0;
+      while (store.undo()) steps++;
+      expect(steps).toBe(100);
+      expect(flag(store)).toBe('5');
+    });
+  });
 });
