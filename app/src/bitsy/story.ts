@@ -295,3 +295,18 @@ export function removeRoom(world: World, id: Id): boolean {
 export function eraseMarkerAt(world: World, roomId: Id, x: number, y: number): boolean {
   return removeExit(world, roomId, x, y) || removeEndingAt(world, roomId, x, y);
 }
+
+/** How many of an item the avatar starts with. */
+export function startingItem(world: World, itemId: Id): number {
+  return byId(world.sprites, AVATAR)?.inventory.find((e) => e.id === itemId)?.count ?? 0;
+}
+
+/** Sets how many of an item the avatar starts with; 0 takes it out. */
+export function setStartingItem(world: World, itemId: Id, count: number): void {
+  const avatar = byId(world.sprites, AVATAR);
+  if (!avatar) return;
+  const entry = avatar.inventory.find((e) => e.id === itemId);
+  if (count <= 0) avatar.inventory = avatar.inventory.filter((e) => e.id !== itemId);
+  else if (entry) entry.count = count;
+  else avatar.inventory.push({ id: itemId, count });
+}

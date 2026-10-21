@@ -22,6 +22,8 @@ import {
   setExitDest,
   setExitDialog,
   setTwoWay,
+  setStartingItem,
+  startingItem,
   moveExit,
   removeExit,
 } from './story';
@@ -261,5 +263,17 @@ describe('removeRoom', () => {
     const w = world();
     addRoom(w);
     expect(removeRoom(w, '0')).toBe(false);
+  });
+});
+
+describe('starting inventory', () => {
+  it('sets how many of an item the avatar starts with, and writes it on the avatar', () => {
+    const w = world();
+    expect(startingItem(w, '1')).toBe(0);
+    setStartingItem(w, '1', 2);
+    expect(startingItem(w, '1')).toBe(2);
+    expect(serialize(w)).toMatch(/SPR A\n[\s\S]*?ITM 1 2\n/);
+    setStartingItem(w, '1', 0);
+    expect(byId(w.sprites, 'A')!.inventory).toEqual([]);
   });
 });

@@ -176,4 +176,25 @@ describe('Dialog', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Insert' }), 'Lock or unlock the exit');
     expect(dialogText(world(), '0')).toBe('{property locked true}');
   });
+
+  it('makes, copies and deletes dialogs nobody has to own', async () => {
+    const user = userEvent.setup();
+    const { creator, world } = await renderTool(Dialog);
+    act(() => creator.editor.select({ kind: 'sprites', id: 'a' }));
+    await user.click(screen.getByRole('button', { name: 'Copy dialog' }));
+    const copy = creator.editor.getState().dialog!;
+    expect(byId(world().dialogs, copy)).toMatchObject({ name: 'cat dialog copy' });
+    expect(dialogText(world(), copy)).toBe("I'm a cat");
+    await user.click(screen.getByRole('button', { name: 'New dialog' }));
+    const made = creator.editor.getState().dialog!;
+    expect(dialogText(world(), made)).toBe('');
+    expect(screen.getByText('Nobody says this yet')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Delete dialog' }));
+    await user.click(screen.getByRole('button', { name: 'Delete for good' }));
+    expect(byId(world().dialogs, made)).toBeUndefined();
+
+    act(() => creator.editor.set({ dialog: '0' }));
+    await user.click(screen.getByRole('button', { name: 'Delete dialog' }));
+    expect(screen.getByText(/cat will have nothing to say/)).toBeInTheDocument();
+  });
 });

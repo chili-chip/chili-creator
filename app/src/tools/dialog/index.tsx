@@ -1,10 +1,12 @@
-import { AlertTriangle, MessageSquare, Plus } from 'lucide-react';
+import { AlertTriangle, Copy, MessageSquare, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import {
+  addDialog,
   byId,
   dialogText,
   giveDialog,
   parseScript,
+  removeDialog,
   printScript,
   referencesTo,
   setDialogText,
@@ -16,7 +18,7 @@ import { useCreator, useSelection } from '../../shell/creator-context';
 import { Button } from '../../ui/button';
 import { Input, Select, Textarea } from '../../ui/input';
 import { Segmented } from '../../ui/segmented';
-import { dialogName, drawingName, Empty } from '../shared';
+import { Confirm, dialogName, drawingName, Empty } from '../shared';
 import { blockKinds, BlockList } from './blocks';
 
 type View = 'text' | 'blocks';
@@ -67,6 +69,7 @@ function DialogTool() {
   const creator = useCreator();
   const { world, kind, drawing, dialog } = useSelection();
   const [view, setView] = useState<View>('text');
+  const [deleting, setDeleting] = useState(false);
   const textarea = useRef<HTMLTextAreaElement | null>(null);
 
   if (!world) return <Empty icon={<MessageSquare />}>Open a game to write what its sprites and items say.</Empty>;
@@ -106,6 +109,16 @@ function DialogTool() {
     if (made !== null) creator.editor.set({ dialog: made });
   }
 
+  function newDialog(copyOf?: string) {
+    let made: string | undefined;
+    creator.projects.updateWorld((w) => {
+      const source = copyOf === undefined ? undefined : byId(w.dialogs, copyOf);
+      made = addDialog(w, source ? (dialogText(w, source.id) ?? '') : '', source ? `${dialogName(source)} copy` : undefined);
+    });
+    setDeleting(false);
+    if (made !== undefined) creator.editor.set({ dialog: made });
+  }
+
   const saidBy = id === undefined ? [] : referencesTo(world, { type: 'dialog', id }).map((r) => r.label);
   const problems = id === undefined ? [] : validate(world).filter((p) => p.at.type === 'dialog' && p.at.id === id);
 
@@ -127,6 +140,31 @@ function DialogTool() {
         </Select>
         {dialog && (
           <Segmented label="View" value={view} options={views} onChange={(value: View) => setView(value)} />
+        )}
+        <Button size="sm" variant="ghost" onClick={() => newDialog()}>
+          <Plus />
+          New dialog
+        </Button>
+        {dialog && byId(world.dialogs, dialog.id) && !world.rooms.some((r) => r.endings.some((e) => e.id === dialog.id)) && (
+          <>
+            <Button size="icon" variant="ghost" aria-label="Copy dialog" title="Copy dialog" onClick={() => newDialog(dialog.id)}>
+              <Copy />
+            </Button>
+            <Button size="icon" variant="ghost" aria-label="Delete dialog" title="Delete dialog" onClick={() => setDeleting(true)}>
+              <Trash2 />
+            </Button>
+          </>
+        )}
+        {deleting && dialog && (
+          <Confirm
+            question={`Delete “${dialogName(dialog)}”?${saidBy.length ? ` ${saidBy.join(', ')} will have nothing to say.` : ''}`}
+            onKeep={() => setDeleting(false)}
+            onDelete={() => {
+              creator.projects.updateWorld((w) => void removeDialog(w, dialog.id));
+              setDeleting(false);
+              creator.editor.set({ dialog: null });
+            }}
+          />
         )}
       </div>
 
