@@ -223,10 +223,10 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
       post({ type: 'chili-project-new' });
     },
 
-    /** Starts a new game from the blank template and opens it. */
-    async create(title = NEW_GAME_TITLE) {
+    /** Starts a new game, from the blank template or from imported data, and opens it. */
+    async create(title = NEW_GAME_TITLE, data?: string) {
       if (!(await settle())) return;
-      const project = await repo().create({ title, data: serialize(createWorld({ title })) });
+      const project = await repo().create({ title, data: data ?? serialize(createWorld({ title })) });
       await refresh();
       show(project);
     },

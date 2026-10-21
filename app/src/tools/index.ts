@@ -2,6 +2,7 @@ import type { ToolDefinition } from '../plugin-api';
 import blips from './blips';
 import colors from './colors';
 import dialog from './dialog';
+import download from './download';
 import exits from './exits';
 import find from './find';
 import game from './game';
@@ -32,5 +33,6 @@ export const builtInTools: ToolDefinition[] = [
   problems,
   play,
   game,
+  download,
   find,
 ];

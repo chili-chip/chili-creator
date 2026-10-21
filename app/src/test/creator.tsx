@@ -35,6 +35,8 @@ export function fakePlayer() {
     tap: vi.fn(),
     dispose: vi.fn(),
     set,
+    /** What the Play tool paints frames with. */
+    paint: (_pixels: Uint8ClampedArray) => {},
   };
   return player;
 }
@@ -77,7 +79,10 @@ export function renderCreator({ signedIn = true, platform = createFakePlatform()
     origin: 'http://localhost',
     fetch: platform.fetch,
     localStore: createMemoryStore(),
-    createPlayer: () => player as unknown as Player,
+    createPlayer: (paint) => {
+      player.paint = paint;
+      return player as unknown as Player;
+    },
     sound: fakeSound() as unknown as SoundPreview,
     ...options,
   });

@@ -3,12 +3,16 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
+  Circle,
   CirclePlay,
   Play as PlayIcon,
   RotateCcw,
   Square,
 } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { download, fileName } from '../../export/files';
+import { encodeGif } from '../../export/gif';
+import { createRecorder, type Recorder } from '../../export/recorder';
 import { defineTool } from '../../plugin-api';
 import { Button as Key, buttonForKey, type Player, type PlayerState } from '../../player';
 import { useCreator, useProjects } from '../../shell/creator-context';
@@ -17,9 +21,10 @@ import { Button } from '../../ui/button';
 const SIZE = 128;
 
 // Reads the ref on every frame: the canvas mounts only once a game is open.
-function paintInto(canvas: RefObject<HTMLCanvasElement | null>) {
+function paintInto(canvas: RefObject<HTMLCanvasElement | null>, recorder: Recorder) {
   let image: ImageData | null = null;
   return (pixels: Uint8ClampedArray) => {
+    recorder.frame(pixels);
     const context = canvas.current?.getContext('2d');
     if (!context) return;
     image ??= context.createImageData(SIZE, SIZE);
@@ -28,19 +33,19 @@ function paintInto(canvas: RefObject<HTMLCanvasElement | null>) {
   };
 }
 
-function usePlayer(canvas: RefObject<HTMLCanvasElement | null>) {
+function usePlayer(canvas: RefObject<HTMLCanvasElement | null>, recorder: Recorder) {
   const creator = useCreator();
   const [player, setPlayer] = useState<Player | null>(null);
   const [state, setState] = useState<PlayerState>({ status: 'idle' });
   useEffect(() => {
-    const created = creator.createPlayer(paintInto(canvas));
+    const created = creator.createPlayer(paintInto(canvas, recorder));
     setPlayer(created);
     const unsubscribe = created.subscribe(setState);
     return () => {
       unsubscribe();
       created.dispose();
     };
-  }, [creator, canvas]);
+  }, [creator, canvas, recorder]);
   return { player, state };
 }
 
@@ -68,9 +73,31 @@ function Play() {
   const projects = useProjects();
   const canvas = useRef<HTMLCanvasElement | null>(null);
   const screen = useRef<HTMLDivElement | null>(null);
-  const { player, state } = usePlayer(canvas);
+  const [recorder] = useState(() => createRecorder());
+  const [recording, setRecording] = useState(false);
+  const { player, state } = usePlayer(canvas, recorder);
   const ready = projects.open.status === 'ready';
   const running = state.status === 'playing' || state.status === 'loading';
+
+  function stopRecording() {
+    if (!recorder.recording()) return;
+    const frames = recorder.stop();
+    setRecording(false);
+    if (frames.length === 0) return;
+    const title = projects.open.status === 'ready' ? projects.open.world.title.split('\n')[0] ?? '' : '';
+    download(fileName(title, 'gif'), encodeGif(frames, { scale: 2 }), 'image/gif');
+  }
+
+  // A recording ends with the game, or at its longest.
+  useEffect(() => {
+    if (!recording) return;
+    if (!running) {
+      stopRecording();
+      return;
+    }
+    const timer = setInterval(() => recorder.full() && stopRecording(), 500);
+    return () => clearInterval(timer);
+  });
 
   function start() {
     player?.play(creator.projects.data());
@@ -119,6 +146,27 @@ function Play() {
           <RotateCcw />
           Restart
         </Button>
+        {running &&
+          (recording ? (
+            <Button size="sm" variant="destructive" onClick={stopRecording}>
+              <Circle className="fill-current" />
+              Stop recording
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              title="Records up to 30 seconds as a GIF"
+              onClick={() => {
+                recorder.start();
+                setRecording(true);
+                screen.current?.focus();
+              }}
+            >
+              <Circle />
+              Record GIF
+            </Button>
+          ))}
         <span className="ml-auto text-xs text-muted">
           {state.status === 'loading' && 'Starting…'}
           {state.status === 'playing' && 'Arrows or WASD to move, Space to talk'}

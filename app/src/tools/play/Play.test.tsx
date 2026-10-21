@@ -1,9 +1,15 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createFakePlatform } from '../../chili-api/fake-platform';
 import { Button } from '../../player';
 import { renderCreator } from '../../test/creator';
+
+const saved = vi.hoisted(() => ({ files: [] as { name: string; content: Uint8Array; type: string }[] }));
+vi.mock('../../export/files', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../export/files')>()),
+  download: (name: string, content: Uint8Array, type: string) => saved.files.push({ name, content, type }),
+}));
 
 const game = (title: string) => `${title}\n\n# BITSY VERSION 8.12\n\n! ROOM_FORMAT 1\n`;
 
@@ -80,5 +86,20 @@ describe('Play', () => {
     act(() => player.set({ status: 'error', message: 'bad room' }));
     // Dockview has its own live region, so find the message by its text.
     expect(await screen.findByText('bad room')).toHaveAttribute('role', 'alert');
+  });
+
+  it('records a GIF of what is played', async () => {
+    const user = userEvent.setup();
+    const { player } = await withOpenGame();
+    expect(screen.queryByRole('button', { name: 'Record GIF' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Play game' }));
+    await user.click(screen.getByRole('button', { name: 'Record GIF' }));
+    act(() => player.paint(new Uint8ClampedArray(128 * 128 * 4).fill(200)));
+    act(() => player.paint(new Uint8ClampedArray(128 * 128 * 4).fill(50)));
+    await user.click(screen.getByRole('button', { name: 'Stop recording' }));
+    expect(saved.files).toHaveLength(1);
+    expect(saved.files[0]!.name).toBe('Mossland.gif');
+    expect(saved.files[0]!.type).toBe('image/gif');
+    expect(String.fromCharCode(...saved.files[0]!.content.slice(0, 6))).toBe('GIF89a');
   });
 });

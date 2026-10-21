@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
+import { createWorld, serialize } from '../../bitsy';
 import { createFakePlatform } from '../../chili-api/fake-platform';
 import { renderCreator } from '../../test/creator';
 
@@ -72,5 +73,22 @@ describe('Projects', () => {
     expect(await screen.findByText(/saved in this browser/i)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'New game' }));
     expect(await screen.findByRole('textbox', { name: 'Game title' })).toHaveValue('Untitled game');
+  });
+
+  it('imports a .bitsy file or an exported page as a new game', async () => {
+    const user = userEvent.setup();
+    const { platform } = renderCreator();
+    const data = serialize(createWorld({ title: 'Cave' }));
+    await user.upload(await screen.findByLabelText('Import a game'), new File([data], 'cave.bitsy'));
+    expect(await screen.findByRole('textbox', { name: 'Game title' })).toHaveValue('Cave');
+    expect(platform.games[0]!.data).toBe(data);
+  });
+
+  it('says when a file has no game in it', async () => {
+    const user = userEvent.setup({ applyAccept: false });
+    const { platform } = renderCreator();
+    await user.upload(await screen.findByLabelText('Import a game'), new File(['hello'], 'notes.txt'));
+    expect(await screen.findByText('notes.txt has no Bitsy game in it.')).toHaveAttribute('role', 'alert');
+    expect(platform.games).toHaveLength(0);
   });
 });
