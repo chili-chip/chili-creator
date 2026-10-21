@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { byId, createWorld } from '.';
-import { colorsFor, drawingPixels, EXIT_COLOR, ENDING_COLOR, markRoom, roomPixels, ROOM_PIXELS } from './render';
+import { colorsFor, drawingPixels, EXIT_COLOR, ENDING_COLOR, markRoom, markWalls, roomPixels, ROOM_PIXELS, WALL_COLOR } from './render';
 
 const world = () => createWorld({ title: 'Test' });
 
@@ -122,5 +122,20 @@ describe('markRoom', () => {
     expect(at(pixels, ROOM_PIXELS, 40, 40)).toEqual([...ENDING_COLOR, 255]);
     expect(at(pixels, ROOM_PIXELS, 41, 41)).toEqual([...ENDING_COLOR, 255]);
     expect(at(pixels, ROOM_PIXELS, 42, 42)).toEqual(background);
+  });
+});
+
+describe('markWalls', () => {
+  it('hatches cells whose tile is a wall', () => {
+    const w = world();
+    const wall = w.tiles[0]!;
+    wall.wall = true;
+    const room = w.rooms[0]!;
+    room.tilemap[0]![0] = wall.id;
+    room.tilemap[0]![1] = '0';
+    const pixels = roomPixels(w, '0');
+    markWalls(pixels, w, '0');
+    expect(at(pixels, ROOM_PIXELS, 0, 0)).toEqual([...WALL_COLOR, 255]);
+    expect(at(pixels, ROOM_PIXELS, 8, 0)).not.toEqual([...WALL_COLOR, 255]);
   });
 });

@@ -150,4 +150,15 @@ describe('Paint', () => {
     act(() => creator.editor.select({ kind: 'tiles', id: 'a' }));
     expect(screen.queryByRole('combobox', { name: 'Sound' })).toBeNull();
   });
+
+  it('plays an animated drawing beside the frames, and hides the grid', async () => {
+    const user = userEvent.setup();
+    const { creator } = await renderTool(Paint);
+    act(() => creator.editor.select({ kind: 'sprites', id: 'a' }));
+    expect(screen.queryByRole('img', { name: 'Animation preview' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: 'Animated' }));
+    expect(screen.getByRole('img', { name: 'Animation preview' })).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: 'Grid' }));
+    expect(creator.editor.getState().showGrid).toBe(false);
+  });
 });

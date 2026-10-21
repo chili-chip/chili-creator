@@ -1,4 +1,4 @@
-import { DoorOpen, Eraser, Flag, Map as MapIcon, MousePointer2, Plus, Trash2 } from 'lucide-react';
+import { Copy, DoorOpen, Eraser, Flag, Map as MapIcon, MousePointer2, Pipette, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import {
   addEnding,
@@ -6,11 +6,14 @@ import {
   addRoom,
   AVATAR,
   byId,
+  contentAt,
+  duplicateRoom,
   endingAt,
   eraseAt,
   eraseMarkerAt,
   exitAt,
   markRoom,
+  markWalls,
   paintTile,
   placeSprite,
   referencesTo,
@@ -26,7 +29,7 @@ import type { RoomTool } from '../../project/editor';
 import { defineTool } from '../../plugin-api';
 import { useCreator, useEditor, useSelection } from '../../shell/creator-context';
 import { Button } from '../../ui/button';
-import { Input, Select } from '../../ui/input';
+import { Checkbox, Input, Select } from '../../ui/input';
 import { PixelCanvas, type Cell } from '../../ui/pixel-canvas';
 import { Segmented } from '../../ui/segmented';
 import { Confirm, count, drawingName, Empty, newGroup, roomName } from '../shared';
@@ -34,6 +37,7 @@ import { Confirm, count, drawingName, Empty, newGroup, roomName } from '../share
 const roomTools = [
   { value: 'place', label: 'Place', icon: MousePointer2, hint: 'P' },
   { value: 'erase', label: 'Erase', icon: Eraser, hint: 'E' },
+  { value: 'pick', label: 'Pick', icon: Pipette, hint: 'I' },
   { value: 'exit', label: 'Exit', icon: DoorOpen, hint: 'X' },
   { value: 'ending', label: 'Ending', icon: Flag, hint: 'N' },
 ] as const;
@@ -53,6 +57,8 @@ function RoomTool() {
   const brush = drawing && kind ? drawingName(kind, drawing) : '';
   const hint = erasing
     ? 'Click to erase'
+    : editor.roomTool === 'pick'
+      ? 'Click to pick what is on a cell'
     : editor.roomTool === 'exit'
       ? 'Click to add an exit, or pick one'
       : editor.roomTool === 'ending'
@@ -77,6 +83,13 @@ function RoomTool() {
     }
     const current = stroke.current;
     if (!current) return;
+    if (editor.roomTool === 'pick') {
+      if (!first) return;
+      const found = contentAt(world!, roomId, x, y);
+      if (found) creator.editor.select(found);
+      creator.editor.set({ roomTool: 'place' });
+      return;
+    }
     if (erasing) {
       edit((w) => void (eraseMarkerAt(w, roomId, x, y) || eraseAt(w, roomId, x, y)), current.group);
       return;
@@ -114,6 +127,14 @@ function RoomTool() {
     creator.editor.set({ room: id, marker: null });
   }
 
+  function copyRoom() {
+    let id = '';
+    creator.projects.updateWorld((w) => {
+      id = duplicateRoom(w, roomId);
+    });
+    if (id) creator.editor.set({ room: id, marker: null });
+  }
+
   function deleteRoom() {
     creator.projects.updateWorld((w) => void removeRoom(w, roomId));
     setConfirming(false);
@@ -123,7 +144,11 @@ function RoomTool() {
   const avatarHere = byId(world.sprites, AVATAR)?.position?.room === roomId;
   const uses = referencesTo(world, { type: 'room', room: roomId }).length;
   const pixels = roomPixels(world, roomId);
+  if (editor.showWalls) markWalls(pixels, world, roomId);
   markRoom(pixels, room, editor.marker);
+  const hovered = hover && contentAt(world, roomId, hover.x, hover.y);
+  const hoveredDrawing = hovered && byId(hovered.kind === 'tiles' ? world.tiles : hovered.kind === 'sprites' ? world.sprites : world.items, hovered.id);
+  const hoverName = hovered && hoveredDrawing ? ` · ${drawingName(hovered.kind, hoveredDrawing)}` : '';
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-auto p-3">
@@ -146,6 +171,9 @@ function RoomTool() {
         <Button size="sm" variant="ghost" onClick={newRoom}>
           <Plus />
           New room
+        </Button>
+        <Button size="icon" variant="ghost" aria-label="Copy room" title="Copy room" onClick={copyRoom}>
+          <Copy />
         </Button>
         <Button
           size="icon"
@@ -183,6 +211,7 @@ function RoomTool() {
           columns={ROOM_SIZE}
           rows={ROOM_SIZE}
           className="size-[min(100cqw,100cqh,640px)]"
+          grid={editor.showGrid}
           onPaint={paint}
           onStrokeEnd={() => {
             stroke.current = null;
@@ -194,8 +223,10 @@ function RoomTool() {
 
       <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
         <span>{hint}</span>
+        <Checkbox label="Grid" checked={editor.showGrid} onChange={(event) => creator.editor.set({ showGrid: event.target.checked })} />
+        <Checkbox label="Walls" checked={editor.showWalls} onChange={(event) => creator.editor.set({ showWalls: event.target.checked })} />
         <span className="ml-auto tabular-nums" aria-live="off">
-          {hover ? `x ${hover.x}, y ${hover.y}` : ''}
+          {hover ? `x ${hover.x}, y ${hover.y}${hoverName}` : ''}
         </span>
       </div>
 
@@ -216,6 +247,34 @@ function RoomTool() {
             }, `room-name-${roomId}`);
           }}
         />
+      </label>
+
+      <label className="flex items-center gap-2 text-xs text-muted">
+        Avatar
+        <Select
+          aria-label="Avatar"
+          value={room.avatar !== undefined && byId(world.sprites, room.avatar) ? room.avatar : ''}
+          className="flex-1"
+          title="The sprite the player is in this room"
+          onChange={(event) => {
+            const value = event.target.value;
+            creator.projects.updateWorld((w) => {
+              const target = byId(w.rooms, roomId);
+              if (!target) return;
+              if (value) target.avatar = value;
+              else delete target.avatar;
+            });
+          }}
+        >
+          <option value="">The usual avatar</option>
+          {world.sprites
+            .filter((s) => s.id !== AVATAR)
+            .map((s) => (
+              <option key={s.id} value={s.id}>
+                {drawingName('sprites', s)}
+              </option>
+            ))}
+        </Select>
       </label>
 
       <label className="flex items-center gap-2 text-xs text-muted">

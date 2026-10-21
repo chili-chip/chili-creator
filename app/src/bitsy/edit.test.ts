@@ -4,6 +4,8 @@ import {
   addDrawing,
   addPalette,
   addRoom,
+  contentAt,
+  duplicateRoom,
   AVATAR,
   clearFrame,
   drawingsOf,
@@ -247,5 +249,37 @@ describe('palettes', () => {
       [128, 128, 128],
       [255, 255, 255],
     ]);
+  });
+});
+
+describe('rooms', () => {
+  it('duplicates a room: tiles, items, exits, endings, palette, music and avatar', () => {
+    const w = createWorld({ title: 'Test' });
+    const room = w.rooms[0]!;
+    room.name = 'hall';
+    room.tune = '1';
+    room.avatar = 'a';
+    room.exits.push({ x: 1, y: 1, dest: { room: '0', x: 2, y: 2 } });
+    const id = duplicateRoom(w, '0');
+    const copy = byId(w.rooms, id)!;
+    expect(copy).toMatchObject({ name: 'hall copy', tune: '1', avatar: 'a', palette: room.palette });
+    expect(copy.tilemap).toEqual(room.tilemap);
+    expect(copy.tilemap).not.toBe(room.tilemap);
+    expect(copy.exits).toEqual(room.exits);
+    copy.exits[0]!.x = 5;
+    expect(room.exits[0]!.x).toBe(1);
+    expect(copy.items).toEqual(room.items);
+  });
+
+  it('says what is on a cell: a sprite before an item before a tile', () => {
+    const w = createWorld({ title: 'Test' });
+    const cat = byId(w.sprites, 'a')!.position!;
+    expect(contentAt(w, '0', cat.x, cat.y)).toEqual({ kind: 'sprites', id: 'a' });
+    const item = w.rooms[0]!.items[0];
+    if (item) expect(contentAt(w, '0', item.x, item.y)).toEqual({ kind: 'items', id: item.id });
+    w.rooms[0]!.tilemap[0]![0] = w.tiles[0]!.id;
+    expect(contentAt(w, '0', 0, 0)).toEqual({ kind: 'tiles', id: w.tiles[0]!.id });
+    w.rooms[0]!.tilemap[5]![5] = '0';
+    expect(contentAt(w, '0', 5, 5)).toBeNull();
   });
 });

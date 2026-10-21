@@ -1,5 +1,5 @@
 import { Brush, Eraser, FlipHorizontal2, FlipVertical2, PaintBucket, Pencil, Volume2 } from 'lucide-react';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   blipName,
   blipOf,
@@ -20,7 +20,7 @@ import { defineTool } from '../../plugin-api';
 import { useCreator, useEditor, useSelection } from '../../shell/creator-context';
 import { Button } from '../../ui/button';
 import { Checkbox, Input, Select } from '../../ui/input';
-import { PixelCanvas } from '../../ui/pixel-canvas';
+import { PixelCanvas, PixelImage } from '../../ui/pixel-canvas';
 import { Segmented } from '../../ui/segmented';
 import { drawingName, Empty, kinds, newGroup } from '../shared';
 
@@ -28,6 +28,20 @@ const paintTools = [
   { value: 'pencil', label: 'Pencil', icon: Pencil, hint: 'B' },
   { value: 'fill', label: 'Fill', icon: PaintBucket, hint: 'F' },
 ] as const;
+
+/** The drawing's frames in turn, at the game's animation speed. */
+function Preview({ frames }: { frames: Uint8ClampedArray[] }) {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setShown((n) => n + 1), 400);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <div role="img" aria-label="Animation preview" title="How it moves in the game" className="size-12 shrink-0 rounded border border-line">
+      <PixelImage pixels={frames[shown % frames.length]!} width={8} height={8} className="size-full" />
+    </div>
+  );
+}
 
 function Paint() {
   const creator = useCreator();
@@ -121,6 +135,7 @@ function Paint() {
         columns={8}
         rows={8}
         className="mx-auto w-full max-w-64 shrink-0"
+        grid={editor.showGrid}
         onPaint={paint}
         onStrokeEnd={() => {
           stroke.current = null;
@@ -138,6 +153,10 @@ function Paint() {
             if (!animated) creator.editor.set({ frame: 0 });
           }}
         />
+        <Checkbox label="Grid" checked={editor.showGrid} onChange={(event) => creator.editor.set({ showGrid: event.target.checked })} />
+        {drawing.frames.length > 1 && (
+          <Preview frames={drawing.frames.map((_, i) => drawingPixels(drawing, i, colorsFor(world, room?.id), kind))} />
+        )}
         {drawing.frames.length > 1 && (
           <Segmented
             label="Frame"

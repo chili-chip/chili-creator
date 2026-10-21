@@ -23,7 +23,7 @@ export interface DrawingRef {
   id: Id;
 }
 
-export type RoomTool = 'place' | 'erase' | 'exit' | 'ending';
+export type RoomTool = 'place' | 'erase' | 'pick' | 'exit' | 'ending';
 export type PaintTool = 'pencil' | 'fill';
 
 export interface EditorState {
@@ -41,6 +41,9 @@ export interface EditorState {
   /** The tune and blip picked in the sound tools. */
   tune: Id | null;
   blip: Id | null;
+  /** The grid over the room and drawings, and the walls hatched in the room. */
+  showGrid: boolean;
+  showWalls: boolean;
 }
 
 const initial: EditorState = {
@@ -54,6 +57,8 @@ const initial: EditorState = {
   marker: null,
   tune: null,
   blip: null,
+  showGrid: true,
+  showWalls: false,
 };
 
 export function createEditorState() {

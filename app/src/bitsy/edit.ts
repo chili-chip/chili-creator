@@ -214,3 +214,27 @@ export function addPalette(world: World, from?: Id): Id {
   world.palettes.push(palette);
   return id;
 }
+
+/** Copies a room under a new id, with "copy" after its name. Returns the new id. */
+export function duplicateRoom(world: World, roomId: Id): Id {
+  const room = byId(world.rooms, roomId);
+  if (!room) return '';
+  const id = nextId(world.rooms.map((r) => r.id));
+  const copy: Room = structuredClone(room);
+  copy.id = id;
+  if (room.name) copy.name = `${room.name.replace(/\s*copy$/, '')} copy`;
+  world.rooms.splice(world.rooms.indexOf(room) + 1, 0, copy);
+  return id;
+}
+
+/** What is on a cell, as the game draws it: a sprite, else an item, else a tile. */
+export function contentAt(world: World, roomId: Id, x: number, y: number): { kind: DrawingKind; id: Id } | null {
+  const sprite = world.sprites.find((s) => s.position?.room === roomId && s.position.x === x && s.position.y === y && s.id !== AVATAR)
+    ?? world.sprites.find((s) => s.position?.room === roomId && s.position.x === x && s.position.y === y);
+  if (sprite) return { kind: 'sprites', id: sprite.id };
+  const room = byId(world.rooms, roomId);
+  const item = room?.items.find((i) => i.x === x && i.y === y);
+  if (item) return { kind: 'items', id: item.id };
+  const tile = room?.tilemap[y]?.[x];
+  return tile && tile !== EMPTY_TILE ? { kind: 'tiles', id: tile } : null;
+}

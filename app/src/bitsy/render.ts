@@ -110,3 +110,27 @@ export function markRoom(out: Uint8ClampedArray, room: Room, selected?: { x: num
   for (const exit of room.exits) outline(exit.x, exit.y, EXIT_COLOR);
   for (const ending of room.endings) outline(ending.x, ending.y, ENDING_COLOR);
 }
+
+export const WALL_COLOR: Rgb = [255, 96, 64];
+
+/** Hatches the cells a player cannot walk through: wall tiles and the room's own walls. */
+export function markWalls(out: Uint8ClampedArray, world: World, roomId: Id): void {
+  const room = byId(world.rooms, roomId);
+  if (!room) return;
+  room.tilemap.forEach((row, cellY) =>
+    row.forEach((cell, cellX) => {
+      if (cell === '0' || cellX >= ROOM_SIZE || cellY >= ROOM_SIZE) return;
+      if (!byId(world.tiles, cell)?.wall && !room.walls.includes(cell)) return;
+      for (let y = 0; y < DRAWING_SIZE; y++) {
+        for (let x = 0; x < DRAWING_SIZE; x++) {
+          if ((x + y) % 4 !== 0) continue;
+          const i = ((cellY * DRAWING_SIZE + y) * ROOM_PIXELS + cellX * DRAWING_SIZE + x) * 4;
+          out[i] = WALL_COLOR[0];
+          out[i + 1] = WALL_COLOR[1];
+          out[i + 2] = WALL_COLOR[2];
+          out[i + 3] = 255;
+        }
+      }
+    }),
+  );
+}
