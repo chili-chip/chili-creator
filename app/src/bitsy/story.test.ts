@@ -16,7 +16,14 @@ import {
   removeRoom,
   removeVariable,
   renameVariable,
+  returnExitOf,
+  reverseExit,
   setDialogText,
+  setExitDest,
+  setExitDialog,
+  setTwoWay,
+  moveExit,
+  removeExit,
 } from './story';
 
 const fixtures = import.meta.glob<string>('./fixtures/*.bitsy', { query: '?raw', import: 'default', eager: true });
@@ -96,6 +103,96 @@ describe('exits and endings', () => {
   });
 });
 
+describe('two-way exits', () => {
+  /** Room 0 and a second room, with a two-way exit at 3,4 between them. */
+  function linked() {
+    const w = world();
+    const other = addRoom(w);
+    const index = addExit(w, '0', 3, 4);
+    return { w, other, index, room: w.rooms[0]!, dest: byId(w.rooms, other)! };
+  }
+
+  it('adds the way back too, like the Bitsy editor', () => {
+    const { w, other, dest } = linked();
+    expect(dest.exits).toEqual([{ x: 3, y: 4, dest: { room: '0', x: 3, y: 4 } }]);
+    expect(returnExitOf(w, '0', 0)).toEqual({ room: other, index: 0 });
+    expect(serialize(w)).toContain(`EXT 3,4 0 3,4`);
+  });
+
+  it('adds only one way when asked, or when the way back has no free cell', () => {
+    const w = world();
+    const other = addRoom(w);
+    addEnding(w, other, 5, 5);
+    addExit(w, '0', 1, 1, { twoWay: false });
+    addExit(w, '0', 5, 5);
+    expect(byId(w.rooms, other)!.exits).toEqual([]);
+    expect(returnExitOf(w, '0', 0)).toBeUndefined();
+    // With one room, an exit leads to its own cell: no way back on top of it.
+    const lonely = world();
+    addExit(lonely, '0', 2, 2);
+    expect(lonely.rooms[0]!.exits).toHaveLength(1);
+  });
+
+  it('makes an exit one-way or two-way, and turns a one-way exit around', () => {
+    const { w, other, room, dest } = linked();
+    setTwoWay(w, '0', 0, false);
+    expect(dest.exits).toEqual([]);
+    setTwoWay(w, '0', 0, true);
+    expect(dest.exits).toEqual([{ x: 3, y: 4, dest: { room: '0', x: 3, y: 4 } }]);
+    setTwoWay(w, '0', 0, false);
+    room.exits[0]!.transition = 'fade_w';
+    expect(reverseExit(w, '0', 0)).toEqual({ room: other, index: 0 });
+    expect(room.exits).toEqual([]);
+    expect(dest.exits).toEqual([{ x: 3, y: 4, dest: { room: '0', x: 3, y: 4 }, transition: 'fade_w' }]);
+  });
+
+  it('moves the way back with the exit and with its destination', () => {
+    const { w, other, room, dest } = linked();
+    expect(moveExit(w, '0', 0, 6, 7)).toBe(true);
+    expect(room.exits[0]).toMatchObject({ x: 6, y: 7 });
+    expect(dest.exits[0]!.dest).toEqual({ room: '0', x: 6, y: 7 });
+    setExitDest(w, '0', 0, { room: other, x: 9, y: 9 });
+    expect(dest.exits).toEqual([{ x: 9, y: 9, dest: { room: '0', x: 6, y: 7 } }]);
+    const third = addRoom(w);
+    setExitDest(w, '0', 0, { room: third, x: 1, y: 2 });
+    expect(dest.exits).toEqual([]);
+    expect(byId(w.rooms, third)!.exits).toEqual([{ x: 1, y: 2, dest: { room: '0', x: 6, y: 7 } }]);
+    addEnding(w, '0', 0, 0);
+    expect(moveExit(w, '0', 0, 0, 0)).toBe(false);
+  });
+
+  it('removes both ways', () => {
+    const { w, room, dest } = linked();
+    expect(removeExit(w, '0', 3, 4)).toBe(true);
+    expect(room.exits).toEqual([]);
+    expect(dest.exits).toEqual([]);
+  });
+});
+
+describe('exit dialog', () => {
+  it('adds narration, or a lock opened by a key, and takes it off again', () => {
+    const w = world();
+    addRoom(w);
+    addExit(w, '0', 3, 4);
+    const narration = setExitDialog(w, '0', 0, 'narration')!;
+    expect(w.rooms[0]!.exits[0]!.dialog).toBe(narration);
+    expect(dialogText(w, narration)).toBe('You walk through the doorway');
+    expect(byId(w.dialogs, narration)!.name).toBe('exit narration');
+
+    const lock = setExitDialog(w, '0', 0, 'lock')!;
+    expect(w.dialogs.some((d) => d.name === 'exit narration')).toBe(false);
+    const key = w.items.find((i) => i.name === 'key')!.id;
+    expect(dialogText(w, lock)).toBe(
+      `{\n  - {item "${key}"} >= 1 ?\n    {property locked false}\n    The key opens the door!\n  - else ?\n    {property locked true}\n    The door is locked...\n}`,
+    );
+    expect(serialize(w)).toMatch(new RegExp(`EXT 3,4 1 3,4 DLG ${lock}\n`));
+
+    setExitDialog(w, '0', 0, null);
+    expect(w.rooms[0]!.exits[0]!.dialog).toBeUndefined();
+    expect(byId(w.dialogs, lock)).toBeUndefined();
+  });
+});
+
 describe('eraseMarkerAt', () => {
   it('takes an exit or an ending off a cell', () => {
     const w = world();
@@ -106,6 +203,14 @@ describe('eraseMarkerAt', () => {
     expect(eraseMarkerAt(w, '0', 3, 3)).toBe(false);
     expect(w.rooms[0]!.exits).toEqual([]);
     expect(w.rooms[0]!.endings).toEqual([]);
+  });
+
+  it('takes the way back too', () => {
+    const w = world();
+    const other = addRoom(w);
+    addExit(w, '0', 1, 1);
+    expect(eraseMarkerAt(w, '0', 1, 1)).toBe(true);
+    expect(byId(w.rooms, other)!.exits).toEqual([]);
   });
 });
 

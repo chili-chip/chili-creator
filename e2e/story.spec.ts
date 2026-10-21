@@ -66,3 +66,24 @@ test('a broken reference shows up as a problem that leads to it', async ({ page 
   await problem.click();
   await expect(creator.getByRole('textbox', { name: 'Dialog text' })).toHaveValue('{exit "attic" 1 1}');
 });
+
+test('a locked door: a two-way exit whose way in needs the key', async ({ page }) => {
+  const { platform, creator } = await newGame(page);
+  const tools = creator.getByRole('navigation', { name: 'Tools' });
+  const room = creator.getByRole('application', { name: 'Room example room' });
+  await expect(room).toBeVisible();
+  await creator.getByRole('button', { name: 'New room' }).click();
+  await creator.getByRole('combobox', { name: 'Room' }).selectOption({ label: 'example room' });
+  await creator.getByRole('radio', { name: 'Exit' }).click();
+  await stroke(room, 16, [[13, 8]]);
+
+  await tools.getByRole('button', { name: 'Exits & endings' }).click();
+  await expect(creator.getByRole('radio', { name: 'Both ways' })).toHaveAttribute('aria-checked', 'true');
+  await creator.getByRole('button', { name: 'Add a lock' }).click();
+  await expect(creator.getByRole('textbox', { name: 'Exit dialog' })).toHaveValue(/The door is locked/);
+
+  await expect.poll(() => platform.games[0]!.data, { timeout: 10_000 }).toMatch(/EXT 13,8 1 13,8 DLG \w+\n/);
+  const data = platform.games[0]!.data;
+  expect(data).toMatch(/ROOM 1[\s\S]*EXT 13,8 0 13,8\n/);
+  expect(data).toContain('{property locked true}');
+});

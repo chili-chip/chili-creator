@@ -68,8 +68,42 @@ export function endingAt(room: Room, x: number, y: number): Placement | undefine
   return room.endings.find((ending) => ending.x === x && ending.y === y);
 }
 
-/** Puts an exit on a cell, leading to the same spot in the next room. Returns its index. */
-export function addExit(world: World, roomId: Id, x: number, y: number): number {
+function cellTaken(room: Room, x: number, y: number): boolean {
+  return exitAt(room, x, y) >= 0 || endingAt(room, x, y) !== undefined;
+}
+
+/** Where an exit is: its room and its index there. */
+export interface ExitRef {
+  room: Id;
+  index: number;
+}
+
+/** The exit that leads back: in the destination room, leading to this exit's cell. */
+export function returnExitOf(world: World, roomId: Id, index: number): ExitRef | undefined {
+  const exit = byId(world.rooms, roomId)?.exits[index];
+  const dest = exit && byId(world.rooms, exit.dest.room);
+  if (!exit || !dest) return undefined;
+  const back = dest.exits.findIndex((e) => e !== exit && e.dest.room === roomId && e.dest.x === exit.x && e.dest.y === exit.y);
+  return back < 0 ? undefined : { room: dest.id, index: back };
+}
+
+/** Adds the way back at an exit's destination, unless something is on that cell. */
+function addReturn(world: World, roomId: Id, exit: Exit): void {
+  const dest = byId(world.rooms, exit.dest.room);
+  if (!dest || cellTaken(dest, exit.dest.x, exit.dest.y)) return;
+  dest.exits.push({ x: exit.dest.x, y: exit.dest.y, dest: { room: roomId, x: exit.x, y: exit.y } });
+}
+
+function removeRef(world: World, ref: ExitRef | undefined): Exit | undefined {
+  const room = ref && byId(world.rooms, ref.room);
+  return room?.exits.splice(ref!.index, 1)[0];
+}
+
+/**
+ * Puts an exit on a cell, leading to the same spot in the next room, and the
+ * way back there unless `twoWay` is false. Returns its index.
+ */
+export function addExit(world: World, roomId: Id, x: number, y: number, { twoWay = true }: { twoWay?: boolean } = {}): number {
   const room = byId(world.rooms, roomId);
   if (!room) return -1;
   const existing = exitAt(room, x, y);
@@ -79,14 +113,117 @@ export function addExit(world: World, roomId: Id, x: number, y: number): number 
   const dest = world.rooms[index + 1] ?? world.rooms.find((r) => r !== room) ?? room;
   const exit: Exit = { x, y, dest: { room: dest.id, x, y } };
   room.exits.push(exit);
-  return room.exits.length - 1;
+  if (twoWay) addReturn(world, roomId, exit);
+  return room.exits.indexOf(exit);
 }
 
+/** Makes an exit two-way (adding the way back) or one-way (removing it). */
+export function setTwoWay(world: World, roomId: Id, index: number, twoWay: boolean): void {
+  const exit = byId(world.rooms, roomId)?.exits[index];
+  if (!exit) return;
+  const back = returnExitOf(world, roomId, index);
+  if (twoWay && !back) addReturn(world, roomId, exit);
+  if (!twoWay && back) removeRef(world, back);
+}
+
+/** Turns a one-way exit around: it now leads from its destination to its cell. Returns where it is now. */
+export function reverseExit(world: World, roomId: Id, index: number): ExitRef | undefined {
+  const room = byId(world.rooms, roomId);
+  const exit = room?.exits[index];
+  const dest = exit && byId(world.rooms, exit.dest.room);
+  if (!room || !exit || !dest || returnExitOf(world, roomId, index)) return undefined;
+  if (cellTaken(dest, exit.dest.x, exit.dest.y) && !(dest === room && exit.dest.x === exit.x && exit.dest.y === exit.y)) return undefined;
+  room.exits.splice(index, 1);
+  const reversed: Exit = { ...exit, x: exit.dest.x, y: exit.dest.y, dest: { room: roomId, x: exit.x, y: exit.y } };
+  dest.exits.push(reversed);
+  return { room: dest.id, index: dest.exits.length - 1 };
+}
+
+/** Moves an exit to another cell of its room; the way back follows. False when the cell is taken. */
+export function moveExit(world: World, roomId: Id, index: number, x: number, y: number): boolean {
+  const room = byId(world.rooms, roomId);
+  const exit = room?.exits[index];
+  if (!room || !exit || cellTaken(room, x, y)) return false;
+  const back = returnExitOf(world, roomId, index);
+  exit.x = x;
+  exit.y = y;
+  const backExit = back && byId(world.rooms, back.room)?.exits[back.index];
+  if (backExit) backExit.dest = { room: roomId, x, y };
+  return true;
+}
+
+/** Changes where an exit leads; the way back moves there too. */
+export function setExitDest(world: World, roomId: Id, index: number, dest: Exit['dest']): void {
+  const exit = byId(world.rooms, roomId)?.exits[index];
+  if (!exit) return;
+  const back = returnExitOf(world, roomId, index);
+  const backExit = removeRef(world, back);
+  exit.dest = { ...dest };
+  if (!backExit) return;
+  const target = byId(world.rooms, dest.room);
+  if (target && !cellTaken(target, dest.x, dest.y)) target.exits.push({ ...backExit, x: dest.x, y: dest.y });
+}
+
+/** Takes an exit and its way back off the map. */
+export function removeExit(world: World, roomId: Id, x: number, y: number): boolean {
+  const room = byId(world.rooms, roomId);
+  const index = room ? exitAt(room, x, y) : -1;
+  if (!room || index < 0) return false;
+  const back = returnExitOf(world, roomId, index);
+  const exit = room.exits[index]!;
+  removeRef(world, back);
+  room.exits.splice(room.exits.indexOf(exit), 1);
+  if (exit.dialog !== undefined && !dialogInUse(world, exit.dialog)) removeDialog(world, exit.dialog);
+  return true;
+}
+
+/** Takes the exit off one cell only, leaving any way back. */
 export function removeExitAt(room: Room, x: number, y: number): boolean {
   const index = exitAt(room, x, y);
   if (index < 0) return false;
   room.exits.splice(index, 1);
   return true;
+}
+
+export type ExitDialogKind = 'narration' | 'lock';
+
+/** The item a lock asks for: one called key, or else the first item. */
+function keyItem(world: World): Id | undefined {
+  return (world.items.find((i) => /key/i.test(i.name ?? '')) ?? world.items[0])?.id;
+}
+
+function exitDialogScript(world: World, kind: ExitDialogKind): { text: string; name: string } {
+  if (kind === 'narration') return { text: 'You walk through the doorway', name: 'exit narration' };
+  const key = keyItem(world) ?? '1';
+  return {
+    name: 'locked exit',
+    text: [
+      '{',
+      `  - {item "${key}"} >= 1 ?`,
+      '    {property locked false}',
+      '    The key opens the door!',
+      '  - else ?',
+      '    {property locked true}',
+      '    The door is locked...',
+      '}',
+    ].join('\n'),
+  };
+}
+
+/**
+ * Gives an exit a new dialog (narration, or a lock opened by a key), or none.
+ * The old one goes when nothing else uses it. Returns the new dialog's id.
+ */
+export function setExitDialog(world: World, roomId: Id, index: number, kind: ExitDialogKind | null): Id | undefined {
+  const exit = byId(world.rooms, roomId)?.exits[index];
+  if (!exit) return undefined;
+  const old = exit.dialog;
+  delete exit.dialog;
+  if (old !== undefined && !dialogInUse(world, old)) world.dialogs = world.dialogs.filter((d) => d.id !== old);
+  if (!kind) return undefined;
+  const { text, name } = exitDialogScript(world, kind);
+  exit.dialog = addDialog(world, text, name);
+  return exit.dialog;
 }
 
 /** Puts an ending on a cell, with its own text. Returns the ending's id. */
@@ -156,7 +293,5 @@ export function removeRoom(world: World, id: Id): boolean {
 
 /** Takes the exit or ending off a cell, for the room's eraser. */
 export function eraseMarkerAt(world: World, roomId: Id, x: number, y: number): boolean {
-  const room = byId(world.rooms, roomId);
-  if (!room) return false;
-  return removeExitAt(room, x, y) || removeEndingAt(world, roomId, x, y);
+  return removeExit(world, roomId, x, y) || removeEndingAt(world, roomId, x, y);
 }
