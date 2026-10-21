@@ -13,6 +13,7 @@ const sizes = [
   { value: '256', label: '256 pixels' },
   { value: '512', label: '512 pixels' },
   { value: '1024', label: '1024 pixels' },
+  { value: 'other', label: 'Other size' },
 ];
 
 function Section({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
@@ -32,18 +33,25 @@ function Download() {
   const world = useWorld();
   const [pageColor, setPageColor] = useState('#000000');
   const [size, setSize] = useState('fill');
+  const [otherSize, setOtherSize] = useState('768');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   if (!world) return <Empty icon={<DownloadIcon />}>Open a game to download it.</Empty>;
   const title = world.title.split('\n')[0] || 'game';
 
+  function pageSize(): 'fill' | number {
+    if (size === 'fill') return 'fill';
+    if (size !== 'other') return Number(size);
+    return Math.max(128, Math.round(Number(otherSize)) || 128);
+  }
+
   async function webPage() {
     setBusy(true);
     setError('');
     try {
       const parts = await loadHtmlParts();
-      const html = exportHtml({ data: creator.projects.data(), title, pageColor, size: size === 'fill' ? 'fill' : Number(size), ...parts });
+      const html = exportHtml({ data: creator.projects.data(), title, pageColor, size: pageSize(), ...parts });
       download(fileName(title, 'html'), html, 'text/html');
     } catch (err) {
       setError(`Could not make the page: ${err instanceof Error ? err.message : String(err)}`);
@@ -79,6 +87,17 @@ function Download() {
               ))}
             </Select>
           </label>
+          {size === 'other' && (
+            <Input
+              type="number"
+              aria-label="Size in pixels"
+              min={128}
+              step={1}
+              value={otherSize}
+              onChange={(event) => setOtherSize(event.target.value)}
+              className="w-20"
+            />
+          )}
         </div>
         <Button size="sm" onClick={() => void webPage()} disabled={busy}>
           <DownloadIcon />

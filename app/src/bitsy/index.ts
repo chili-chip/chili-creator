@@ -21,3 +21,4 @@ export function createWorld({ title }: { title: string }): World {
   world.title = title;
   return world;
 }
+export * from './font';
