@@ -30,6 +30,8 @@ export interface CreatorOptions {
   createPlayer?: (paint: (pixels: Uint8ClampedArray) => void) => Player;
   /** Plays tunes and blips in the sound tools. */
   sound?: SoundPreview;
+  /** Offers the first-run tour to people who have not seen it. */
+  tour?: boolean;
 }
 
 /** Everything the shell needs, wired once. Tests build their own. */
@@ -42,6 +44,7 @@ export function createCreator({
   localStore,
   createPlayer: makePlayer = (paint) => createPlayer({ paint }),
   sound = createSoundPreview(),
+  tour = true,
 }: CreatorOptions) {
   const bridge = createEmbedBridge({ win: window, parent, origin });
   const transport = createTransport({
@@ -91,6 +94,7 @@ export function createCreator({
     notify,
     createPlayer: makePlayer,
     sound,
+    tour,
     initialProject,
     tools,
     commands,

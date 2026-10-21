@@ -28,6 +28,7 @@ test('sound: write a tune for the room, give the cat a new blip, and it is saved
   await tools.getByRole('button', { name: 'Blips' }).click();
   await creator.getByRole('combobox', { name: 'Kind' }).selectOption('bloop');
   await creator.getByRole('button', { name: 'New blip' }).click();
+  await tools.getByRole('button', { name: 'Library' }).click();
   await creator.getByRole('button', { name: 'cat', exact: true }).click();
   await tools.getByRole('button', { name: 'Paint' }).click();
   await creator.getByRole('combobox', { name: 'Sound' }).selectOption({ label: 'bloop 3' });

@@ -84,6 +84,7 @@ export function renderCreator({ signedIn = true, platform = createFakePlatform()
       return player as unknown as Player;
     },
     sound: fakeSound() as unknown as SoundPreview,
+    tour: false,
     ...options,
   });
   const view = render(<App creator={creator} />);

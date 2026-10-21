@@ -9,7 +9,10 @@ test('a new game: paint a sprite, place it in the room, play it, and it is saved
   await expect(room).toBeVisible();
 
   // Make a sprite and paint a line across it.
+  const tools = creator.getByRole('navigation', { name: 'Tools' });
+  await tools.getByRole('button', { name: 'Library' }).click();
   await creator.getByRole('button', { name: 'New sprite' }).click();
+  await tools.getByRole('button', { name: 'Paint' }).click();
   const drawing = creator.getByRole('application', { name: 'Drawing sprite b' });
   await expect(drawing).toBeVisible();
   await stroke(drawing, 8, [
@@ -18,6 +21,7 @@ test('a new game: paint a sprite, place it in the room, play it, and it is saved
   ]);
 
   // Put it in the room.
+  await tools.getByRole('button', { name: 'Room' }).click();
   await stroke(room, 16, [[10, 10]]);
   await expect(creator.getByText('Click to move sprite b')).toBeVisible();
 
@@ -37,8 +41,11 @@ test('undo and redo take back a whole stroke and bring it back', async ({ page }
   const { platform, creator } = await newGame(page);
   const room = creator.getByRole('application', { name: 'Room example room' });
   await expect(room).toBeVisible();
+  const tools = creator.getByRole('navigation', { name: 'Tools' });
+  await tools.getByRole('button', { name: 'Library' }).click();
   await creator.getByRole('radio', { name: 'Tiles' }).click();
   await creator.getByRole('button', { name: 'block' }).click();
+  await tools.getByRole('button', { name: 'Room' }).click();
   await stroke(room, 16, [
     [3, 3],
     [6, 3],

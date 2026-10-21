@@ -8,6 +8,7 @@ test('a story: dialog with a variable, an exit to a new room, an ending, and it 
   await expect(room).toBeVisible();
 
   // The cat counts how often it was talked to.
+  await tools.getByRole('button', { name: 'Library' }).click();
   await creator.getByRole('button', { name: 'cat', exact: true }).click();
   await tools.getByRole('button', { name: 'Dialog' }).click();
   const text = creator.getByRole('textbox', { name: 'Dialog text' });
@@ -15,6 +16,7 @@ test('a story: dialog with a variable, an exit to a new room, an ending, and it 
   await text.fill('{a = a + 1}meow number {say a}');
 
   // A second room, and an exit into it.
+  await tools.getByRole('button', { name: 'Room' }).click();
   await creator.getByRole('button', { name: 'New room' }).click();
   await creator.getByRole('combobox', { name: 'Room' }).selectOption({ label: 'example room' });
   await creator.getByRole('radio', { name: 'Exit' }).click();
@@ -48,6 +50,7 @@ test('a story: dialog with a variable, an exit to a new room, an ending, and it 
 test('a broken reference shows up as a problem that leads to it', async ({ page }) => {
   const { creator } = await newGame(page);
   const tools = creator.getByRole('navigation', { name: 'Tools' });
+  await tools.getByRole('button', { name: 'Library' }).click();
   await creator.getByRole('button', { name: 'cat', exact: true }).click();
   await tools.getByRole('button', { name: 'Dialog' }).click();
   await creator.getByRole('textbox', { name: 'Dialog text' }).fill('{exit "attic" 1 1}');
