@@ -2,9 +2,11 @@ import {
   DockviewReact,
   type DockviewApi,
   type DockviewReadyEvent,
+  type IDockviewPanelHeaderProps,
   type IDockviewPanelProps,
 } from 'dockview-react';
-import { useMemo, type FunctionComponent } from 'react';
+import { X } from 'lucide-react';
+import { useEffect, useMemo, useState, type FunctionComponent } from 'react';
 import type { ToolDefinition, ToolPosition } from '../plugin-api';
 import { loadLayout, saveLayout } from './layout-storage';
 
@@ -46,6 +48,53 @@ export function openDefaultTools(api: DockviewApi, tools: readonly ToolDefinitio
   tools.filter((tool) => tool.openByDefault).forEach((tool) => addPanel(api, tool, Boolean(tool.openInBackground)));
 }
 
+/**
+ * A tab with its title and a close mark. The mark is for the mouse; the
+ * keyboard closes the tab with Delete, so no button sits inside the tab.
+ */
+function ToolTab({ api }: IDockviewPanelHeaderProps) {
+  const [title, setTitle] = useState(api.title ?? '');
+  useEffect(() => {
+    const listener = api.onDidTitleChange((event) => setTitle(event.title));
+    return () => listener.dispose();
+  }, [api]);
+
+  useEffect(() => {
+    // Dockview puts role="tab" on the element around this one.
+    const tab = document.querySelector<HTMLElement>(`[data-tool-tab="${CSS.escape(api.id)}"]`)?.closest<HTMLElement>('[role="tab"]');
+    if (!tab) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+      event.preventDefault();
+      api.close();
+    };
+    tab.title = `${title} (Delete closes it)`;
+    tab.addEventListener('keydown', onKey);
+    return () => tab.removeEventListener('keydown', onKey);
+  }, [api, title]);
+
+  return (
+    <div
+      className="dv-default-tab"
+      data-tool-tab={api.id}
+      onPointerUp={(event) => event.button === 1 && api.close()}
+    >
+      <span className="dv-default-tab-content">{title}</span>
+      <span
+        aria-hidden
+        className="dv-default-tab-action"
+        onPointerDown={(event) => event.preventDefault()}
+        onClick={(event) => {
+          event.stopPropagation();
+          api.close();
+        }}
+      >
+        <X className="size-3" />
+      </span>
+    </div>
+  );
+}
+
 interface WorkspaceProps {
   tools: readonly ToolDefinition[];
   onReady: (api: DockviewApi) => void;
@@ -84,6 +133,7 @@ export function Workspace({ tools, onReady }: WorkspaceProps) {
     <DockviewReact
       className="dockview-theme-chili h-full"
       components={components}
+      defaultTabComponent={ToolTab}
       onReady={ready}
     />
   );

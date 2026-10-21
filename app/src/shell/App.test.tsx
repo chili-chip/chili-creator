@@ -7,6 +7,18 @@ import { blankGame, renderCreator } from '../test/creator';
 const game = (title: string) => `${title}\n\n# BITSY VERSION 8.12\n\n! ROOM_FORMAT 1\n`;
 
 describe('App', () => {
+  it('closes a tool from its tab with the Delete key, with no button nested in the tab', async () => {
+    const user = userEvent.setup();
+    renderCreator();
+    await screen.findByRole('heading', { name: 'Your games' });
+    await user.click(within(screen.getByRole('navigation', { name: 'Tools' })).getByRole('button', { name: 'Find' }));
+    const tab = await screen.findByRole('tab', { name: 'Find' });
+    expect(within(tab).queryByRole('button')).toBeNull();
+    tab.focus();
+    await user.keyboard('{Delete}');
+    expect(screen.queryByRole('tab', { name: 'Find' })).not.toBeInTheDocument();
+  });
+
   it('switches language from the status bar and remembers it', async () => {
     const user = userEvent.setup();
     const catalogs: Record<string, Record<string, string>> = { pl: { Room: 'Pokój', 'Your games': 'Twoje gry', Help: 'Pomoc' } };
