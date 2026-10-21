@@ -5,7 +5,12 @@ import type { World } from './types';
 export { byId } from './by-id';
 export * from './edit';
 export { emptyWorld, parse } from './parse';
+export * from './names';
+export * from './references';
 export * from './render';
+export * from './script';
+export * from './story';
+export * from './validate';
 export { serialize } from './serialize';
 export type * from './types';
 

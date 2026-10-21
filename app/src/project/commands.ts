@@ -26,5 +26,7 @@ export function editingCommands({ projects, editor }: { projects: ProjectStore; 
     { id: 'paint.fill', title: 'Fill', category: 'Paint', keybinding: 'f', run: () => editor.set({ paintTool: 'fill' }) },
     { id: 'room.place', title: 'Place', category: 'Room', keybinding: 'p', run: () => editor.set({ roomTool: 'place' }) },
     { id: 'room.erase', title: 'Erase', category: 'Room', keybinding: 'e', run: () => editor.set({ roomTool: 'erase' }) },
+    { id: 'room.exit', title: 'Add exits', category: 'Room', keybinding: 'x', run: () => editor.set({ roomTool: 'exit' }) },
+    { id: 'room.ending', title: 'Add endings', category: 'Room', keybinding: 'n', run: () => editor.set({ roomTool: 'ending' }) },
   ];
 }

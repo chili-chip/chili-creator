@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, SelectHTMLAttributes } from 'react';
+import type { InputHTMLAttributes, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react';
 import { cn } from './cn';
 
 const field =
@@ -19,5 +19,22 @@ export function Checkbox({ label, className, ...props }: InputHTMLAttributes<HTM
       <input type="checkbox" className="size-4 accent-chili" {...props} />
       {label}
     </label>
+  );
+}
+
+export function Textarea({
+  className,
+  ref,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & { ref?: Ref<HTMLTextAreaElement> }) {
+  return (
+    <textarea
+      ref={ref}
+      className={cn(
+        'min-h-24 min-w-0 rounded-md border border-line bg-bg-0 p-2 font-mono text-xs leading-relaxed text-text hover:border-muted/60 focus:border-phosphor focus:outline-none',
+        className,
+      )}
+      {...props}
+    />
   );
 }

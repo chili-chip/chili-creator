@@ -47,6 +47,10 @@ describe('editingCommands', () => {
     expect(creator.editor.getState().roomTool).toBe('erase');
     press({ key: 'p' });
     expect(creator.editor.getState().roomTool).toBe('place');
+    press({ key: 'x' });
+    expect(creator.editor.getState().roomTool).toBe('exit');
+    press({ key: 'n' });
+    expect(creator.editor.getState().roomTool).toBe('ending');
   });
 
   it('is part of every creator', async () => {

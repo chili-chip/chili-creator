@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
-import { AVATAR, type Drawing, type DrawingKind, type Room } from '../bitsy';
+import type { DrawingKind, Location } from '../bitsy';
+import { useCreator } from '../shell/creator-context';
+import { Button } from '../ui/button';
 
 // Small things the editing tools share. Tools never import each other.
 
@@ -9,16 +11,7 @@ export const kinds: Record<DrawingKind, { one: string; title: string; many: stri
   items: { one: 'item', title: 'Item', many: 'Items' },
 };
 
-/** What people call a drawing: its name, else "tile b". The avatar is "avatar". */
-export function drawingName(kind: DrawingKind, drawing: Drawing): string {
-  if (drawing.name) return drawing.name;
-  if (kind === 'sprites' && drawing.id === AVATAR) return 'avatar';
-  return `${kinds[kind].one} ${drawing.id}`;
-}
-
-export function roomName(room: Room): string {
-  return room.name || `Room ${room.id}`;
-}
+export { dialogName, drawingName, roomName } from '../bitsy';
 
 let strokes = 0;
 
@@ -40,4 +33,33 @@ export function Empty({ icon, children }: { icon: ReactNode; children: ReactNode
       </div>
     </div>
   );
+}
+
+/** Shows a place in the game in the tool that edits it. */
+export function useGoTo(): (location: Location) => void {
+  const creator = useCreator();
+  return (location) => {
+    const tool = creator.editor.goTo(location);
+    creator.commands.execute(`tool.open.${tool}`);
+  };
+}
+
+/** Asks before something that removes work; undo can still bring it back. */
+export function Confirm({ question, onKeep, onDelete }: { question: ReactNode; onKeep(): void; onDelete(): void }) {
+  return (
+    <div className="flex w-full flex-wrap items-center gap-2 pt-2 text-xs">
+      <span className="mr-auto">{question}</span>
+      <Button size="sm" variant="ghost" onClick={onKeep}>
+        Keep it
+      </Button>
+      <Button size="sm" variant="destructive" onClick={onDelete}>
+        Delete for good
+      </Button>
+    </div>
+  );
+}
+
+/** "1 dialog", "2 dialogs". */
+export function count(n: number, one: string, many = `${one}s`): string {
+  return `${n} ${n === 1 ? one : many}`;
 }
