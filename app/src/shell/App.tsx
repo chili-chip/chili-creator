@@ -14,6 +14,7 @@ import { clearLayout } from './layout-storage';
 import { PhoneWorkspace } from './PhoneWorkspace';
 import { applyPreset, layoutPresets } from './presets';
 import { ProjectBar } from './ProjectBar';
+import { Help } from './Help';
 import { Tour, tourDone } from './Tour';
 import { PHONE, useMediaQuery } from './use-media-query';
 import { useRegistry } from './use-registry';
@@ -63,6 +64,7 @@ function Shell({ creator }: { creator: Creator }) {
   const commands = useRegistry(creator.commands);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [touring, setTouring] = useState(() => creator.tour && !tourDone());
+  const [helping, setHelping] = useState(false);
   const dock = useRef<DockviewApi | null>(null);
   const phone = useMediaQuery(PHONE);
   const [phoneTool, setPhoneTool] = useState('projects');
@@ -116,6 +118,12 @@ function Shell({ creator }: { creator: Creator }) {
         title: 'Take the tour',
         category: 'Help',
         run: () => setTouring(true),
+      }),
+      creator.commands.register({
+        id: 'help.open',
+        title: 'What each tool does',
+        category: 'Help',
+        run: () => setHelping(true),
       }),
     ];
     return () => unregister.forEach((fn) => fn());
@@ -267,6 +275,9 @@ function Shell({ creator }: { creator: Creator }) {
       <footer className={cn('flex h-6 items-center gap-4 border-t border-line bg-bg-2 px-3 text-[11px] text-muted', !phone && 'col-span-2')}>
         <span>{creator.bridge.embedded ? 'In Chili Platform' : 'Standalone'}</span>
         <ProblemCount onOpen={() => creator.commands.execute('tool.open.problems')} />
+        <button type="button" className="hover:text-text" onClick={() => setHelping((h) => !h)}>
+          Help
+        </button>
         {!phone && (
           <>
             <Select
@@ -290,6 +301,22 @@ function Shell({ creator }: { creator: Creator }) {
       {phone && toolBar}
 
       {!creator.bridge.embedded && <Toaster theme="dark" position={phone ? 'top-center' : 'bottom-right'} />}
+
+      {helping && (
+        <Help
+          tools={tools}
+          phone={phone}
+          onOpenTool={(id) => {
+            setHelping(false);
+            open(id);
+          }}
+          onTour={() => {
+            setHelping(false);
+            setTouring(true);
+          }}
+          onClose={() => setHelping(false)}
+        />
+      )}
 
       {touring && <Tour phone={phone} onOpenTool={open} onClose={() => setTouring(false)} />}
 

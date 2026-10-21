@@ -22,7 +22,7 @@ import {
 import { defineTool } from '../../plugin-api';
 import { useCreator, useEditor, useSelection } from '../../shell/creator-context';
 import { Button } from '../../ui/button';
-import { Select, Textarea } from '../../ui/input';
+import { Input, Select, Textarea } from '../../ui/input';
 import { PixelCanvas } from '../../ui/pixel-canvas';
 import { cn } from '../../ui/cn';
 import { Segmented } from '../../ui/segmented';
@@ -231,9 +231,24 @@ function ExitsTool() {
                 </option>
               ))}
             </Select>
-            <span className="tabular-nums">
-              at {exit.dest.x},{exit.dest.y}
-            </span>
+            <span>at</span>
+            {(['x', 'y'] as const).map((axis) => (
+              <Input
+                key={axis}
+                type="number"
+                aria-label={`Arrival ${axis}`}
+                min={0}
+                max={ROOM_SIZE - 1}
+                value={exit.dest[axis]}
+                className="h-7 w-14 py-0 text-right tabular-nums"
+                onChange={(event) => {
+                  const n = Number(event.target.value);
+                  if (!Number.isFinite(n)) return;
+                  const at = Math.max(0, Math.min(ROOM_SIZE - 1, Math.round(n)));
+                  changeExit((target, w, index) => setExitDest(w, roomId, index, { ...target.dest, [axis]: at }), `arrive-${axis}`);
+                }}
+              />
+            ))}
             {destination && destination.id !== roomId && (
               <Button size="sm" variant="ghost" onClick={() => creator.editor.set({ room: destination.id, marker: { x: exit.dest.x, y: exit.dest.y } })}>
                 Go to {roomName(destination)}
@@ -366,6 +381,7 @@ function ExitsTool() {
 export default defineTool({
   id: 'exits',
   title: 'Exits & endings',
+  help: 'Exits take the avatar to another room; endings finish the game. Add locks, ways back and transitions.',
   icon: DoorOpen,
   component: ExitsTool,
   defaultPosition: 'within',

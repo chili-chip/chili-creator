@@ -139,6 +139,7 @@ function Variables() {
 export default defineTool({
   id: 'variables',
   title: 'Variables',
+  help: 'Numbers and words the dialog can read and change, and the items the avatar starts with.',
   icon: VariableIcon,
   component: Variables,
   defaultPosition: 'within',

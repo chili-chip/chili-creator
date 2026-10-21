@@ -303,6 +303,7 @@ function Play() {
 export default defineTool({
   id: 'play',
   title: 'Play',
+  help: 'Play the game as it is now, record a GIF, save a picture or set the cover.',
   icon: PlayIcon,
   component: Play,
   defaultPosition: 'within',

@@ -183,6 +183,7 @@ function Colors() {
 export default defineTool({
   id: 'colors',
   title: 'Colors',
+  help: 'Palettes of three colours: the background, tiles, and sprites and items. Each room uses one.',
   icon: PaletteIcon,
   component: Colors,
   defaultPosition: 'within',

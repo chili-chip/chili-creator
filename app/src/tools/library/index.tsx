@@ -164,6 +164,7 @@ function Library() {
 export default defineTool({
   id: 'library',
   title: 'Library',
+  help: 'Every tile, sprite and item. Pick one to paint it or to draw it into the room.',
   icon: LibraryIcon,
   component: Library,
   defaultPosition: 'below',

@@ -12,6 +12,8 @@ export interface ToolDefinition {
   id: string;
   title: string;
   icon: LucideIcon;
+  /** One or two sentences on what the tool is for, shown in Help. */
+  help?: string;
   /** Rendered inside a workspace panel. */
   component: ComponentType;
   defaultPosition?: ToolPosition;

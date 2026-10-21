@@ -150,38 +150,45 @@ function firstLine(text: string): string {
   return line.trim().length > 80 ? `${line.trim().slice(0, 79)}…` : line.trim();
 }
 
-/** Things whose name, id or text has `query` in it. */
-export function search(world: World, query: string): SearchResult[] {
+export type SearchCategory = 'all' | 'drawings' | 'rooms' | 'dialog' | 'colors' | 'sound';
+
+/**
+ * Things whose name, id or text has `query` in it. In one category an
+ * empty query lists everything in it, to browse; across them all it finds
+ * nothing.
+ */
+export function search(world: World, query: string, category: SearchCategory = 'all'): SearchResult[] {
   const needle = query.trim().toLowerCase();
-  if (!needle) return [];
-  const has = (...texts: (string | undefined)[]) => texts.some((t) => t?.toLowerCase().includes(needle));
+  if (!needle && category === 'all') return [];
+  const has = (...texts: (string | undefined)[]) => !needle || texts.some((t) => t?.toLowerCase().includes(needle));
+  const shows = (c: SearchCategory) => category === 'all' || category === c;
   const results: SearchResult[] = [];
-  for (const kind of ['tiles', 'sprites', 'items'] as const) {
+  for (const kind of shows('drawings') ? (['tiles', 'sprites', 'items'] as const) : []) {
     for (const drawing of world[kind]) {
       const name = drawingName(kind, drawing);
       if (has(name) || drawing.id.toLowerCase() === needle) results.push({ label: name, at: { type: 'drawing', kind, id: drawing.id } });
     }
   }
-  for (const room of world.rooms) {
+  for (const room of shows('rooms') ? world.rooms : []) {
     if (has(roomName(room))) results.push({ label: roomName(room), at: { type: 'room', room: room.id } });
   }
-  for (const { entry, name } of scripts(world)) {
+  for (const { entry, name } of shows('dialog') ? scripts(world) : []) {
     const text = scriptBody(entry.script);
     if (!has(name, text)) continue;
     const hit = text.split('\n').find((line) => line.toLowerCase().includes(needle));
     results.push({ label: name, detail: firstLine(hit ?? text), at: { type: 'dialog', id: entry.id } });
   }
-  for (const variable of world.variables) {
+  for (const variable of shows('dialog') ? world.variables : []) {
     if (has(variable.id)) results.push({ label: variable.id, detail: `starts at ${variable.value}`, at: { type: 'variable', id: variable.id } });
   }
-  for (const palette of world.palettes) {
+  for (const palette of shows('colors') ? world.palettes : []) {
     const name = palette.name || `Palette ${palette.id}`;
     if (has(name)) results.push({ label: name, at: { type: 'palette', id: palette.id } });
   }
-  for (const tune of world.tunes) {
+  for (const tune of shows('sound') ? world.tunes : []) {
     if (has(tuneName(tune))) results.push({ label: tuneName(tune), at: { type: 'tune', id: tune.id } });
   }
-  for (const blip of world.blips) {
+  for (const blip of shows('sound') ? world.blips : []) {
     if (has(blipName(blip))) results.push({ label: blipName(blip), at: { type: 'blip', id: blip.id } });
   }
   return results;

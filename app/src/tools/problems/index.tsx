@@ -48,6 +48,7 @@ function Problems() {
 export default defineTool({
   id: 'problems',
   title: 'Problems',
+  help: 'Things that would stop the game working as you meant, each with a way to fix it.',
   icon: AlertTriangle,
   component: Problems,
   defaultPosition: 'within',

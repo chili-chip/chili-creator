@@ -120,6 +120,7 @@ function Download() {
 export default defineTool({
   id: 'download',
   title: 'Download',
+  help: 'Download the .bitsy file, or a web page that plays the game anywhere.',
   icon: DownloadIcon,
   component: Download,
   defaultPosition: 'within',

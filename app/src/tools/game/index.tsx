@@ -196,6 +196,7 @@ function Game() {
 export default defineTool({
   id: 'game',
   title: 'Game',
+  help: 'The title, font, text direction and text size, and the whole game as .bitsy text.',
   icon: Settings2,
   component: Game,
   defaultPosition: 'within',

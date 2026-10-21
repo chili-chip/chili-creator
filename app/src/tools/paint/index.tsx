@@ -223,6 +223,7 @@ function Paint() {
 export default defineTool({
   id: 'paint',
   title: 'Paint',
+  help: 'Draw the picked tile, sprite or item, with a second frame to animate it.',
   icon: Brush,
   component: Paint,
   defaultPosition: 'right',

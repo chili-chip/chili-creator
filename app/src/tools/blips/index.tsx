@@ -10,6 +10,7 @@ import {
   chromaticNames,
   duplicateBlip,
   generateBlip,
+  mutateBlip,
   paceBlip,
   referencesTo,
   removeBlip,
@@ -211,6 +212,9 @@ function Blips() {
             <Button size="sm" variant="secondary" title={`A new ${kind} sound`} onClick={() => edit((b) => generateBlip(b, kind), { play: true })}>
               Make a new sound
             </Button>
+            <Button size="sm" variant="secondary" title="Change the sound a little" onClick={() => edit((b) => mutateBlip(b), { play: true })}>
+              Mutate
+            </Button>
             <Input
               aria-label="Blip name"
               value={blip.name ?? ''}
@@ -325,6 +329,7 @@ function Blips() {
 export default defineTool({
   id: 'blips',
   title: 'Blips',
+  help: 'Short sounds that sprites and items make when the avatar meets them. Make one of a kind, then mutate or tweak it.',
   icon: AudioLines,
   component: Blips,
   defaultPosition: 'within',

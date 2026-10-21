@@ -253,6 +253,7 @@ function DialogTool() {
 export default defineTool({
   id: 'dialog',
   title: 'Dialog',
+  help: 'What sprites and items say, and the text of endings. Write it, or build it from blocks: choices, conditions and actions.',
   icon: MessageSquare,
   component: DialogTool,
   defaultPosition: 'within',

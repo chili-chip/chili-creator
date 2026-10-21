@@ -308,6 +308,7 @@ function RoomTool() {
 export default defineTool({
   id: 'room',
   title: 'Room',
+  help: 'Draw tiles, sprites and items into the room, and add exits and endings.',
   icon: MapIcon,
   component: RoomTool,
   defaultPosition: 'center',

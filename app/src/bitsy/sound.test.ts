@@ -9,6 +9,7 @@ import {
   duplicateTune,
   eraseNotes,
   generateBlip,
+  mutateBlip,
   keyNameOf,
   moveBar,
   noteAt,
@@ -255,6 +256,26 @@ describe('blips', () => {
       for (const p of blip.pitches) expect(p.octave).toBeGreaterThanOrEqual(2);
       for (const p of blip.pitches) expect(p.octave).toBeLessThanOrEqual(5);
       expect(blip.envelope.sustain).toBeLessThanOrEqual(15);
+    }
+  });
+
+  it('mutates a blip a little, as the classic editor does', () => {
+    const w = world();
+    const before = blipOf(w, '1')!;
+    const steps = (p: { note: number; octave: number }) => p.octave * 12 + p.note;
+    for (let seed = 1; seed < 20; seed++) {
+      const blip = structuredClone(before);
+      mutateBlip(blip, seeded(seed));
+      blip.pitches.forEach((p, i) => {
+        expect(Math.abs(steps(p) - steps(before.pitches[i]!))).toBeLessThanOrEqual(2);
+        expect(p.beats).toBe(before.pitches[i]!.beats);
+      });
+      expect(Math.abs(blip.envelope.length - before.envelope.length)).toBeLessThanOrEqual(64);
+      for (const ms of [blip.envelope.length, blip.beat.time, blip.beat.delay]) {
+        expect(ms).toBeGreaterThanOrEqual(32);
+        expect(ms).toBeLessThanOrEqual(480);
+      }
+      expect(blip.instrument).toBe(before.instrument);
     }
   });
 

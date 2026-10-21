@@ -246,6 +246,7 @@ function Projects() {
 export default defineTool({
   id: 'projects',
   title: 'Projects',
+  help: 'Your games: make a new one, open, copy or delete one, or import a .bitsy file or web page.',
   icon: LayoutGrid,
   component: Projects,
   defaultPosition: 'center',

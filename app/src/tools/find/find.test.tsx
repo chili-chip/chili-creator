@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { renderTool } from '../../test/creator';
@@ -29,5 +29,18 @@ describe('Find', () => {
     expect(screen.getByRole('heading', { name: 'Where block is used' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'example room: 52 cells' }));
     expect(creator.editor.getState().room).toBe('0');
+  });
+
+  it('browses a category with pictures', async () => {
+    const user = userEvent.setup();
+    const { creator } = await renderTool(Find);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Show' }), 'Rooms');
+    const rooms = screen.getByRole('list', { name: 'Found' });
+    const room = within(rooms).getByRole('button', { name: 'example room' });
+    expect(within(room).getByTestId('thumbnail')).toBeInTheDocument();
+    await user.click(room);
+    expect(creator.editor.getState().room).toBe('0');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Show' }), 'Drawings');
+    expect(within(screen.getByRole('button', { name: 'cat' })).getByTestId('thumbnail')).toBeInTheDocument();
   });
 });

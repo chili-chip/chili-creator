@@ -83,6 +83,16 @@ describe('search', () => {
     expect(search(w, 'fanfare')).toEqual([{ label: 'finale fanfare', at: { type: 'tune', id: '1' } }]);
     expect(search(w, 'meow')).toEqual([{ label: 'meow', at: { type: 'blip', id: '1' } }]);
   });
+
+  it('lists a whole category, or narrows a search to one', () => {
+    const w = world();
+    expect(search(w, '', 'rooms').map((r) => r.label)).toEqual(['example room']);
+    expect(search(w, '', 'drawings').map((r) => r.label)).toEqual(['block', 'avatar', 'cat', 'tea', 'key']);
+    expect(search(w, '', 'colors').map((r) => r.at.type)).toEqual(['palette']);
+    expect(search(w, '', 'sound').map((r) => r.at.type)).toEqual(['tune', 'tune', 'tune', 'blip', 'blip']);
+    expect(search(w, 'cat', 'dialog').map((r) => r.label)).toEqual(['cat dialog']);
+    expect(search(w, '', 'all')).toEqual([]);
+  });
 });
 
 describe('validate', () => {

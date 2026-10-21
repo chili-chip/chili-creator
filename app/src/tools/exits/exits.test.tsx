@@ -51,6 +51,19 @@ describe('Exits & endings', () => {
     expect(world().rooms[0]!.exits[0]!.transition).toBeUndefined();
   });
 
+  it('types where the avatar arrives', async () => {
+    const user = userEvent.setup();
+    const { creator, world } = await withMarkers();
+    act(() => creator.editor.set({ marker: { x: 3, y: 4 } }));
+    const x = screen.getByRole('spinbutton', { name: 'Arrival x' });
+    await user.clear(x);
+    await user.type(x, '12');
+    const y = screen.getByRole('spinbutton', { name: 'Arrival y' });
+    await user.clear(y);
+    await user.type(y, '99');
+    expect(world().rooms[0]!.exits[0]!.dest).toMatchObject({ x: 12, y: 15 });
+  });
+
   it('writes an ending’s text', async () => {
     const user = userEvent.setup();
     const { creator, world } = await withMarkers();

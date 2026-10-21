@@ -642,6 +642,19 @@ export function generateBlip(blip: Blip, kind: BlipKind, random: () => number = 
   }
 }
 
+/** Nudges a blip's pitches and timing a little, like the classic editor's "mutate". */
+export function mutateBlip(blip: Blip, random: () => number = Math.random): void {
+  const int = (min: number, max: number) => min + Math.floor((max - min) * random());
+  const ms = (n: number) => Math.max(32, Math.min(480, n));
+  for (const p of blip.pitches) {
+    const absolute = Math.max(0, Math.min(4 * 12 - 1, (p.octave - 2) * 12 + p.note + int(-2, 2)));
+    p.octave = Math.floor(absolute / 12) + 2;
+    p.note = absolute % 12;
+  }
+  blip.envelope = { ...blip.envelope, length: ms(blip.envelope.length + int(-64, 64)) };
+  blip.beat = { time: ms(blip.beat.time + int(-64, 64)), delay: ms(blip.beat.delay + int(-64, 64)) };
+}
+
 /** Shifts every pitch of a blip by semitones, staying within octaves 2–5. */
 export function transposeBlip(blip: Blip, semitones: number): void {
   for (const p of blip.pitches) {

@@ -533,6 +533,7 @@ function Tunes() {
 export default defineTool({
   id: 'tunes',
   title: 'Tunes',
+  help: 'Music for rooms: notes on a staff, in bars, with a key, tempo and instruments.',
   icon: Music,
   component: Tunes,
   defaultPosition: 'within',

@@ -39,6 +39,9 @@ describe('Blips', () => {
     await user.click(screen.getByRole('button', { name: 'Make a new sound' }));
     expect(byId(world().blips, '1')!.lines.join('\n')).not.toBe(before);
     expect(byId(world().blips, '1')!.name).toBe('meow');
+    const made = byId(world().blips, '1')!.lines.join('\n');
+    await user.click(screen.getByRole('button', { name: 'Mutate' }));
+    expect(byId(world().blips, '1')!.lines.join('\n')).not.toBe(made);
 
     await user.selectOptions(screen.getByRole('combobox', { name: 'Pitch 1' }), 'A4');
     await user.click(screen.getByRole('button', { name: 'Higher' }));
