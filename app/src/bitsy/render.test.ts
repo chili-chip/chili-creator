@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { byId, createWorld } from '.';
-import { colorsFor, drawingPixels, roomPixels, ROOM_PIXELS } from './render';
+import { colorsFor, drawingPixels, EXIT_COLOR, ENDING_COLOR, markRoom, roomPixels, ROOM_PIXELS } from './render';
 
 const world = () => createWorld({ title: 'Test' });
 
@@ -105,5 +105,22 @@ describe('roomPixels', () => {
   it('draws an unknown room as background only', () => {
     const pixels = roomPixels(world(), 'nope');
     expect(at(pixels, ROOM_PIXELS, 64, 64)).toEqual(background);
+  });
+});
+
+describe('markRoom', () => {
+  it('outlines exits and endings, and the picked one twice as thick', () => {
+    const w = world();
+    const room = w.rooms[0]!;
+    room.exits.push({ x: 2, y: 3, dest: { room: '0', x: 0, y: 0 } });
+    room.endings.push({ id: '9', x: 5, y: 5 });
+    const pixels = roomPixels(w, '0');
+    markRoom(pixels, room, { x: 5, y: 5 });
+    expect(at(pixels, ROOM_PIXELS, 16, 24)).toEqual([...EXIT_COLOR, 255]);
+    expect(at(pixels, ROOM_PIXELS, 23, 31)).toEqual([...EXIT_COLOR, 255]);
+    expect(at(pixels, ROOM_PIXELS, 17, 25)).toEqual(background);
+    expect(at(pixels, ROOM_PIXELS, 40, 40)).toEqual([...ENDING_COLOR, 255]);
+    expect(at(pixels, ROOM_PIXELS, 41, 41)).toEqual([...ENDING_COLOR, 255]);
+    expect(at(pixels, ROOM_PIXELS, 42, 42)).toEqual(background);
   });
 });

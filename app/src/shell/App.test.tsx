@@ -13,7 +13,7 @@ describe('App', () => {
     const tools = screen.getByRole('navigation', { name: 'Tools' });
     expect(within(tools).getByRole('button', { name: 'Projects' })).toBeInTheDocument();
     expect(within(tools).getByRole('button', { name: 'Play' })).toBeInTheDocument();
-    for (const name of ['Room', 'Paint', 'Library', 'Colors']) {
+    for (const name of ['Room', 'Paint', 'Library', 'Colors', 'Dialog', 'Exits & endings', 'Variables', 'Problems', 'Game', 'Find']) {
       expect(within(tools).getByRole('button', { name })).toBeInTheDocument();
     }
   });
@@ -90,6 +90,16 @@ describe('App', () => {
     expect(await screen.findByRole('application', { name: 'Room example room' })).toBeInTheDocument();
     expect(screen.getByRole('application', { name: 'Drawing avatar' })).toBeInTheDocument();
     expect(screen.getByRole('list', { name: 'Sprites' })).toBeInTheDocument();
+  });
+
+  it('counts the game’s problems in the status bar and opens them', async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    const saved = platform.addGame({ title: 'Test game', data: blankGame });
+    renderCreator({ platform, initialProject: String(saved.id) });
+    const status = await screen.findByRole('button', { name: 'Problems: 1 warning' });
+    await user.click(status);
+    expect(await screen.findByText('Players cannot finish this game yet: add an ending.')).toBeInTheDocument();
   });
 
   it('shows the dashboard first when no game is open', async () => {

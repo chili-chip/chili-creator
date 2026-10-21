@@ -16,7 +16,7 @@ import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { PixelImage } from '../../ui/pixel-canvas';
 import { Segmented } from '../../ui/segmented';
-import { drawingName, Empty, kinds } from '../shared';
+import { Confirm, drawingName, Empty, kinds } from '../shared';
 
 const tabs = [
   { value: 'tiles', label: 'Tiles', icon: Grid2x2 },
@@ -150,15 +150,11 @@ function Library() {
           <Trash2 />
         </Button>
         {confirming && current && (
-          <div className="flex w-full flex-wrap items-center gap-2 pt-2 text-xs">
-            <span className="mr-auto">Delete “{currentName}” and take it out of every room?</span>
-            <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>
-              Keep it
-            </Button>
-            <Button size="sm" variant="destructive" onClick={remove}>
-              Delete for good
-            </Button>
-          </div>
+          <Confirm
+            question={`Delete “${currentName}” and take it out of every room?`}
+            onKeep={() => setConfirming(false)}
+            onDelete={remove}
+          />
         )}
       </div>
     </div>

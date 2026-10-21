@@ -1,12 +1,13 @@
 import type { DockviewApi } from 'dockview-react';
-import { Command, ExternalLink, UserRound } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { AlertTriangle, CircleCheck, Command, ExternalLink, UserRound } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { problemSummary, validate } from '../bitsy';
 import { Toaster } from 'sonner';
 import type { Creator } from '../creator';
 import { Button } from '../ui/button';
 import { classicEditorUrl } from './classic';
 import { CommandPalette } from './CommandPalette';
-import { CreatorProvider, useProjects } from './creator-context';
+import { CreatorProvider, useProjects, useWorld } from './creator-context';
 import { clearLayout } from './layout-storage';
 import { ProjectBar } from './ProjectBar';
 import { useRegistry } from './use-registry';
@@ -29,6 +30,25 @@ function Account() {
       {projects.mode === 'local' && <span>Not signed in</span>}
       {projects.mode === 'unknown' && <span>…</span>}
     </span>
+  );
+}
+
+/** The open game's problem count; it opens the Problems tool. */
+function ProblemCount({ onOpen }: { onOpen(): void }) {
+  const world = useWorld();
+  const problems = useMemo(() => (world ? validate(world) : []), [world]);
+  if (!world) return null;
+  const summary = problemSummary(problems);
+  return (
+    <button
+      type="button"
+      aria-label={`Problems: ${summary || 'none'}`}
+      onClick={onOpen}
+      className="flex items-center gap-1 hover:text-text [&_svg]:size-3"
+    >
+      {problems.length ? <AlertTriangle className="text-amber" aria-hidden /> : <CircleCheck aria-hidden />}
+      {summary || 'No problems'}
+    </button>
   );
 }
 
@@ -147,7 +167,7 @@ function Shell({ creator }: { creator: Creator }) {
         </div>
       </header>
 
-      <nav aria-label="Tools" className="flex w-12 flex-col items-center gap-1 border-r border-line bg-bg-2 py-2">
+      <nav aria-label="Tools" className="flex w-12 flex-col items-center gap-1 overflow-y-auto border-r border-line bg-bg-2 py-2">
         {tools.map((tool) => {
           const Icon = tool.icon;
           return (
@@ -171,6 +191,7 @@ function Shell({ creator }: { creator: Creator }) {
 
       <footer className="col-span-2 flex h-6 items-center gap-4 border-t border-line bg-bg-2 px-3 text-[11px] text-muted">
         <span>{creator.bridge.embedded ? 'In Chili Platform' : 'Standalone'}</span>
+        <ProblemCount onOpen={() => creator.commands.execute('tool.open.problems')} />
         <span className="ml-auto hidden sm:inline">Ctrl+K for commands</span>
       </footer>
 

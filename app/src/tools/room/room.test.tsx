@@ -106,4 +106,51 @@ describe('Room', () => {
     act(() => creator.editor.select({ kind: 'items', id: '1' }));
     expect(screen.getByText(/Click to put down key/)).toBeInTheDocument();
   });
+
+  it('adds an exit where it is clicked with the Exit tool, and picks it', async () => {
+    const user = userEvent.setup();
+    const { creator, world } = await renderTool(Room);
+    await user.click(screen.getByRole('radio', { name: 'Exit' }));
+    click(canvas(), 3, 4);
+    expect(world().rooms[0]!.exits).toEqual([{ x: 3, y: 4, dest: { room: '0', x: 3, y: 4 } }]);
+    expect(creator.editor.getState().marker).toEqual({ x: 3, y: 4 });
+    // A second click on it only picks it.
+    click(canvas(), 3, 4);
+    expect(world().rooms[0]!.exits).toHaveLength(1);
+  });
+
+  it('adds an ending with the Ending tool', async () => {
+    const user = userEvent.setup();
+    const { creator, world } = await renderTool(Room);
+    await user.click(screen.getByRole('radio', { name: 'Ending' }));
+    expect(screen.getByText(/Click to add an ending/)).toBeInTheDocument();
+    click(canvas(), 6, 6);
+    expect(world().rooms[0]!.endings).toEqual([{ id: '3', x: 6, y: 6 }]);
+    expect(creator.editor.getState().marker).toEqual({ x: 6, y: 6 });
+  });
+
+  it('erases an exit before what is under it', async () => {
+    const user = userEvent.setup();
+    const { world } = await renderTool(Room);
+    await user.click(screen.getByRole('radio', { name: 'Exit' }));
+    click(canvas(), 1, 1);
+    await user.click(screen.getByRole('radio', { name: 'Erase' }));
+    click(canvas(), 1, 1);
+    expect(world().rooms[0]!.exits).toEqual([]);
+    expect(world().rooms[0]!.tilemap[1]![1]).toBe('a');
+  });
+
+  it('deletes a room after asking, but never the avatar’s room', async () => {
+    const user = userEvent.setup();
+    const { world } = await renderTool(Room);
+    expect(screen.getByRole('button', { name: 'Delete room' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'New room' }));
+    await user.click(screen.getByRole('button', { name: 'Delete room' }));
+    await user.click(screen.getByRole('button', { name: 'Keep it' }));
+    expect(world().rooms).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: 'Delete room' }));
+    await user.click(screen.getByRole('button', { name: 'Delete for good' }));
+    expect(world().rooms.map((r) => r.id)).toEqual(['0']);
+    expect(screen.getByRole('combobox', { name: 'Room' })).toHaveDisplayValue('example room');
+  });
 });

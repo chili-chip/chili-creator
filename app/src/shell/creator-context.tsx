@@ -37,6 +37,6 @@ export function useWorld(): World | null {
 export function useSelection(): Resolved & { world: World | null } {
   const world = useWorld();
   const editor = useEditor();
-  if (!world) return { world, room: undefined, kind: undefined, drawing: undefined, frame: 0 };
+  if (!world) return { world, room: undefined, kind: undefined, drawing: undefined, frame: 0, dialog: undefined, marker: undefined };
   return { world, ...resolveSelection(world, editor) };
 }

@@ -1,7 +1,7 @@
 // The workspace layout is a per-viewer convenience: losing it only means the
 // default layout comes back, so storage errors are swallowed.
 
-export const LAYOUT_KEY = 'chili.creator.layout.v3';
+export const LAYOUT_KEY = 'chili.creator.layout.v4';
 
 export function loadLayout(): unknown {
   try {

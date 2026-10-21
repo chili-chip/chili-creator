@@ -1,6 +1,6 @@
 import { byId } from './by-id';
 import { DRAWING_SIZE, ROOM_SIZE, type DrawingKind } from './edit';
-import type { Drawing, Id, Rgb, World } from './types';
+import type { Drawing, Id, Rgb, Room, World } from './types';
 
 // The editor's view of a world, drawn in TypeScript as RGBA pixels. citsy is
 // only used to play, so editing stays instant.
@@ -86,4 +86,27 @@ export function roomPixels(world: World, roomId: Id, frame = 0): Uint8ClampedArr
   sprites.sort((a, b) => Number(a.id === 'A') - Number(b.id === 'A'));
   for (const sprite of sprites) draw(sprite, 'sprites', sprite.position!.x, sprite.position!.y);
   return out;
+}
+
+export const EXIT_COLOR: Rgb = [255, 196, 0];
+export const ENDING_COLOR: Rgb = [255, 72, 96];
+
+/** Outlines a room's exits and endings on its pixels; the picked cell gets a thicker line. */
+export function markRoom(out: Uint8ClampedArray, room: Room, selected?: { x: number; y: number } | null): void {
+  const outline = (cellX: number, cellY: number, color: Rgb) => {
+    const thickness = selected && selected.x === cellX && selected.y === cellY ? 2 : 1;
+    for (let y = 0; y < DRAWING_SIZE; y++) {
+      for (let x = 0; x < DRAWING_SIZE; x++) {
+        const edge = Math.min(x, y, DRAWING_SIZE - 1 - x, DRAWING_SIZE - 1 - y);
+        if (edge >= thickness) continue;
+        const i = ((cellY * DRAWING_SIZE + y) * ROOM_PIXELS + cellX * DRAWING_SIZE + x) * 4;
+        out[i] = color[0];
+        out[i + 1] = color[1];
+        out[i + 2] = color[2];
+        out[i + 3] = 255;
+      }
+    }
+  };
+  for (const exit of room.exits) outline(exit.x, exit.y, EXIT_COLOR);
+  for (const ending of room.endings) outline(ending.x, ending.y, ENDING_COLOR);
 }
