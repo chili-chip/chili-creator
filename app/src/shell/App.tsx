@@ -9,7 +9,8 @@ import { cn } from '../ui/cn';
 import { Select } from '../ui/input';
 import { classicEditorUrl } from './classic';
 import { CommandPalette } from './CommandPalette';
-import { CreatorProvider, useProjects, useWorld } from './creator-context';
+import { languages } from '../i18n';
+import { CreatorProvider, useI18nState, useProjects, useT, useWorld } from './creator-context';
 import { clearLayout } from './layout-storage';
 import { PhoneWorkspace } from './PhoneWorkspace';
 import { applyPreset, layoutPresets } from './presets';
@@ -60,6 +61,8 @@ function ProblemCount({ onOpen }: { onOpen(): void }) {
 }
 
 function Shell({ creator }: { creator: Creator }) {
+  const t = useT();
+  const { language } = useI18nState();
   const tools = useRegistry(creator.tools);
   const commands = useRegistry(creator.commands);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -208,14 +211,14 @@ function Shell({ creator }: { creator: Creator }) {
             key={tool.id}
             variant="ghost"
             size={phone ? 'sm' : 'icon'}
-            aria-label={tool.title}
+            aria-label={t(tool.title)}
             aria-current={current ? 'page' : undefined}
-            title={tool.title}
+            title={t(tool.title)}
             className={cn(phone && 'h-full min-w-16 shrink-0 flex-col gap-0.5 px-1 text-[10px]', current && 'bg-bg-3 text-text')}
             onClick={() => open(tool.id)}
           >
             <Icon />
-            {phone && <span className="max-w-16 truncate">{tool.title}</span>}
+            {phone && <span className="max-w-16 truncate">{t(tool.title)}</span>}
           </Button>
         );
       })}
@@ -276,8 +279,20 @@ function Shell({ creator }: { creator: Creator }) {
         <span>{creator.bridge.embedded ? 'In Chili Platform' : 'Standalone'}</span>
         <ProblemCount onOpen={() => creator.commands.execute('tool.open.problems')} />
         <button type="button" className="hover:text-text" onClick={() => setHelping((h) => !h)}>
-          Help
+          {t('Help')}
         </button>
+        <Select
+          aria-label={t('Language')}
+          value={language}
+          className="h-5 py-0 text-[11px]"
+          onChange={(event) => void creator.i18n.setLanguage(event.target.value)}
+        >
+          {languages.map((l) => (
+            <option key={l.id} value={l.id} lang={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </Select>
         {!phone && (
           <>
             <Select

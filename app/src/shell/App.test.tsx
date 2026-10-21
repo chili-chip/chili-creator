@@ -7,6 +7,23 @@ import { blankGame, renderCreator } from '../test/creator';
 const game = (title: string) => `${title}\n\n# BITSY VERSION 8.12\n\n! ROOM_FORMAT 1\n`;
 
 describe('App', () => {
+  it('switches language from the status bar and remembers it', async () => {
+    const user = userEvent.setup();
+    const catalogs: Record<string, Record<string, string>> = { pl: { Room: 'Pokój', 'Your games': 'Twoje gry', Help: 'Pomoc' } };
+    const first = renderCreator({ loadCatalog: async (id) => catalogs[id] ?? {} });
+    await screen.findByRole('heading', { name: 'Your games' });
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Language' }), 'Polski');
+    const tools = screen.getByRole('navigation', { name: 'Tools' });
+    expect(await within(tools).findByRole('button', { name: 'Pokój' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Twoje gry' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pomoc' })).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe('pl');
+    first.unmount();
+    renderCreator({ loadCatalog: async (id) => catalogs[id] ?? {} });
+    expect(await screen.findByRole('heading', { name: 'Twoje gry' })).toBeInTheDocument();
+    localStorage.removeItem('chili.creator.language');
+  });
+
   it('shows the creator frame with a launcher for every registered tool', async () => {
     renderCreator();
     expect(screen.getByRole('banner')).toHaveTextContent('Chili Creator');

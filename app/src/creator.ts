@@ -8,6 +8,7 @@ import {
   type KeyValueStore,
 } from './chili-api';
 import { createEmbedBridge } from './embed/bridge';
+import { createI18n, type Catalog } from './i18n';
 import { createCommandRegistry, createToolRegistry } from './plugin-api';
 import { createPlayer, type Player } from './player';
 import { editingCommands } from './project/commands';
@@ -32,6 +33,8 @@ export interface CreatorOptions {
   sound?: SoundPreview;
   /** Offers the first-run tour to people who have not seen it. */
   tour?: boolean;
+  /** Loads a language's translations; the built-in catalogs by default. */
+  loadCatalog?: (language: string) => Promise<Catalog>;
 }
 
 /** Everything the shell needs, wired once. Tests build their own. */
@@ -45,7 +48,10 @@ export function createCreator({
   createPlayer: makePlayer = (paint) => createPlayer({ paint }),
   sound = createSoundPreview(),
   tour = true,
+  loadCatalog,
 }: CreatorOptions) {
+  const i18n = createI18n(loadCatalog ? { load: loadCatalog } : {});
+  void i18n.start();
   const bridge = createEmbedBridge({ win: window, parent, origin });
   const transport = createTransport({
     baseUrl: apiBase,
@@ -92,6 +98,7 @@ export function createCreator({
     projects,
     editor,
     notify,
+    i18n,
     createPlayer: makePlayer,
     sound,
     tour,

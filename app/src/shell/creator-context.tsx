@@ -1,6 +1,7 @@
 import { createContext, useContext, useSyncExternalStore } from 'react';
 import type { Creator } from '../creator';
 import type { World } from '../bitsy';
+import type { I18nState, Vars } from '../i18n';
 import { resolveSelection, type EditorState, type Resolved } from '../project/editor';
 import type { ProjectsState } from '../project/store';
 import type { PreviewState } from '../sound/preview';
@@ -46,4 +47,17 @@ export function useSelection(): Resolved & { world: World | null } {
 export function useSound(): PreviewState {
   const { sound } = useCreator();
   return useSyncExternalStore(sound.subscribe, sound.state, sound.state);
+}
+
+/** Translates English text into the chosen language, re-rendering when it changes. */
+export function useT(): (text: string, vars?: Vars) => string {
+  const { i18n } = useCreator();
+  useSyncExternalStore(i18n.subscribe, i18n.getState, i18n.getState);
+  return i18n.t;
+}
+
+/** The chosen language. */
+export function useI18nState(): I18nState {
+  const { i18n } = useCreator();
+  return useSyncExternalStore(i18n.subscribe, i18n.getState, i18n.getState);
 }

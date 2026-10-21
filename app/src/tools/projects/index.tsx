@@ -2,7 +2,7 @@ import { Copy, FolderOpen, Gamepad2, LayoutGrid, Plus, Trash2, Upload } from 'lu
 import { useState } from 'react';
 import { MAX_GAMES, type ProjectSummary } from '../../chili-api';
 import { defineTool } from '../../plugin-api';
-import { useCreator, useProjects } from '../../shell/creator-context';
+import { useCreator, useProjects, useT } from '../../shell/creator-context';
 import { gameFromFile } from '../../export/files';
 import { Button } from '../../ui/button';
 import { cn } from '../../ui/cn';
@@ -108,6 +108,7 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete }: RowProps) 
 
 function Projects() {
   const creator = useCreator();
+  const t = useT();
   const state = useProjects();
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -146,7 +147,7 @@ function Projects() {
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex flex-wrap items-end gap-3">
           <div className="mr-auto">
-            <h1 className="font-display text-2xl font-bold">Your games</h1>
+            <h1 className="font-display text-2xl font-bold">{t('Your games')}</h1>
             <p className="text-sm text-muted">
               {state.mode === 'local' &&
                 'Not signed in: games are saved in this browser only. Sign in on Chili Platform to keep them on your account.'}
