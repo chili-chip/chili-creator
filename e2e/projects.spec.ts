@@ -16,6 +16,11 @@ async function litPixels(canvas: Locator): Promise<number> {
   });
 }
 
+/** Play opens as a tab behind Paint; the launcher brings it to the front. */
+export async function showPlay(creator: FrameLocator | import('@playwright/test').Page) {
+  await creator.getByRole('navigation', { name: 'Tools' }).getByRole('button', { name: 'Play' }).click();
+}
+
 async function playPanel(creator: FrameLocator | import('@playwright/test').Page) {
   const panel = creator.getByRole('application', { name: 'Game screen' });
   await expect(panel).toBeVisible();
@@ -32,6 +37,7 @@ test('inside the platform, a saved game opens from the URL, plays in citsy and a
   await expect(title).toHaveValue("Write your game's title here");
   expect(await received(page)).toContainEqual({ type: 'chili-project', id: String(game.id), v: 2 });
 
+  await showPlay(creator);
   await creator.getByRole('button', { name: 'Play game' }).click();
   const screen = await playPanel(creator);
   await expect.poll(() => litPixels(screen.locator('canvas')), { timeout: 10_000 }).toBeGreaterThan(1000);
@@ -51,6 +57,9 @@ test('a new game starts on the platform and is listed', async ({ page }) => {
   await expect(creator.getByText('0 of 30 games')).toBeVisible();
   await creator.getByRole('button', { name: 'New game' }).click();
   await expect(creator.getByRole('textbox', { name: 'Game title' })).toHaveValue('Untitled game');
+  // The new game's room comes to the front; the dashboard lists it.
+  await expect(creator.getByRole('application', { name: 'Room example room' })).toBeVisible();
+  await creator.getByRole('navigation', { name: 'Tools' }).getByRole('button', { name: 'Projects' }).click();
   await expect(creator.getByRole('list', { name: 'Projects' }).getByText('Untitled game')).toBeVisible();
   expect(platform.games).toHaveLength(1);
   expect(await received(page)).toContainEqual({ type: 'chili-project', id: String(platform.games[0]!.id), v: 2 });
@@ -67,6 +76,7 @@ test('signed out, a new game is kept in this browser', async ({ page }) => {
   await page.reload();
   await page.getByRole('button', { name: 'Open Kept here' }).click();
   await expect(page.getByRole('textbox', { name: 'Game title' })).toHaveValue('Kept here');
+  await showPlay(page);
   await page.getByRole('button', { name: 'Play game' }).click();
   const screen = await playPanel(page);
   await expect.poll(() => litPixels(screen.locator('canvas')), { timeout: 10_000 }).toBeGreaterThan(1000);

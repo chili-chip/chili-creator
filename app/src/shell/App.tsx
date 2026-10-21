@@ -10,7 +10,7 @@ import { CreatorProvider, useProjects } from './creator-context';
 import { clearLayout } from './layout-storage';
 import { ProjectBar } from './ProjectBar';
 import { useRegistry } from './use-registry';
-import { openDefaultTools, openTool, Workspace } from './Workspace';
+import { openDefaultTools, openTool, showTool, Workspace } from './Workspace';
 
 export function App({ creator }: { creator: Creator }) {
   return (
@@ -45,6 +45,7 @@ function Shell({ creator }: { creator: Creator }) {
         id: 'palette.open',
         title: 'Show all commands',
         keybinding: 'mod+k',
+        whileTyping: true,
         run: () => setPaletteOpen(true),
       }),
       creator.commands.register({
@@ -71,6 +72,19 @@ function Shell({ creator }: { creator: Creator }) {
     );
     return () => unregister.forEach((fn) => fn());
   }, [creator, tools]);
+
+  // An opened game shows its room; closing it goes back to the dashboard.
+  useEffect(() => {
+    // Undefined until the first change, so a restored layout starts on the dashboard too.
+    let shown: string | null | undefined;
+    return creator.projects.subscribe(() => {
+      const { open } = creator.projects.getState();
+      const id = open.status === 'ready' ? open.project.id : null;
+      if (id === shown) return;
+      shown = id;
+      if (dock.current) showTool(dock.current, id ? 'room' : 'projects');
+    });
+  }, [creator]);
 
   // Load projects (and the one the platform asked for), and keep work safe.
   useEffect(() => {
@@ -117,6 +131,8 @@ function Shell({ creator }: { creator: Creator }) {
             size="sm"
             onClick={() => setPaletteOpen(true)}
             aria-label="Show all commands"
+            // Phones have no keyboard shortcuts to look up; the tools have the same buttons.
+            className="hidden sm:inline-flex"
           >
             <Command />
             <span className="hidden sm:inline">Commands</span>

@@ -8,34 +8,42 @@ import { useMemo, type FunctionComponent } from 'react';
 import type { ToolDefinition, ToolPosition } from '../plugin-api';
 import { loadLayout, saveLayout } from './layout-storage';
 
-const directions: Record<Exclude<ToolPosition, 'center'>, 'left' | 'right' | 'below'> = {
+const directions: Record<Exclude<ToolPosition, 'center'>, 'left' | 'right' | 'below' | 'within'> = {
   left: 'left',
   right: 'right',
   below: 'below',
+  within: 'within',
 };
 
-/** Opens a tool's panel, or brings it to the front when it is already open. */
-export function openTool(api: DockviewApi, tool: ToolDefinition): void {
-  const existing = api.getPanel(tool.id);
-  if (existing) {
-    existing.api.setActive();
-    return;
-  }
+function addPanel(api: DockviewApi, tool: ToolDefinition, background: boolean): void {
   const position = tool.defaultPosition ?? 'center';
-  const reference = api.activePanel;
+  const reference = (tool.defaultReference && api.getPanel(tool.defaultReference)) || api.activePanel;
   api.addPanel({
     id: tool.id,
     component: tool.id,
     title: tool.title,
+    inactive: background && Boolean(reference),
     ...(position !== 'center' && reference
       ? { position: { referencePanel: reference.id, direction: directions[position] } }
       : {}),
   });
 }
 
+/** Opens a tool's panel, or brings it to the front when it is already open. */
+export function openTool(api: DockviewApi, tool: ToolDefinition): void {
+  const existing = api.getPanel(tool.id);
+  if (existing) existing.api.setActive();
+  else addPanel(api, tool, false);
+}
+
+/** Brings an open tool to the front; does nothing when it is closed. */
+export function showTool(api: DockviewApi, id: string): void {
+  api.getPanel(id)?.api.setActive();
+}
+
 export function openDefaultTools(api: DockviewApi, tools: readonly ToolDefinition[]): void {
   api.clear();
-  tools.filter((tool) => tool.openByDefault).forEach((tool) => openTool(api, tool));
+  tools.filter((tool) => tool.openByDefault).forEach((tool) => addPanel(api, tool, Boolean(tool.openInBackground)));
 }
 
 interface WorkspaceProps {

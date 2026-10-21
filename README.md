@@ -41,7 +41,7 @@ npm run build         # new creator into dist/
 npm run check         # classic editor: every file index.html loads exists, every script parses
 ```
 
-New code goes in `app/src`, one folder per module: `plugin-api/` (registries for tools and commands), `embed/` (the platform page), `bitsy/` (the typed `.bitsy` world model: `parse` and `serialize`, byte for byte on unchanged parts), `player/` (citsy in a Web Worker), `chili-api/` (platform API client, project repositories for the platform and this browser, autosave), `project/` (the open project and project lists every tool shares), `shell/` (frame, workspace, command palette), `ui/` (design system), `tools/` (one folder per tool, registered in `tools/index.ts`).
+New code goes in `app/src`, one folder per module: `plugin-api/` (registries for tools and commands), `embed/` (the platform page), `bitsy/` (the typed `.bitsy` world model: `parse` and `serialize`, byte for byte on unchanged parts; `edit` for tool edits and `render` for the editor's pixels), `player/` (citsy in a Web Worker), `chili-api/` (platform API client, project repositories for the platform and this browser, autosave), `project/` (the open project, project lists and undo history every tool shares, plus what the editing tools have picked), `shell/` (frame, workspace, command palette), `ui/` (design system, including `PixelCanvas`), `tools/` (one folder per tool, registered in `tools/index.ts`: Projects, Room, Paint, Library, Colors, Play).
 
 The player loads `citsy/citsy.js` and `citsy/citsy.wasm` into the build (`dist/assets/`), so the new creator does not need the platform's `/creator/citsy/` copy.
 

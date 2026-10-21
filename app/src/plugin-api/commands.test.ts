@@ -45,4 +45,35 @@ describe('createCommandRegistry', () => {
     expect(commands.handleKeydown(key({ key: 'j', ctrlKey: true }))).toBe(false);
     expect(run).toHaveBeenCalledOnce();
   });
+
+  it('can bind more than one key press', () => {
+    const commands = createCommandRegistry();
+    const run = vi.fn();
+    commands.register({ id: 'edit.redo', title: 'Redo', keybinding: ['mod+shift+z', 'mod+y'], run });
+    expect(commands.handleKeydown(key({ key: 'y', ctrlKey: true }))).toBe(true);
+    expect(commands.handleKeydown(key({ key: 'Z', ctrlKey: true, shiftKey: true }))).toBe(true);
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it('leaves key presses alone while someone types in a field, unless the command asks for them', () => {
+    const commands = createCommandRegistry();
+    const undo = vi.fn();
+    const palette = vi.fn();
+    commands.register({ id: 'edit.undo', title: 'Undo', keybinding: 'mod+z', run: undo });
+    commands.register({ id: 'paint.fill', title: 'Fill', keybinding: 'f', run: undo });
+    commands.register({ id: 'palette.open', title: 'Commands', keybinding: 'mod+k', whileTyping: true, run: palette });
+    const field = document.createElement('input');
+    document.body.append(field);
+    const typed = (init: KeyboardEventInit) => {
+      const event = key(init);
+      Object.defineProperty(event, 'target', { value: field });
+      return event;
+    };
+    expect(commands.handleKeydown(typed({ key: 'z', ctrlKey: true }))).toBe(false);
+    expect(commands.handleKeydown(typed({ key: 'f' }))).toBe(false);
+    expect(commands.handleKeydown(typed({ key: 'k', ctrlKey: true }))).toBe(true);
+    expect(undo).not.toHaveBeenCalled();
+    expect(palette).toHaveBeenCalledOnce();
+    field.remove();
+  });
 });

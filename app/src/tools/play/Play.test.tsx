@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { createFakePlatform } from '../../chili-api/fake-platform';
@@ -12,12 +12,19 @@ async function withOpenGame() {
   const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
   const view = renderCreator({ platform, initialProject: String(saved.id) });
   await screen.findByRole('textbox', { name: 'Game title' });
+  showPlay();
   return view;
+}
+
+/** Play opens as a tab behind Paint; the launcher brings it to the front. */
+function showPlay() {
+  act(() => within(screen.getByRole('navigation', { name: 'Tools' })).getByRole('button', { name: 'Play' }).click());
 }
 
 describe('Play', () => {
   it('asks for a game when none is open', async () => {
     renderCreator();
+    showPlay();
     expect(await screen.findByText('Open a game to play it.')).toBeInTheDocument();
   });
 

@@ -32,6 +32,12 @@ export interface ProjectsState {
   };
   open: OpenState;
   save: SaveStatus;
+  history: { canUndo: boolean; canRedo: boolean };
+}
+
+export interface EditOptions {
+  /** Edits with the same group in a row are one undo step (one paint stroke, one typed title). */
+  group?: string;
 }
 
 export interface ProjectStoreOptions {
@@ -44,6 +50,9 @@ export interface ProjectStoreOptions {
 }
 
 export const NEW_GAME_TITLE = 'Untitled game';
+
+/** Undo steps kept per open game. */
+export const HISTORY_LIMIT = 100;
 
 function messageOf(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -60,10 +69,15 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
     list: { status: 'idle', projects: [], released: [] },
     open: { status: 'none' },
     save: { state: 'saved', unsaved: false },
+    history: { canUndo: false, canRedo: false },
   };
   const listeners = new Set<() => void>();
   let reportedFailure = false;
   let started: Promise<void> | null = null;
+  // Worlds are replaced, never changed, on every edit, so history keeps them as they are.
+  let past: World[] = [];
+  let future: World[] = [];
+  let lastGroup: string | undefined;
 
   function set(patch: Partial<ProjectsState>) {
     state = { ...state, ...patch };
@@ -131,10 +145,29 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
     }
   }
 
+  function forget() {
+    past = [];
+    future = [];
+    lastGroup = undefined;
+  }
+
+  function historyState() {
+    return { canUndo: past.length > 0, canRedo: future.length > 0 };
+  }
+
+  /** Puts a world from history back and saves it. */
+  function restore(world: World) {
+    if (state.open.status !== 'ready') return;
+    lastGroup = undefined;
+    set({ open: { ...state.open, world }, history: historyState() });
+    autosave.edit(serialize(world));
+  }
+
   function show(project: Project) {
     const { world, issues } = parse(project.data);
     autosave.reset();
-    set({ open: { status: 'ready', project, world, issues } });
+    forget();
+    set({ open: { status: 'ready', project, world, issues }, history: historyState() });
     if (!isLocal(project.id)) post({ type: 'chili-project', id: project.id });
   }
 
@@ -185,7 +218,8 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
     /** Saves and closes the open project. */
     async close() {
       if (!(await settle())) return;
-      set({ open: { status: 'none' } });
+      forget();
+      set({ open: { status: 'none' }, history: historyState() });
       post({ type: 'chili-project-new' });
     },
 
@@ -206,25 +240,57 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
       await repo(id).remove(id);
       if (openProject()?.id === id) {
         autosave.reset();
-        set({ open: { status: 'none' } });
+        forget();
+        set({ open: { status: 'none' }, history: historyState() });
         post({ type: 'chili-project-new' });
       }
       set({ list: { ...state.list, projects: state.list.projects.filter((p) => p.id !== id) } });
     },
 
-    /** Changes the open world and autosaves it. Phase 2 replaces this with undoable patches. */
-    updateWorld(recipe: (world: World) => void) {
+    /** Changes the open world on a copy, keeps the old one for undo, and autosaves. */
+    updateWorld(recipe: (world: World) => void, { group }: EditOptions = {}) {
       if (state.open.status !== 'ready') return;
-      const world = structuredClone(state.open.world);
+      const before = state.open.world;
+      const world = structuredClone(before);
       recipe(world);
-      set({ open: { ...state.open, world } });
+      if (group === undefined || group !== lastGroup) {
+        past.push(before);
+        if (past.length > HISTORY_LIMIT) past.shift();
+      }
+      future = [];
+      lastGroup = group;
+      set({ open: { ...state.open, world }, history: historyState() });
       autosave.edit(serialize(world));
     },
 
+    /** Ends the current group, so the next edit is its own undo step. */
+    endGroup() {
+      lastGroup = undefined;
+    },
+
+    undo(): boolean {
+      const world = past.pop();
+      if (!world || state.open.status !== 'ready') return false;
+      future.push(state.open.world);
+      restore(world);
+      return true;
+    },
+
+    redo(): boolean {
+      const world = future.pop();
+      if (!world || state.open.status !== 'ready') return false;
+      past.push(state.open.world);
+      restore(world);
+      return true;
+    },
+
     setTitle(title: string) {
-      store.updateWorld((world) => {
-        world.title = title;
-      });
+      store.updateWorld(
+        (world) => {
+          world.title = title;
+        },
+        { group: 'title' },
+      );
     },
 
     /** The open game's `.bitsy` text, for the player. */
