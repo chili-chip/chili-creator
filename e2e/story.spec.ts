@@ -87,3 +87,18 @@ test('a locked door: a two-way exit whose way in needs the key', async ({ page }
   expect(data).toMatch(/ROOM 1[\s\S]*EXT 13,8 0 13,8\n/);
   expect(data).toContain('{property locked true}');
 });
+
+test('dialog blocks: a choice and an action built without typing script', async ({ page }) => {
+  const { platform, creator } = await newGame(page);
+  const tools = creator.getByRole('navigation', { name: 'Tools' });
+  await tools.getByRole('button', { name: 'Library' }).click();
+  await creator.getByRole('button', { name: 'cat', exact: true }).click();
+  await tools.getByRole('button', { name: 'Dialog' }).click();
+  await creator.getByRole('radio', { name: 'Blocks' }).click();
+  const blocks = creator.getByRole('list', { name: 'Blocks' });
+  await creator.getByRole('combobox', { name: 'Add a block' }).last().selectOption('If the player has an item');
+  await blocks.getByRole('combobox', { name: 'Add a block' }).first().selectOption('Play a blip');
+  await page.screenshot({ path: test.info().outputPath('blocks.png') });
+  await expect.poll(() => platform.games[0]!.data, { timeout: 10_000 }).toContain('{blip "1"}');
+  expect(platform.games[0]!.data).toMatch(/DLG 0\n"""\nI'm a cat\n\{\n  - \{item "1"\} >= 1 \?\n    you have it\n    \{blip "1"\}\n  - else \?/);
+});

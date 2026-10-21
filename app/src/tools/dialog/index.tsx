@@ -5,10 +5,10 @@ import {
   dialogText,
   giveDialog,
   parseScript,
+  printScript,
   referencesTo,
   setDialogText,
   validate,
-  type ScriptNode,
   type World,
 } from '../../bitsy';
 import { defineTool } from '../../plugin-api';
@@ -17,6 +17,7 @@ import { Button } from '../../ui/button';
 import { Input, Select, Textarea } from '../../ui/input';
 import { Segmented } from '../../ui/segmented';
 import { dialogName, drawingName, Empty } from '../shared';
+import { blockKinds, BlockList } from './blocks';
 
 type View = 'text' | 'blocks';
 
@@ -56,87 +57,10 @@ const snippets: Snippet[] = [
   { label: 'End the game', make: () => '{end}' },
 ];
 
-const listLabels = {
-  sequence: 'In order, then stays on the last',
-  cycle: 'In order, then again from the top',
-  shuffle: 'In any order',
-};
-
-const effectLabels: Record<string, string> = {
-  wvy: 'wavy',
-  shk: 'shaky',
-  rbw: 'rainbow',
-  clr1: 'colour 1',
-  clr2: 'colour 2',
-  clr3: 'colour 3',
-};
-
-const unquote = (text = '') => text.replace(/^"(.*)"$/, '$1');
-
-function describeCall(name: string, args: string[]): string {
-  switch (name) {
-    case 'end':
-      return 'End the game';
-    case 'exit':
-      return `Go to room ${unquote(args[0])}${args.length >= 3 ? ` at ${args[1]},${args[2]}` : ''}`;
-    case 'item':
-      return `Number of ${unquote(args[0])}`;
-    case 'printItem':
-      return `Show the number of ${unquote(args[0])}`;
-    case 'say':
-    case 'print':
-      return `Show ${args.join(' ')}`;
-    case 'pg':
-      return 'New page';
-    case 'br':
-      return 'New line';
-    default:
-      return `{${[name, ...args].join(' ')}}`;
-  }
-}
-
-const chip = 'w-fit rounded border border-line bg-bg-3 px-1.5 py-0.5 font-mono text-[11px] text-text';
-
-/** The script as nested blocks: text, effects, choices and actions. */
-function Blocks({ nodes, label }: { nodes: ScriptNode[]; label?: string }) {
-  return (
-    <ul aria-label={label} className="space-y-1.5">
-      {nodes.map((node, index) => (
-        <li key={index}>
-          {node.type === 'text' && <p className="text-sm whitespace-pre-wrap">{node.text}</p>}
-          {node.type === 'effect' && <p className={chip}>{effectLabels[node.name] ?? node.name}</p>}
-          {node.type === 'call' && <p className={chip}>{describeCall(node.name, node.args)}</p>}
-          {node.type === 'assign' && <p className={chip}>{`Set ${node.variable} to ${node.expression}`}</p>}
-          {node.type === 'list' && (
-            <div className="rounded-md border border-line p-2">
-              <p className="mb-1 text-[11px] tracking-wide text-muted uppercase">{listLabels[node.kind]}</p>
-              <ol className="list-decimal space-y-1 pl-5">
-                {node.options.map((option, n) => (
-                  <li key={n}>
-                    <Blocks nodes={option} />
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-          {node.type === 'branch' && (
-            <div className="space-y-1 rounded-md border border-line p-2">
-              {node.cases.map((branch, n) => (
-                <div key={n}>
-                  <p className="mb-1 text-[11px] tracking-wide text-phosphor">
-                    {branch.condition === 'else' ? 'Otherwise' : branch.condition ? `If ${branch.condition}` : 'Always'}
-                  </p>
-                  <div className="border-l border-line pl-3">
-                    <Blocks nodes={branch.body} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </li>
-      ))}
-    </ul>
-  );
+// The rest of the block view's actions, written out as script.
+for (const kind of blockKinds.flatMap((g) => g.kinds)) {
+  if (kind.label === 'Text' || snippets.some((s) => s.label === kind.label)) continue;
+  snippets.push({ label: kind.label, make: (w) => printScript(kind.make(w)) });
 }
 
 function DialogTool() {
@@ -269,10 +193,7 @@ function DialogTool() {
               </Select>
             </>
           ) : (
-            <div className="space-y-2">
-              <Blocks nodes={parseScript(dialog.script)} label="Blocks" />
-              <p className="text-[11px] text-muted">Switch to Text to change it.</p>
-            </div>
+            <BlockList nodes={parseScript(dialog.script)} world={world} label="Blocks" onChange={(nodes) => write(printScript(nodes))} />
           )}
 
           {problems.length > 0 && (

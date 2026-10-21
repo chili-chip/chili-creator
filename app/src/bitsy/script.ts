@@ -281,3 +281,35 @@ export function renameVariableInScript(script: string, from: string, to: string)
   for (const [start, end] of edits.sort((a, b) => b[0] - a[0])) out = out.slice(0, start) + to + out.slice(end);
   return out;
 }
+
+/** Indents every line but the first, for a block inside an option. */
+function indentRest(text: string, by: string): string {
+  return text.replace(/\n/g, `\n${by}`);
+}
+
+function printOption(head: string, body: ScriptNode[]): string {
+  const content = printScript(body);
+  return `\n  - ${head}${head && content ? '\n    ' : ''}${indentRest(content, '    ')}`;
+}
+
+/** Writes blocks back as script, laid out the way the Bitsy editor writes them. */
+export function printScript(nodes: ScriptNode[]): string {
+  return nodes
+    .map((node) => {
+      switch (node.type) {
+        case 'text':
+          return node.text;
+        case 'effect':
+          return `{${node.name}}`;
+        case 'call':
+          return `{${[node.name, ...node.args].join(' ')}}`;
+        case 'assign':
+          return `{${node.variable} = ${node.expression}}`;
+        case 'list':
+          return `{${node.kind}${node.options.map((option) => printOption('', option)).join('')}\n}`;
+        case 'branch':
+          return `{${node.cases.map((c) => printOption(c.condition ? `${c.condition} ?` : '', c.body)).join('')}\n}`;
+      }
+    })
+    .join('');
+}
