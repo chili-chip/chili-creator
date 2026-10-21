@@ -47,6 +47,10 @@ describe('createEditorState', () => {
     expect(editor.goTo({ type: 'variable', id: 'a' })).toBe('variables');
     expect(editor.goTo({ type: 'palette', id: '0' })).toBe('colors');
     expect(editor.goTo({ type: 'game' })).toBe('game');
+    expect(editor.goTo({ type: 'tune', id: '2' })).toBe('tunes');
+    expect(editor.getState().tune).toBe('2');
+    expect(editor.goTo({ type: 'blip', id: '1' })).toBe('blips');
+    expect(editor.getState().blip).toBe('1');
   });
 
   it('tells subscribers about changes', () => {

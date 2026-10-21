@@ -2,6 +2,7 @@ import { byId } from './by-id';
 import { drawingsOf, type DrawingKind } from './edit';
 import { dialogName, drawingName, roomName } from './names';
 import { scriptBody, scriptReferences } from './script';
+import { blipName, readTune, tuneName } from './sound';
 import type { Id, World } from './types';
 
 // Who uses what, for Find, safe delete and the validators.
@@ -13,14 +14,18 @@ export type Location =
   | { type: 'drawing'; kind: DrawingKind; id: Id }
   | { type: 'dialog'; id: Id }
   | { type: 'variable'; id: Id }
-  | { type: 'palette'; id: Id };
+  | { type: 'palette'; id: Id }
+  | { type: 'tune'; id: Id }
+  | { type: 'blip'; id: Id };
 
 export type Target =
   | { type: 'room'; room: Id }
   | { type: 'drawing'; kind: DrawingKind; id: Id }
   | { type: 'dialog'; id: Id }
   | { type: 'variable'; id: Id }
-  | { type: 'palette'; id: Id };
+  | { type: 'palette'; id: Id }
+  | { type: 'tune'; id: Id }
+  | { type: 'blip'; id: Id };
 
 export interface Reference {
   label: string;
@@ -114,6 +119,24 @@ export function referencesTo(world: World, target: Target): Reference[] {
         if (room.palette === target.id) refs.push({ label: roomName(room), at: { type: 'room', room: room.id } });
       }
       break;
+    case 'tune':
+      for (const room of world.rooms) {
+        if (room.tune === target.id) refs.push({ label: roomName(room), at: { type: 'room', room: room.id } });
+      }
+      break;
+    case 'blip':
+      for (const kind of ['sprites', 'items'] as const) {
+        for (const drawing of world[kind]) {
+          if (drawing.blip === target.id) refs.push({ label: drawingName(kind, drawing), at: { type: 'drawing', kind, id: drawing.id } });
+        }
+      }
+      for (const block of world.tunes) {
+        const tune = readTune(block);
+        if ([...tune.melody, ...tune.harmony].some((bar) => bar.some((p) => p.beats > 0 && p.blip === target.id))) {
+          refs.push({ label: tuneName(tune), at: { type: 'tune', id: tune.id } });
+        }
+      }
+      break;
   }
   return refs;
 }
@@ -154,6 +177,12 @@ export function search(world: World, query: string): SearchResult[] {
   for (const palette of world.palettes) {
     const name = palette.name || `Palette ${palette.id}`;
     if (has(name)) results.push({ label: name, at: { type: 'palette', id: palette.id } });
+  }
+  for (const tune of world.tunes) {
+    if (has(tuneName(tune))) results.push({ label: tuneName(tune), at: { type: 'tune', id: tune.id } });
+  }
+  for (const blip of world.blips) {
+    if (has(blipName(blip))) results.push({ label: blipName(blip), at: { type: 'blip', id: blip.id } });
   }
   return results;
 }

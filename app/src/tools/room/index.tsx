@@ -19,6 +19,7 @@ import {
   ROOM_SIZE,
   roomPixels,
   toggleItem,
+  tuneName,
   type World,
 } from '../../bitsy';
 import type { RoomTool } from '../../project/editor';
@@ -215,6 +216,31 @@ function RoomTool() {
             }, `room-name-${roomId}`);
           }}
         />
+      </label>
+
+      <label className="flex items-center gap-2 text-xs text-muted">
+        Music
+        <Select
+          aria-label="Music"
+          value={room.tune !== undefined && byId(world.tunes, room.tune) ? room.tune : ''}
+          className="flex-1"
+          onChange={(event) => {
+            const value = event.target.value;
+            creator.projects.updateWorld((w) => {
+              const target = byId(w.rooms, roomId);
+              if (!target) return;
+              if (value) target.tune = value;
+              else delete target.tune;
+            });
+          }}
+        >
+          <option value="">None</option>
+          {world.tunes.map((t) => (
+            <option key={t.id} value={t.id}>
+              {tuneName(t)}
+            </option>
+          ))}
+        </Select>
       </label>
     </div>
   );

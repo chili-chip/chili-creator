@@ -8,6 +8,7 @@ import { createCreator, type CreatorOptions } from '../creator';
 import type { Player, PlayerState } from '../player';
 import { App } from '../shell/App';
 import { CreatorProvider } from '../shell/creator-context';
+import type { PreviewState, SoundPreview } from '../sound/preview';
 
 /** A player that records what it was asked to do. */
 export function fakePlayer() {
@@ -38,6 +39,29 @@ export function fakePlayer() {
   return player;
 }
 
+/** A sound preview that records what it was asked to play. */
+export function fakeSound() {
+  let state: PreviewState = { playing: null };
+  const listeners = new Set<(state: PreviewState) => void>();
+  const set = (next: PreviewState) => {
+    state = next;
+    listeners.forEach((listener) => listener(next));
+  };
+  return {
+    playTune: vi.fn((tune: { id: string }) => set({ playing: 'tune', id: tune.id, bar: 0, beat: 0 })),
+    playBlip: vi.fn((blip: { id: string }) => set({ playing: 'blip', id: blip.id })),
+    playNote: vi.fn(),
+    stop: vi.fn(() => set({ playing: null })),
+    state: () => state,
+    subscribe(listener: (state: PreviewState) => void) {
+      listeners.add(listener);
+      return () => void listeners.delete(listener);
+    },
+    dispose: vi.fn(),
+    set,
+  };
+}
+
 export interface TestCreatorOptions extends Partial<CreatorOptions> {
   signedIn?: boolean;
   platform?: FakePlatform;
@@ -54,6 +78,7 @@ export function renderCreator({ signedIn = true, platform = createFakePlatform()
     fetch: platform.fetch,
     localStore: createMemoryStore(),
     createPlayer: () => player as unknown as Player,
+    sound: fakeSound() as unknown as SoundPreview,
     ...options,
   });
   const view = render(<App creator={creator} />);
@@ -68,6 +93,7 @@ export async function renderTool(Tool: ComponentType, { data = blankGame }: { da
   localStorage.setItem('chili.accessToken', 'good-token');
   const platform = createFakePlatform();
   const game = platform.addGame({ title: 'Test game', data });
+  const sound = fakeSound();
   const creator = createCreator({
     apiBase: 'https://api.test/api',
     parent: null,
@@ -75,6 +101,7 @@ export async function renderTool(Tool: ComponentType, { data = blankGame }: { da
     fetch: platform.fetch,
     localStore: createMemoryStore(),
     createPlayer: () => fakePlayer() as unknown as Player,
+    sound: sound as unknown as SoundPreview,
   });
   await creator.projects.start(String(game.id));
   const view = render(
@@ -88,5 +115,5 @@ export async function renderTool(Tool: ComponentType, { data = blankGame }: { da
     if (open.status !== 'ready') throw new Error('no game is open');
     return open.world;
   };
-  return { creator, platform, world, ...view };
+  return { creator, platform, world, sound, ...view };
 }

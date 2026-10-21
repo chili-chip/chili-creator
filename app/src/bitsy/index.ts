@@ -9,6 +9,7 @@ export * from './names';
 export * from './references';
 export * from './render';
 export * from './script';
+export * from './sound';
 export * from './story';
 export * from './validate';
 export { serialize } from './serialize';

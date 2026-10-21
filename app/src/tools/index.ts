@@ -1,4 +1,5 @@
 import type { ToolDefinition } from '../plugin-api';
+import blips from './blips';
 import colors from './colors';
 import dialog from './dialog';
 import exits from './exits';
@@ -10,6 +11,7 @@ import play from './play';
 import problems from './problems';
 import projects from './projects';
 import room from './room';
+import tunes from './tunes';
 import variables from './variables';
 
 /**
@@ -25,6 +27,8 @@ export const builtInTools: ToolDefinition[] = [
   dialog,
   exits,
   variables,
+  tunes,
+  blips,
   problems,
   play,
   game,

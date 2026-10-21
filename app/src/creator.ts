@@ -13,6 +13,7 @@ import { createPlayer, type Player } from './player';
 import { editingCommands } from './project/commands';
 import { createEditorState } from './project/editor';
 import { createProjectStore, type NoticeKind } from './project/store';
+import { createSoundPreview, type SoundPreview } from './sound/preview';
 import { builtInTools } from './tools';
 
 export interface CreatorOptions {
@@ -27,6 +28,8 @@ export interface CreatorOptions {
   localStore?: KeyValueStore;
   /** Makes a player that paints into `paint`; the real one runs citsy in a worker. */
   createPlayer?: (paint: (pixels: Uint8ClampedArray) => void) => Player;
+  /** Plays tunes and blips in the sound tools. */
+  sound?: SoundPreview;
 }
 
 /** Everything the shell needs, wired once. Tests build their own. */
@@ -38,6 +41,7 @@ export function createCreator({
   fetch: fetchImpl,
   localStore,
   createPlayer: makePlayer = (paint) => createPlayer({ paint }),
+  sound = createSoundPreview(),
 }: CreatorOptions) {
   const bridge = createEmbedBridge({ win: window, parent, origin });
   const transport = createTransport({
@@ -86,6 +90,7 @@ export function createCreator({
     editor,
     notify,
     createPlayer: makePlayer,
+    sound,
     initialProject,
     tools,
     commands,

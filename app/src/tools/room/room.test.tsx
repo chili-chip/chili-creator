@@ -153,4 +153,15 @@ describe('Room', () => {
     expect(world().rooms.map((r) => r.id)).toEqual(['0']);
     expect(screen.getByRole('combobox', { name: 'Room' })).toHaveDisplayValue('example room');
   });
+
+  it('picks the music the room plays', async () => {
+    const user = userEvent.setup();
+    const { world } = await renderTool(Room);
+    const music = screen.getByRole('combobox', { name: 'Music' });
+    expect(music).toHaveDisplayValue('tuneful town');
+    await user.selectOptions(music, 'rhythmic ruins');
+    expect(world().rooms[0]!.tune).toBe('3');
+    await user.selectOptions(music, 'None');
+    expect(world().rooms[0]!.tune).toBeUndefined();
+  });
 });

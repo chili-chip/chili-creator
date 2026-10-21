@@ -3,6 +3,7 @@ import type { Creator } from '../creator';
 import type { World } from '../bitsy';
 import { resolveSelection, type EditorState, type Resolved } from '../project/editor';
 import type { ProjectsState } from '../project/store';
+import type { PreviewState } from '../sound/preview';
 
 const CreatorContext = createContext<Creator | null>(null);
 
@@ -39,4 +40,10 @@ export function useSelection(): Resolved & { world: World | null } {
   const editor = useEditor();
   if (!world) return { world, room: undefined, kind: undefined, drawing: undefined, frame: 0, dialog: undefined, marker: undefined };
   return { world, ...resolveSelection(world, editor) };
+}
+
+/** What the sound tools are playing, re-rendering when it changes. */
+export function useSound(): PreviewState {
+  const { sound } = useCreator();
+  return useSyncExternalStore(sound.subscribe, sound.state, sound.state);
 }

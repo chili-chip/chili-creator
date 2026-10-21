@@ -1,6 +1,8 @@
-import { Brush, Eraser, FlipHorizontal2, FlipVertical2, PaintBucket, Pencil } from 'lucide-react';
+import { Brush, Eraser, FlipHorizontal2, FlipVertical2, PaintBucket, Pencil, Volume2 } from 'lucide-react';
 import { useRef } from 'react';
 import {
+  blipName,
+  blipOf,
   byId,
   clearFrame,
   colorsFor,
@@ -17,7 +19,7 @@ import type { PaintTool } from '../../project/editor';
 import { defineTool } from '../../plugin-api';
 import { useCreator, useEditor, useSelection } from '../../shell/creator-context';
 import { Button } from '../../ui/button';
-import { Checkbox, Input } from '../../ui/input';
+import { Checkbox, Input, Select } from '../../ui/input';
 import { PixelCanvas } from '../../ui/pixel-canvas';
 import { Segmented } from '../../ui/segmented';
 import { drawingName, Empty, kinds, newGroup } from '../shared';
@@ -44,6 +46,8 @@ function Paint() {
   const id = drawing.id;
   const pixels = drawing.frames[frame] ?? drawing.frames[0]!;
   const name = drawingName(kind, drawing);
+  const blipId = (drawing as { blip?: string }).blip;
+  const sound = blipId === undefined ? undefined : blipOf(world, blipId);
 
   /** Changes the picked drawing in the world. */
   function edit(recipe: (d: Drawing, w: World) => void, group?: string) {
@@ -141,6 +145,41 @@ function Paint() {
             options={drawing.frames.map((_, i) => ({ value: String(i), label: `Frame ${i + 1}` }))}
             onChange={(value) => creator.editor.set({ frame: Number(value) })}
           />
+        )}
+        {kind !== 'tiles' && (
+          <div className="flex items-center gap-1">
+            <Select
+              aria-label="Sound"
+              title="The blip it makes when the avatar meets it"
+              value={blipId !== undefined && byId(world.blips, blipId) ? blipId : ''}
+              className="max-w-40"
+              onChange={(event) => {
+                const value = event.target.value;
+                edit((d) => {
+                  const target = d as { blip?: string };
+                  if (value) target.blip = value;
+                  else delete target.blip;
+                });
+              }}
+            >
+              <option value="">None</option>
+              {world.blips.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {blipName(b)}
+                </option>
+              ))}
+            </Select>
+            <Button
+              size="icon"
+              variant="ghost"
+              aria-label="Play sound"
+              title="Play sound"
+              disabled={!sound}
+              onClick={() => sound && creator.sound.playBlip(sound)}
+            >
+              <Volume2 />
+            </Button>
+          </div>
         )}
         {kind === 'tiles' && (
           <Checkbox
