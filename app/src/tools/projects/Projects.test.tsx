@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createWorld, serialize } from '../../bitsy';
 import { createFakePlatform } from '../../chili-api/fake-platform';
 import { renderCreator } from '../../test/creator';
@@ -59,6 +59,35 @@ describe('Projects', () => {
     expect(await screen.findByText(/cannot be deleted/)).toHaveAttribute('role', 'alert');
   });
 
+  it('asks before releasing, then lists the game as released', async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    platform.addGame({ title: 'Mossland' });
+    renderCreator({ platform });
+    await user.click(await screen.findByRole('button', { name: 'Release Mossland' }));
+    expect(platform.games[0]!.released).toBe(false);
+    expect(screen.getByText(/Buyers get the version you last saved/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Release it' }));
+    const released = await screen.findByRole('list', { name: 'Released games' });
+    expect(within(released).getByText('Mossland')).toBeInTheDocument();
+    expect(platform.games[0]!.released).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Release Mossland' })).not.toBeInTheDocument();
+  });
+
+  it("opens a released game's page on the platform", async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    const out = platform.addGame({ title: 'Tea time', released: true });
+    const parent = { postMessage: vi.fn() };
+    renderCreator({ platform, parent: parent as unknown as Window });
+    // Embedded, the creator waits for the page to hand over a token before using the stored one.
+    await user.click(await screen.findByRole('button', { name: 'Game page for Tea time' }, { timeout: 4000 }));
+    expect(parent.postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'chili-navigate', to: `/games/${out.id}` }),
+      'http://localhost',
+    );
+  });
+
   it('explains the limit instead of failing', async () => {
     const platform = createFakePlatform();
     for (let i = 0; i < 30; i++) platform.addGame({ title: `game ${i}` });
@@ -71,6 +100,7 @@ describe('Projects', () => {
     const user = userEvent.setup();
     renderCreator({ signedIn: false });
     expect(await screen.findByText(/saved in this browser/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Release/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'New game' }));
     expect(await screen.findByRole('textbox', { name: 'Game title' })).toHaveValue('Untitled game');
   });

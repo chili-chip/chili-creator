@@ -19,6 +19,13 @@ beforeEach(() => {
 });
 
 describe('createPlatformProjects', () => {
+  it('releases a project', async () => {
+    const game = platform.addGame({ title: 'Mossland' });
+    const released = await repository().release(String(game.id));
+    expect(released).toMatchObject({ id: String(game.id), released: true, slug: 'mossland' });
+    expect(platform.requests.at(-1)).toMatchObject({ method: 'POST', path: `/games/${game.id}/release/` });
+  });
+
   it('lists every project, following the pages', async () => {
     for (let i = 1; i <= 45; i++) platform.addGame({ title: `game ${i}` });
     platform.addGame({ title: 'out', released: true });
