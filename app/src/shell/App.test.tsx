@@ -63,12 +63,10 @@ describe('App', () => {
     expect(await screen.findByText('Not signed in')).toBeInTheDocument();
   });
 
-  it('offers the classic editor while the new one is in preview', async () => {
+  it('no longer links to the classic editor, which is gone', async () => {
     renderCreator();
-    expect(within(screen.getByRole('banner')).getByRole('link', { name: 'Classic editor' })).toHaveAttribute(
-      'href',
-      expect.stringContaining('../editor/index.html'),
-    );
+    expect(await screen.findByText('Kacper')).toBeInTheDocument();
+    expect(within(screen.getByRole('banner')).queryByRole('link', { name: 'Classic editor' })).not.toBeInTheDocument();
   });
 
   it('opens the command palette with Ctrl+K and runs a command from it', async () => {

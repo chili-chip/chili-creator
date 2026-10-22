@@ -5,12 +5,10 @@
   "license": "MIT",
   "repository": "github:chili-chip/chili-creator",
   "files": [
-    "editor",
     "citsy",
     "dist"
   ],
   "scripts": {
-    "start": "node scripts/serve.mjs",
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
     "preview": "vite preview --port 4310 --strictPort",
@@ -18,8 +16,6 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "check": "node scripts/check.mjs",
-    "stamp": "node scripts/stamp-version.mjs",
     "prepare": "node scripts/prepare.mjs"
   },
   "devDependencies": {

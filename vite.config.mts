@@ -2,8 +2,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 
-// The new creator lives in app/ and builds to dist/, next to the classic
-// editor in editor/. `base: './'` lets the platform serve it under any path.
+// The creator lives in app/ and builds to dist/. `base: './'` lets the platform serve it under any path.
 export default defineConfig({
   root: 'app',
   base: './',

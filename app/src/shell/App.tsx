@@ -1,5 +1,5 @@
 import type { DockviewApi } from 'dockview-react';
-import { AlertTriangle, CircleCheck, Command, ExternalLink, UserRound } from 'lucide-react';
+import { AlertTriangle, CircleCheck, Command, UserRound } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { problemSummary, validate } from '../bitsy';
 import { Toaster } from 'sonner';
@@ -7,7 +7,6 @@ import type { Creator } from '../creator';
 import { Button } from '../ui/button';
 import { cn } from '../ui/cn';
 import { Select } from '../ui/input';
-import { classicEditorUrl } from './classic';
 import { CommandPalette } from './CommandPalette';
 import { CreatorProvider, useI18nState, useProjects, useT, useWorld } from './creator-context';
 import { clearLayout } from './layout-storage';
@@ -257,12 +256,6 @@ function Shell({ creator }: { creator: Creator }) {
           >
             <Command />
             <span className="hidden sm:inline">Commands</span>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <a href={classicEditorUrl()} aria-label="Classic editor">
-              <ExternalLink />
-              <span className="hidden sm:inline">Classic editor</span>
-            </a>
           </Button>
           <Account />
         </div>
