@@ -9,7 +9,6 @@ import { cn } from '../ui/cn';
 import { Select } from '../ui/input';
 import { classicEditorUrl } from './classic';
 import { CommandPalette } from './CommandPalette';
-import { languages } from '../i18n';
 import { CreatorProvider, useI18nState, useProjects, useT, useWorld } from './creator-context';
 import { clearLayout } from './layout-storage';
 import { PhoneWorkspace } from './PhoneWorkspace';
@@ -281,18 +280,20 @@ function Shell({ creator }: { creator: Creator }) {
         <button type="button" className="hover:text-text" onClick={() => setHelping((h) => !h)}>
           {t('Help')}
         </button>
-        <Select
-          aria-label={t('Language')}
-          value={language}
-          className="h-5 py-0 text-[11px]"
-          onChange={(event) => void creator.i18n.setLanguage(event.target.value)}
-        >
-          {languages.map((l) => (
-            <option key={l.id} value={l.id} lang={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </Select>
+        {creator.i18n.languages().length > 1 && (
+          <Select
+            aria-label={t('Language')}
+            value={language}
+            className="h-5 py-0 text-[11px]"
+            onChange={(event) => void creator.i18n.setLanguage(event.target.value)}
+          >
+            {creator.i18n.languages().map((l) => (
+              <option key={l.id} value={l.id} lang={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </Select>
+        )}
         {!phone && (
           <>
             <Select

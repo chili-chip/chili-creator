@@ -1,5 +1,6 @@
 // The creator's languages. English text is the key: a string with no
-// translation shows as written, so a language can be filled in bit by bit.
+// translation shows as written. A language is offered once it has a
+// catalog in ./catalogs; until then the creator is English only.
 
 export type Catalog = Record<string, string>;
 export type Vars = Record<string, string | number>;
@@ -36,14 +37,15 @@ export const languages: Language[] = [
 
 export const LANGUAGE_KEY = 'chili.creator.language';
 
-const known = (id: string | null | undefined) => languages.find((l) => l.id.toLowerCase() === id?.toLowerCase())?.id;
+const known = (id: string | null | undefined, available: readonly string[]) =>
+  available.find((a) => a.toLowerCase() === id?.toLowerCase());
 
 /** The saved language if there is one, else the first browser language we have, else English. */
-export function pickLanguage(saved: string | null, browser: readonly string[]): string {
-  const fromSaved = known(saved);
+export function pickLanguage(saved: string | null, browser: readonly string[], available: readonly string[]): string {
+  const fromSaved = known(saved, available);
   if (fromSaved) return fromSaved;
   for (const tag of browser) {
-    const found = known(tag) ?? known(tag.split('-')[0]);
+    const found = known(tag, available) ?? known(tag.split('-')[0], available);
     if (found) return found;
   }
   return 'en';
@@ -56,6 +58,9 @@ export function translate(catalog: Catalog | undefined, text: string, vars?: Var
 }
 
 const catalogFiles = import.meta.glob<{ default: Catalog }>('./catalogs/*.ts');
+
+/** English, and every language with a catalog. */
+const translated = ['en', ...Object.keys(catalogFiles).map((path) => path.replace(/^\.\/catalogs\/|\.ts$/g, ''))];
 
 async function loadCatalog(id: string): Promise<Catalog> {
   const file = catalogFiles[`./catalogs/${id}.ts`];
@@ -78,7 +83,8 @@ export interface I18nState {
 export function createI18n({
   browser = typeof navigator === 'undefined' ? [] : navigator.languages,
   load = loadCatalog,
-}: { browser?: readonly string[]; load?: (id: string) => Promise<Catalog> } = {}) {
+  available = translated,
+}: { browser?: readonly string[]; load?: (id: string) => Promise<Catalog>; available?: readonly string[] } = {}) {
   let state: I18nState = { language: 'en', catalog: undefined };
   const listeners = new Set<() => void>();
 
@@ -95,8 +101,10 @@ export function createI18n({
       return () => void listeners.delete(listener);
     },
     t: (text: string, vars?: Vars) => translate(state.catalog, text, vars),
+    /** The languages people can pick: English and those with translations. */
+    languages: () => languages.filter((l) => available.includes(l.id)),
     async setLanguage(id: string) {
-      const language = known(id) ?? 'en';
+      const language = known(id, available) ?? 'en';
       try {
         localStorage.setItem(LANGUAGE_KEY, language);
       } catch {
@@ -106,7 +114,7 @@ export function createI18n({
     },
     /** Loads the language people chose before, or their browser's. */
     start() {
-      const language = pickLanguage(saved(), browser);
+      const language = pickLanguage(saved(), browser, available);
       return language === 'en' ? Promise.resolve() : i18n.setLanguage(language);
     },
   };

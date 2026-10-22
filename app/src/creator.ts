@@ -35,6 +35,8 @@ export interface CreatorOptions {
   tour?: boolean;
   /** Loads a language's translations; the built-in catalogs by default. */
   loadCatalog?: (language: string) => Promise<Catalog>;
+  /** The languages on offer; English and those with a catalog by default. */
+  languages?: string[];
 }
 
 /** Everything the shell needs, wired once. Tests build their own. */
@@ -49,8 +51,9 @@ export function createCreator({
   sound = createSoundPreview(),
   tour = true,
   loadCatalog,
+  languages,
 }: CreatorOptions) {
-  const i18n = createI18n(loadCatalog ? { load: loadCatalog } : {});
+  const i18n = createI18n({ ...(loadCatalog ? { load: loadCatalog } : {}), ...(languages ? { available: languages } : {}) });
   void i18n.start();
   const bridge = createEmbedBridge({ win: window, parent, origin });
   const transport = createTransport({

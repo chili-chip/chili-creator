@@ -19,10 +19,16 @@ describe('App', () => {
     expect(screen.queryByRole('tab', { name: 'Find' })).not.toBeInTheDocument();
   });
 
+  it('has no language switch while the creator is in English only', async () => {
+    renderCreator();
+    await screen.findByRole('heading', { name: 'Your games' });
+    expect(screen.queryByRole('combobox', { name: 'Language' })).toBeNull();
+  });
+
   it('switches language from the status bar and remembers it', async () => {
     const user = userEvent.setup();
     const catalogs: Record<string, Record<string, string>> = { pl: { Room: 'Pokój', 'Your games': 'Twoje gry', Help: 'Pomoc' } };
-    const first = renderCreator({ loadCatalog: async (id) => catalogs[id] ?? {} });
+    const first = renderCreator({ languages: ['en', 'pl'], loadCatalog: async (id) => catalogs[id] ?? {} });
     await screen.findByRole('heading', { name: 'Your games' });
     await user.selectOptions(screen.getByRole('combobox', { name: 'Language' }), 'Polski');
     const tools = screen.getByRole('navigation', { name: 'Tools' });
@@ -31,7 +37,7 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Pomoc' })).toBeInTheDocument();
     expect(document.documentElement.lang).toBe('pl');
     first.unmount();
-    renderCreator({ loadCatalog: async (id) => catalogs[id] ?? {} });
+    renderCreator({ languages: ['en', 'pl'], loadCatalog: async (id) => catalogs[id] ?? {} });
     expect(await screen.findByRole('heading', { name: 'Twoje gry' })).toBeInTheDocument();
     localStorage.removeItem('chili.creator.language');
   });

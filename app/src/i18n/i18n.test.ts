@@ -12,10 +12,12 @@ describe('translate', () => {
 });
 
 describe('pickLanguage', () => {
-  it('takes the saved language, else the browser’s, else English', () => {
-    expect(pickLanguage('pl', ['de-DE'])).toBe('pl');
-    expect(pickLanguage(null, ['xx', 'de-DE'])).toBe('de');
-    expect(pickLanguage('nope', ['zz'])).toBe('en');
+  it('takes the saved language, else the browser’s, else English, from those translated', () => {
+    const all = languages.map((l) => l.id);
+    expect(pickLanguage('pl', ['de-DE'], all)).toBe('pl');
+    expect(pickLanguage(null, ['xx', 'de-DE'], all)).toBe('de');
+    expect(pickLanguage('nope', ['zz'], all)).toBe('en');
+    expect(pickLanguage('pl', ['de-DE'], ['en'])).toBe('en');
   });
 
   it('knows every classic editor language, each named in itself', () => {
@@ -29,7 +31,7 @@ describe('pickLanguage', () => {
 describe('createI18n', () => {
   it('loads a language, remembers it and tells listeners', async () => {
     localStorage.removeItem(LANGUAGE_KEY);
-    const i18n = createI18n({ browser: ['en-GB'], load: async (id): Promise<Catalog> => (id === 'pl' ? { Stop: 'Zatrzymaj' } : {}) });
+    const i18n = createI18n({ browser: ['en-GB'], available: ['en', 'pl'], load: async (id): Promise<Catalog> => (id === 'pl' ? { Stop: 'Zatrzymaj' } : {}) });
     expect(i18n.getState().language).toBe('en');
     let calls = 0;
     i18n.subscribe(() => calls++);
@@ -39,5 +41,14 @@ describe('createI18n', () => {
     expect(localStorage.getItem(LANGUAGE_KEY)).toBe('pl');
     expect(document.documentElement.lang).toBe('pl');
     expect(calls).toBeGreaterThan(0);
+  });
+
+  it('stays in English when nothing is translated yet', async () => {
+    localStorage.setItem(LANGUAGE_KEY, 'pl');
+    const i18n = createI18n({ browser: ['de-DE'], available: ['en'] });
+    await i18n.start();
+    expect(i18n.getState().language).toBe('en');
+    expect(i18n.languages().map((l) => l.id)).toEqual(['en']);
+    localStorage.removeItem(LANGUAGE_KEY);
   });
 });
