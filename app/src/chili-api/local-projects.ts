@@ -105,6 +105,9 @@ export function createLocalProjects(
     async remove(id) {
       await store.delete(prefix + id);
     },
+    async release() {
+      throw new ApiError('unauthorized', 'Sign in on Chili Platform to release a game.', 401);
+    },
     async duplicate(id) {
       const source = await read(id);
       return repository.create({ title: copyTitle(source.title), data: source.data });

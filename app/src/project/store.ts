@@ -247,6 +247,24 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
       set({ list: { ...state.list, projects: state.list.projects.filter((p) => p.id !== id) } });
     },
 
+    /** Releases a project with its latest changes saved, and tells the platform page. */
+    async release(id: string) {
+      if (openProject()?.id === id) await autosave.flush();
+      const released = await repo(id).release(id);
+      const { data: _data, ...summary } = released;
+      if (openProject()?.id === id && state.open.status === 'ready') {
+        set({ open: { ...state.open, project: { ...state.open.project, released: true } } });
+      }
+      set({
+        list: {
+          ...state.list,
+          projects: state.list.projects.filter((p) => p.id !== id),
+          released: [summary, ...state.list.released.filter((p) => p.id !== id)],
+        },
+      });
+      post({ type: 'chili-released', id, slug: released.slug });
+    },
+
     /** Sets the open game's cover from a PNG data URL, or removes it with null. */
     async setCover(cover: string | null) {
       const project = openProject();

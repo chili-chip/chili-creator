@@ -25,6 +25,12 @@ describe('createLocalProjects', () => {
     await expect(repo.get('local-missing')).rejects.toMatchObject({ kind: 'not-found' });
   });
 
+  it('cannot release a game kept on this device', async () => {
+    const repo = createLocalProjects(createMemoryStore());
+    const a = await repo.create({ title: 'A', data: '1' });
+    await expect(repo.release(a.id)).rejects.toMatchObject({ kind: 'unauthorized', message: /Sign in/ });
+  });
+
   it('stores them in IndexedDB', async () => {
     const store = createIndexedDbStore('chili-creator-test');
     const repo = createLocalProjects(store);

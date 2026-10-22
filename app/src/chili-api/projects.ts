@@ -38,6 +38,8 @@ export interface ProjectRepository {
   update(id: string, changes: ProjectChanges): Promise<Project>;
   remove(id: string): Promise<void>;
   duplicate(id: string): Promise<Project>;
+  /** Turns a project into a released game, with the version last saved. */
+  release(id: string): Promise<Project>;
 }
 
 /** The game fields this client reads (chili-platform docs/openapi.yaml, Game). */
@@ -120,6 +122,9 @@ export function createPlatformProjects(transport: Transport): ProjectRepository 
     async duplicate(id) {
       const source = await repository.get(id);
       return repository.create({ title: copyTitle(source.title), data: source.data });
+    },
+    async release(id) {
+      return toProject(await transport.request<GameResponse>(`/games/${id}/release/`, { method: 'POST' }));
     },
   };
   return repository;

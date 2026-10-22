@@ -65,6 +65,21 @@ test('a new game starts on the platform and is listed', async ({ page }) => {
   expect(await received(page)).toContainEqual({ type: 'chili-project', id: String(platform.games[0]!.id), v: 2 });
 });
 
+test('a project is released from the creator, and its game page opens on the platform', async ({ page }) => {
+  const platform = createFakePlatform({ token: 'host-token' });
+  const game = platform.addGame({ title: 'Mossland', data: defaultGame });
+  await servePlatform(page, platform);
+  const creator = await openInFakePlatform(page, ['host-token']);
+  await creator.getByRole('button', { name: 'Release Mossland' }).click();
+  await creator.getByRole('button', { name: 'Release it' }).click();
+  await expect(creator.getByRole('list', { name: 'Released games' }).getByText('Mossland')).toBeVisible();
+  expect(platform.games[0]!.released).toBe(true);
+  expect(await received(page)).toContainEqual({ type: 'chili-released', id: String(game.id), slug: 'mossland', v: 2 });
+
+  await creator.getByRole('button', { name: 'Game page for Mossland' }).click();
+  await expect.poll(() => received(page)).toContainEqual({ type: 'chili-navigate', to: `/games/${game.id}`, v: 2 });
+});
+
 test('signed out, a new game is kept in this browser', async ({ page }) => {
   await page.goto('/index.html');
   await expect(page.getByText(/saved in this browser only/)).toBeVisible();

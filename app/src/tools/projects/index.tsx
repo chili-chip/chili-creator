@@ -1,4 +1,4 @@
-import { Copy, FolderOpen, Gamepad2, LayoutGrid, Plus, Trash2, Upload } from 'lucide-react';
+import { Copy, ExternalLink, FolderOpen, Gamepad2, LayoutGrid, Plus, Rocket, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { MAX_GAMES, type ProjectSummary } from '../../chili-api';
 import { defineTool } from '../../plugin-api';
@@ -32,21 +32,24 @@ interface RowProps {
   onOpen(): void;
   onDuplicate?(): void;
   onDelete?(): Promise<void>;
+  onRelease?(): Promise<void>;
+  /** Opens the released game's page on the platform. */
+  onGamePage?(): void;
 }
 
-function ProjectRow({ project, open, onOpen, onDuplicate, onDelete }: RowProps) {
-  const [confirming, setConfirming] = useState(false);
+function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, onGamePage }: RowProps) {
+  const [confirming, setConfirming] = useState<'delete' | 'release' | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  async function remove() {
+  async function run(action?: () => Promise<void>) {
     setBusy(true);
     setError('');
     try {
-      await onDelete?.();
+      await action?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
-      setConfirming(false);
+      setConfirming(null);
     } finally {
       setBusy(false);
     }
@@ -68,6 +71,30 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete }: RowProps) 
             <FolderOpen />
             <span className="hidden sm:inline">Open</span>
           </Button>
+          {onRelease && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setConfirming('release')}
+              aria-label={`Release ${project.title}`}
+              title="Release"
+            >
+              <Rocket />
+              <span className="hidden sm:inline">Release</span>
+            </Button>
+          )}
+          {onGamePage && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onGamePage}
+              aria-label={`Game page for ${project.title}`}
+              title="Game page"
+            >
+              <ExternalLink />
+              <span className="hidden sm:inline">Game page</span>
+            </Button>
+          )}
           {onDuplicate && (
             <Button size="icon" variant="ghost" onClick={onDuplicate} aria-label={`Duplicate ${project.title}`} title="Duplicate">
               <Copy />
@@ -77,7 +104,7 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete }: RowProps) 
             <Button
               size="icon"
               variant="ghost"
-              onClick={() => setConfirming(true)}
+              onClick={() => setConfirming('delete')}
               aria-label={`Delete ${project.title}`}
               title="Delete"
             >
@@ -86,14 +113,28 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete }: RowProps) 
           )}
         </div>
       </div>
-      {confirming && (
+      {confirming === 'delete' && (
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3 text-sm">
           <span className="mr-auto">Delete “{project.title}”? This cannot be undone.</span>
-          <Button size="sm" variant="ghost" onClick={() => setConfirming(false)} disabled={busy}>
+          <Button size="sm" variant="ghost" onClick={() => setConfirming(null)} disabled={busy}>
             Keep it
           </Button>
-          <Button size="sm" variant="destructive" onClick={remove} disabled={busy}>
+          <Button size="sm" variant="destructive" onClick={() => void run(onDelete)} disabled={busy}>
             Delete for good
+          </Button>
+        </div>
+      )}
+      {confirming === 'release' && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3 text-sm">
+          <span className="mr-auto">
+            Release “{project.title}”? It becomes a game you can sell, and you can keep editing it here. Buyers get
+            the version you last saved. Listing it for sale is a separate step on the platform.
+          </span>
+          <Button size="sm" variant="ghost" onClick={() => setConfirming(null)} disabled={busy}>
+            Not yet
+          </Button>
+          <Button size="sm" variant="primary" onClick={() => void run(onRelease)} disabled={busy}>
+            Release it
           </Button>
         </div>
       )}
@@ -218,6 +259,7 @@ function Projects() {
                 onOpen={() => void creator.projects.open(project.id)}
                 onDuplicate={atLimit ? undefined : () => void act(() => creator.projects.duplicate(project.id))}
                 onDelete={() => creator.projects.remove(project.id)}
+                onRelease={state.mode === 'platform' ? () => creator.projects.release(project.id) : undefined}
               />
             ))}
           </ul>
@@ -234,6 +276,7 @@ function Projects() {
                   project={project}
                   open={project.id === openId}
                   onOpen={() => void creator.projects.open(project.id)}
+                  onGamePage={() => creator.bridge.post({ type: 'chili-navigate', to: `/games/${project.id}` })}
                 />
               ))}
             </ul>

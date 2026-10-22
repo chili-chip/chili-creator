@@ -54,6 +54,19 @@ describe('createProjectStore', () => {
     expect(state.list.released.map((p) => p.title)).toEqual(['out']);
   });
 
+  it('releases a project: it moves to released games and the platform is told', async () => {
+    const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
+    const { store, posted } = setup();
+    await store.start(String(saved.id));
+    await store.release(String(saved.id));
+    const state = store.getState();
+    expect(platform.games[0]!.released).toBe(true);
+    expect(state.list.projects).toEqual([]);
+    expect(state.list.released.map((p) => p.title)).toEqual(['Mossland']);
+    expect(state.open.status === 'ready' && state.open.project.released).toBe(true);
+    expect(posted).toContainEqual({ type: 'chili-released', id: String(saved.id), slug: 'mossland' });
+  });
+
   it('keeps games on this device when nobody is signed in', async () => {
     const { store } = setup({ signedIn: false });
     await store.start();
