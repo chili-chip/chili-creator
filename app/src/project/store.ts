@@ -99,12 +99,17 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
       set({ open: { ...state.open, project: { ...saved, data } } });
     }
     const { data: _data, ...summary } = saved;
-    set({
-      list: {
-        ...state.list,
-        projects: [summary, ...state.list.projects.filter((p) => p.id !== saved.id)],
-      },
-    });
+    set({ list: listed(summary) });
+  }
+
+  /** The lists with `summary` moved to the top of the one it belongs to: projects or released games. */
+  function listed(summary: ProjectSummary): ProjectsState['list'] {
+    const others = (list: ProjectSummary[]) => list.filter((p) => p.id !== summary.id);
+    return {
+      ...state.list,
+      projects: summary.released ? others(state.list.projects) : [summary, ...others(state.list.projects)],
+      released: summary.released ? [summary, ...others(state.list.released)] : others(state.list.released),
+    };
   }
 
   const autosave = createSaveController({
@@ -247,21 +252,21 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
       set({ list: { ...state.list, projects: state.list.projects.filter((p) => p.id !== id) } });
     },
 
-    /** Releases a project with its latest changes saved, and tells the platform page. */
+    /** Releases a project, or a released game's unpublished changes, with its latest edits saved, and tells the platform page. */
     async release(id: string) {
       if (openProject()?.id === id) await autosave.flush();
       const released = await repo(id).release(id);
       const { data: _data, ...summary } = released;
       if (openProject()?.id === id && state.open.status === 'ready') {
-        set({ open: { ...state.open, project: { ...state.open.project, released: true } } });
+        const { released: isReleased, releaseNumber, hasUnreleasedChanges, updatedAt } = released;
+        set({
+          open: {
+            ...state.open,
+            project: { ...state.open.project, released: isReleased, releaseNumber, hasUnreleasedChanges, updatedAt },
+          },
+        });
       }
-      set({
-        list: {
-          ...state.list,
-          projects: state.list.projects.filter((p) => p.id !== id),
-          released: [summary, ...state.list.released.filter((p) => p.id !== id)],
-        },
-      });
+      set({ list: listed(summary) });
       post({ type: 'chili-released', id, slug: released.slug });
     },
 
@@ -273,12 +278,9 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
       if (openProject()?.id === saved.id && state.open.status === 'ready') {
         set({ open: { ...state.open, project: { ...state.open.project, cover: saved.cover } } });
       }
-      set({
-        list: {
-          ...state.list,
-          projects: state.list.projects.map((p) => (p.id === saved.id ? { ...p, cover: saved.cover } : p)),
-        },
-      });
+      const withCover = (list: ProjectSummary[]) =>
+        list.map((p) => (p.id === saved.id ? { ...p, cover: saved.cover } : p));
+      set({ list: { ...state.list, projects: withCover(state.list.projects), released: withCover(state.list.released) } });
     },
 
     /** Changes the open world on a copy, keeps the old one for undo, and autosaves. */
