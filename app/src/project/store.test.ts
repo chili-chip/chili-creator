@@ -67,6 +67,30 @@ describe('createProjectStore', () => {
     expect(posted).toContainEqual({ type: 'chili-released', id: String(saved.id), slug: 'mossland' });
   });
 
+  it('keeps a released game listed once when its edits are saved (#38)', async () => {
+    const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
+    const { store } = setup();
+    await store.start(String(saved.id));
+    await store.release(String(saved.id));
+    store.setTitle('Mossland 2');
+    await store.flush();
+    const state = store.getState();
+    expect(state.list.projects).toEqual([]);
+    expect(state.list.released.map((p) => p.title)).toEqual(['Mossland 2']);
+    expect(store.gamesUsed()).toBe(1);
+  });
+
+  it("updates a released game's cover in the released list (#38)", async () => {
+    const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
+    const { store } = setup();
+    await store.start(String(saved.id));
+    await store.release(String(saved.id));
+    await store.setCover('data:image/png;base64,iVBORw0KGgo=');
+    const state = store.getState();
+    expect(state.list.projects).toEqual([]);
+    expect(state.list.released[0]!.cover).not.toBe('');
+  });
+
   it('keeps games on this device when nobody is signed in', async () => {
     const { store } = setup({ signedIn: false });
     await store.start();
