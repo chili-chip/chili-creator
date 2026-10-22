@@ -1,11 +1,11 @@
-import { Palette as PaletteIcon, Plus } from 'lucide-react';
-import { useRef } from 'react';
-import { addPalette, byId, type Rgb, type World } from '../../bitsy';
+import { Palette as PaletteIcon, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { addPalette, byId, removePalette, type Rgb, type World } from '../../bitsy';
 import { defineTool } from '../../plugin-api';
 import { useCreator, useSelection } from '../../shell/creator-context';
 import { Button } from '../../ui/button';
 import { Input, Select } from '../../ui/input';
-import { Empty, newGroup, roomName } from '../shared';
+import { Confirm, Empty, newGroup, roomName } from '../shared';
 
 export function rgbToHex(color: Rgb): string {
   return `#${color.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
@@ -18,11 +18,33 @@ export function hexToRgb(hex: string): Rgb | null {
 
 const roles = ['Background', 'Tiles', 'Sprites and items'];
 
+/** A colour typed as hex; it changes the palette once it is a whole colour. */
+function HexField({ label, color, onColor }: { label: string; color: Rgb; onColor(rgb: Rgb): void }) {
+  const [draft, setDraft] = useState(rgbToHex(color));
+  useEffect(() => setDraft(rgbToHex(color)), [color]);
+  return (
+    <Input
+      aria-label={`${label} hex`}
+      value={draft}
+      spellCheck={false}
+      className="h-7 w-24 py-0 font-mono text-xs"
+      onChange={(event) => {
+        const value = event.target.value.trim();
+        setDraft(value);
+        const rgb = hexToRgb(value.startsWith('#') ? value : `#${value}`);
+        if (rgb) onColor(rgb);
+      }}
+      onBlur={() => setDraft(rgbToHex(color))}
+    />
+  );
+}
+
 function Colors() {
   const creator = useCreator();
   const { world, room } = useSelection();
   // One picker drag is one undo step: the group lasts until the picker is let go.
   const groups = useRef(new Map<number, string>());
+  const [deleting, setDeleting] = useState(false);
 
   if (!world || !room) return <Empty icon={<PaletteIcon />}>Open a game to choose its colours.</Empty>;
 
@@ -67,6 +89,26 @@ function Colors() {
           <Plus />
           New palette
         </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          aria-label="Delete palette"
+          title={world.palettes.length < 2 ? 'A game needs one palette' : 'Delete palette'}
+          disabled={world.palettes.length < 2}
+          onClick={() => setDeleting(true)}
+        >
+          <Trash2 />
+        </Button>
+        {deleting && palette && (
+          <Confirm
+            question={`Delete “${palette.name || `Palette ${palette.id}`}”? Its rooms take another palette.`}
+            onKeep={() => setDeleting(false)}
+            onDelete={() => {
+              edit((w) => void removePalette(w, palette.id));
+              setDeleting(false);
+            }}
+          />
+        )}
       </div>
 
       {palette && (
@@ -114,10 +156,20 @@ function Colors() {
                       creator.projects.endGroup();
                     }}
                   />
-                  <label htmlFor={id} className="text-sm">
+                  <label htmlFor={id} className="flex-1 text-sm">
                     {label}
-                    <span className="block text-[11px] text-muted">{rgbToHex(color)}</span>
                   </label>
+                  <HexField
+                    label={label}
+                    color={color}
+                    onColor={(rgb) => {
+                      const paletteId = palette.id;
+                      edit((w) => {
+                        const target = byId(w.palettes, paletteId);
+                        if (target) target.colors[index] = rgb;
+                      }, `hex-${paletteId}-${index}`);
+                    }}
+                  />
                 </li>
               );
             })}
@@ -131,6 +183,7 @@ function Colors() {
 export default defineTool({
   id: 'colors',
   title: 'Colors',
+  help: 'Palettes of three colours: the background, tiles, and sprites and items. Each room uses one.',
   icon: PaletteIcon,
   component: Colors,
   defaultPosition: 'within',

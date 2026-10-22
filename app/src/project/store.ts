@@ -223,10 +223,10 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
       post({ type: 'chili-project-new' });
     },
 
-    /** Starts a new game from the blank template and opens it. */
-    async create(title = NEW_GAME_TITLE) {
+    /** Starts a new game, from the blank template or from imported data, and opens it. */
+    async create(title = NEW_GAME_TITLE, data?: string) {
       if (!(await settle())) return;
-      const project = await repo().create({ title, data: serialize(createWorld({ title })) });
+      const project = await repo().create({ title, data: data ?? serialize(createWorld({ title })) });
       await refresh();
       show(project);
     },
@@ -245,6 +245,22 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
         post({ type: 'chili-project-new' });
       }
       set({ list: { ...state.list, projects: state.list.projects.filter((p) => p.id !== id) } });
+    },
+
+    /** Sets the open game's cover from a PNG data URL, or removes it with null. */
+    async setCover(cover: string | null) {
+      const project = openProject();
+      if (!project) return;
+      const saved = await repo(project.id).update(project.id, { cover });
+      if (openProject()?.id === saved.id && state.open.status === 'ready') {
+        set({ open: { ...state.open, project: { ...state.open.project, cover: saved.cover } } });
+      }
+      set({
+        list: {
+          ...state.list,
+          projects: state.list.projects.map((p) => (p.id === saved.id ? { ...p, cover: saved.cover } : p)),
+        },
+      });
     },
 
     /** Changes the open world on a copy, keeps the old one for undo, and autosaves. */

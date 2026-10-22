@@ -4,6 +4,9 @@ import {
   addDrawing,
   addPalette,
   addRoom,
+  removePalette,
+  contentAt,
+  duplicateRoom,
   AVATAR,
   clearFrame,
   drawingsOf,
@@ -247,5 +250,50 @@ describe('palettes', () => {
       [128, 128, 128],
       [255, 255, 255],
     ]);
+  });
+});
+
+describe('rooms', () => {
+  it('duplicates a room: tiles, items, exits, endings, palette, music and avatar', () => {
+    const w = createWorld({ title: 'Test' });
+    const room = w.rooms[0]!;
+    room.name = 'hall';
+    room.tune = '1';
+    room.avatar = 'a';
+    room.exits.push({ x: 1, y: 1, dest: { room: '0', x: 2, y: 2 } });
+    const id = duplicateRoom(w, '0');
+    const copy = byId(w.rooms, id)!;
+    expect(copy).toMatchObject({ name: 'hall copy', tune: '1', avatar: 'a', palette: room.palette });
+    expect(copy.tilemap).toEqual(room.tilemap);
+    expect(copy.tilemap).not.toBe(room.tilemap);
+    expect(copy.exits).toEqual(room.exits);
+    copy.exits[0]!.x = 5;
+    expect(room.exits[0]!.x).toBe(1);
+    expect(copy.items).toEqual(room.items);
+  });
+
+  it('says what is on a cell: a sprite before an item before a tile', () => {
+    const w = createWorld({ title: 'Test' });
+    const cat = byId(w.sprites, 'a')!.position!;
+    expect(contentAt(w, '0', cat.x, cat.y)).toEqual({ kind: 'sprites', id: 'a' });
+    const item = w.rooms[0]!.items[0];
+    if (item) expect(contentAt(w, '0', item.x, item.y)).toEqual({ kind: 'items', id: item.id });
+    w.rooms[0]!.tilemap[0]![0] = w.tiles[0]!.id;
+    expect(contentAt(w, '0', 0, 0)).toEqual({ kind: 'tiles', id: w.tiles[0]!.id });
+    w.rooms[0]!.tilemap[5]![5] = '0';
+    expect(contentAt(w, '0', 5, 5)).toBeNull();
+  });
+});
+
+describe('removePalette', () => {
+  it('removes a palette and gives its rooms the first one left, but keeps the last palette', () => {
+    const w = createWorld({ title: 'Test' });
+    const first = w.palettes[0]!.id;
+    const id = addPalette(w, first);
+    w.rooms[0]!.palette = id;
+    expect(removePalette(w, id)).toBe(true);
+    expect(byId(w.palettes, id)).toBeUndefined();
+    expect(w.rooms[0]!.palette).toBe(first);
+    expect(removePalette(w, first)).toBe(false);
   });
 });

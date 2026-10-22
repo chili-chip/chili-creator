@@ -1,8 +1,10 @@
 import { createContext, useContext, useSyncExternalStore } from 'react';
 import type { Creator } from '../creator';
 import type { World } from '../bitsy';
+import type { I18nState, Vars } from '../i18n';
 import { resolveSelection, type EditorState, type Resolved } from '../project/editor';
 import type { ProjectsState } from '../project/store';
+import type { PreviewState } from '../sound/preview';
 
 const CreatorContext = createContext<Creator | null>(null);
 
@@ -39,4 +41,23 @@ export function useSelection(): Resolved & { world: World | null } {
   const editor = useEditor();
   if (!world) return { world, room: undefined, kind: undefined, drawing: undefined, frame: 0, dialog: undefined, marker: undefined };
   return { world, ...resolveSelection(world, editor) };
+}
+
+/** What the sound tools are playing, re-rendering when it changes. */
+export function useSound(): PreviewState {
+  const { sound } = useCreator();
+  return useSyncExternalStore(sound.subscribe, sound.state, sound.state);
+}
+
+/** Translates English text into the chosen language, re-rendering when it changes. */
+export function useT(): (text: string, vars?: Vars) => string {
+  const { i18n } = useCreator();
+  useSyncExternalStore(i18n.subscribe, i18n.getState, i18n.getState);
+  return i18n.t;
+}
+
+/** The chosen language. */
+export function useI18nState(): I18nState {
+  const { i18n } = useCreator();
+  return useSyncExternalStore(i18n.subscribe, i18n.getState, i18n.getState);
 }

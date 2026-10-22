@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from '.';
-import { parseScript, renameVariableInScript, scriptBody, scriptReferences, toScript } from './script';
+import { parseScript, printScript, renameVariableInScript, scriptBody, scriptReferences, toScript, type ScriptNode } from './script';
 
 const fixtures = import.meta.glob<string>('./fixtures/*.bitsy', { query: '?raw', import: 'default', eager: true });
 const fixture = (name: string) => parse(fixtures[`./fixtures/${name}.bitsy`]!).world;
@@ -96,5 +96,48 @@ describe('renameVariableInScript', () => {
 
   it('leaves names that only start the same alone', () => {
     expect(renameVariableInScript('{a = ab + a}', 'a', 'z')).toBe('{z = ab + z}');
+  });
+});
+
+describe('printScript', () => {
+  it('writes blocks back as Bitsy script', () => {
+    const nodes: ScriptNode[] = [
+      { type: 'text', text: 'hi ' },
+      { type: 'effect', name: 'wvy' },
+      { type: 'text', text: 'there' },
+      { type: 'effect', name: 'wvy' },
+      { type: 'call', name: 'pg', args: [] },
+      { type: 'assign', variable: 'a', expression: 'a + 1' },
+      { type: 'list', kind: 'cycle', options: [[{ type: 'text', text: 'one' }], [{ type: 'text', text: 'two\nlines' }]] },
+      {
+        type: 'branch',
+        cases: [
+          { condition: '{item "1"} >= 1', body: [{ type: 'call', name: 'property', args: ['locked', 'false'] }] },
+          { condition: 'else', body: [{ type: 'text', text: 'locked' }] },
+        ],
+      },
+    ];
+    const script = printScript(nodes);
+    expect(script).toBe(
+      'hi {wvy}there{wvy}{pg}{a = a + 1}{cycle\n  - one\n  - two\n    lines\n}{\n  - {item "1"} >= 1 ?\n    {property locked false}\n  - else ?\n    locked\n}',
+    );
+    expect(parseScript(script)).toEqual(nodes);
+  });
+
+  it('indents lists inside lists', () => {
+    const nodes: ScriptNode[] = [
+      { type: 'list', kind: 'sequence', options: [[{ type: 'list', kind: 'shuffle', options: [[{ type: 'text', text: 'a' }]] }]] },
+    ];
+    expect(printScript(nodes)).toBe('{sequence\n  - {shuffle\n      - a\n    }\n}');
+    expect(parseScript(printScript(nodes))).toEqual(nodes);
+  });
+
+  it('round-trips every dialog in the fixtures to the same blocks', () => {
+    for (const [name, text] of Object.entries(fixtures)) {
+      for (const dialog of parse(text).world.dialogs) {
+        const nodes = parseScript(dialog.script);
+        expect(parseScript(toScript(printScript(nodes))), `${name} dialog ${dialog.id}`).toEqual(nodes);
+      }
+    }
   });
 });

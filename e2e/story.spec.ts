@@ -8,6 +8,7 @@ test('a story: dialog with a variable, an exit to a new room, an ending, and it 
   await expect(room).toBeVisible();
 
   // The cat counts how often it was talked to.
+  await tools.getByRole('button', { name: 'Library' }).click();
   await creator.getByRole('button', { name: 'cat', exact: true }).click();
   await tools.getByRole('button', { name: 'Dialog' }).click();
   const text = creator.getByRole('textbox', { name: 'Dialog text' });
@@ -15,6 +16,7 @@ test('a story: dialog with a variable, an exit to a new room, an ending, and it 
   await text.fill('{a = a + 1}meow number {say a}');
 
   // A second room, and an exit into it.
+  await tools.getByRole('button', { name: 'Room' }).click();
   await creator.getByRole('button', { name: 'New room' }).click();
   await creator.getByRole('combobox', { name: 'Room' }).selectOption({ label: 'example room' });
   await creator.getByRole('radio', { name: 'Exit' }).click();
@@ -48,6 +50,7 @@ test('a story: dialog with a variable, an exit to a new room, an ending, and it 
 test('a broken reference shows up as a problem that leads to it', async ({ page }) => {
   const { creator } = await newGame(page);
   const tools = creator.getByRole('navigation', { name: 'Tools' });
+  await tools.getByRole('button', { name: 'Library' }).click();
   await creator.getByRole('button', { name: 'cat', exact: true }).click();
   await tools.getByRole('button', { name: 'Dialog' }).click();
   await creator.getByRole('textbox', { name: 'Dialog text' }).fill('{exit "attic" 1 1}');
@@ -62,4 +65,40 @@ test('a broken reference shows up as a problem that leads to it', async ({ page 
   await tools.getByRole('button', { name: 'Problems' }).click();
   await problem.click();
   await expect(creator.getByRole('textbox', { name: 'Dialog text' })).toHaveValue('{exit "attic" 1 1}');
+});
+
+test('a locked door: a two-way exit whose way in needs the key', async ({ page }) => {
+  const { platform, creator } = await newGame(page);
+  const tools = creator.getByRole('navigation', { name: 'Tools' });
+  const room = creator.getByRole('application', { name: 'Room example room' });
+  await expect(room).toBeVisible();
+  await creator.getByRole('button', { name: 'New room' }).click();
+  await creator.getByRole('combobox', { name: 'Room' }).selectOption({ label: 'example room' });
+  await creator.getByRole('radio', { name: 'Exit' }).click();
+  await stroke(room, 16, [[13, 8]]);
+
+  await tools.getByRole('button', { name: 'Exits & endings' }).click();
+  await expect(creator.getByRole('radio', { name: 'Both ways' })).toHaveAttribute('aria-checked', 'true');
+  await creator.getByRole('button', { name: 'Add a lock' }).click();
+  await expect(creator.getByRole('textbox', { name: 'Exit dialog' })).toHaveValue(/The door is locked/);
+
+  await expect.poll(() => platform.games[0]!.data, { timeout: 10_000 }).toMatch(/EXT 13,8 1 13,8 DLG \w+\n/);
+  const data = platform.games[0]!.data;
+  expect(data).toMatch(/ROOM 1[\s\S]*EXT 13,8 0 13,8\n/);
+  expect(data).toContain('{property locked true}');
+});
+
+test('dialog blocks: a choice and an action built without typing script', async ({ page }) => {
+  const { platform, creator } = await newGame(page);
+  const tools = creator.getByRole('navigation', { name: 'Tools' });
+  await tools.getByRole('button', { name: 'Library' }).click();
+  await creator.getByRole('button', { name: 'cat', exact: true }).click();
+  await tools.getByRole('button', { name: 'Dialog' }).click();
+  await creator.getByRole('radio', { name: 'Blocks' }).click();
+  const blocks = creator.getByRole('list', { name: 'Blocks' });
+  await creator.getByRole('combobox', { name: 'Add a block' }).last().selectOption('If the player has an item');
+  await blocks.getByRole('combobox', { name: 'Add a block' }).first().selectOption('Play a blip');
+  await page.screenshot({ path: test.info().outputPath('blocks.png') });
+  await expect.poll(() => platform.games[0]!.data, { timeout: 10_000 }).toContain('{blip "1"}');
+  expect(platform.games[0]!.data).toMatch(/DLG 0\n"""\nI'm a cat\n\{\n  - \{item "1"\} >= 1 \?\n    you have it\n    \{blip "1"\}\n  - else \?/);
 });

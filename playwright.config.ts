@@ -11,6 +11,11 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:4310',
     trace: 'retain-on-failure',
+    // The first-run tour is tested on its own; it stays out of the other tests' way.
+    storageState: {
+      cookies: [],
+      origins: [{ origin: 'http://localhost:4310', localStorage: [{ name: 'chili.creator.tour.v1', value: 'done' }] }],
+    },
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },

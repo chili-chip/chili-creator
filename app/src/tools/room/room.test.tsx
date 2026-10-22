@@ -153,4 +153,52 @@ describe('Room', () => {
     expect(world().rooms.map((r) => r.id)).toEqual(['0']);
     expect(screen.getByRole('combobox', { name: 'Room' })).toHaveDisplayValue('example room');
   });
+
+  it('picks the music the room plays', async () => {
+    const user = userEvent.setup();
+    const { world } = await renderTool(Room);
+    const music = screen.getByRole('combobox', { name: 'Music' });
+    expect(music).toHaveDisplayValue('tuneful town');
+    await user.selectOptions(music, 'rhythmic ruins');
+    expect(world().rooms[0]!.tune).toBe('3');
+    await user.selectOptions(music, 'None');
+    expect(world().rooms[0]!.tune).toBeUndefined();
+  });
+
+  it('picks up what is on a cell with the Pick tool', async () => {
+    const user = userEvent.setup();
+    const { creator, world } = await renderTool(Room);
+    await user.click(screen.getByRole('radio', { name: 'Pick' }));
+    const cat = byId(world().sprites, 'a')!.position!;
+    click(canvas(), cat.x, cat.y);
+    expect(creator.editor.getState()).toMatchObject({ drawing: { kind: 'sprites', id: 'a' }, roomTool: 'place' });
+  });
+
+  it('names what is under the pointer', async () => {
+    const { world } = await renderTool(Room);
+    const cat = byId(world().sprites, 'a')!.position!;
+    fireEvent.pointerMove(canvas(), { clientX: cat.x * 10 + 5, clientY: cat.y * 10 + 5, pointerId: 1 });
+    expect(screen.getByText(`x ${cat.x}, y ${cat.y} · cat`)).toBeInTheDocument();
+  });
+
+  it('hides the grid and shows the walls', async () => {
+    const user = userEvent.setup();
+    const { creator } = await renderTool(Room);
+    await user.click(screen.getByRole('checkbox', { name: 'Grid' }));
+    expect(creator.editor.getState().showGrid).toBe(false);
+    await user.click(screen.getByRole('checkbox', { name: 'Walls' }));
+    expect(creator.editor.getState().showWalls).toBe(true);
+  });
+
+  it('copies the room and picks its avatar', async () => {
+    const user = userEvent.setup();
+    const { creator, world } = await renderTool(Room);
+    await user.click(screen.getByRole('button', { name: 'Copy room' }));
+    const copy = creator.editor.getState().room!;
+    expect(world().rooms.map((r) => r.id)).toContain(copy);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Avatar' }), 'cat');
+    expect(byId(world().rooms, copy)!.avatar).toBe('a');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Avatar' }), 'The usual avatar');
+    expect(byId(world().rooms, copy)!.avatar).toBeUndefined();
+  });
 });

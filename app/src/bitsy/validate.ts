@@ -3,6 +3,7 @@ import { AVATAR, EMPTY_TILE, ROOM_SIZE } from './edit';
 import { dialogName, drawingName, roomName } from './names';
 import type { Location } from './references';
 import { scriptReferences } from './script';
+import { readTune, tuneName } from './sound';
 import type { World } from './types';
 
 // Checks run before play and release: broken references and games that
@@ -58,6 +59,9 @@ export function validate(world: World): Problem[] {
         warning(`${which} uses dialog ${exit.dialog}, which does not exist.`, at);
       }
     }
+    if (room.tune !== undefined && room.tune !== '0' && !byId(world.tunes, room.tune)) {
+      warning(`${name} plays tune ${room.tune}, which does not exist.`, here);
+    }
     for (const ending of room.endings) {
       if (!dialogs.has(ending.id)) {
         warning(`The ending at ${ending.x},${ending.y} in ${name} has no text.`, { ...here, x: ending.x, y: ending.y });
@@ -78,12 +82,24 @@ export function validate(world: World): Problem[] {
           error(`${name} stands in room ${position.room}, which does not exist.`, at);
         }
       }
+      if (drawing.blip !== undefined && !byId(world.blips, drawing.blip)) {
+        warning(`${name} makes blip ${drawing.blip}, which does not exist.`, at);
+      }
       if ('inventory' in drawing) {
         for (const entry of drawing.inventory) {
           if (!items.has(entry.id)) warning(`${name} carries item ${entry.id}, which does not exist.`, at);
         }
       }
     }
+  }
+
+  for (const block of world.tunes) {
+    const tune = readTune(block);
+    const missing = new Set<string>();
+    for (const bar of [...tune.melody, ...tune.harmony]) {
+      for (const p of bar) if (p.beats > 0 && p.blip !== undefined && !byId(world.blips, p.blip)) missing.add(p.blip);
+    }
+    for (const blip of missing) warning(`${tuneName(tune)} plays blip ${blip}, which does not exist.`, { type: 'tune', id: tune.id });
   }
 
   const all = [...world.dialogs, ...world.endings].map((entry) => ({ entry, refs: scriptReferences(entry.script) }));

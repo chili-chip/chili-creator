@@ -23,7 +23,7 @@ export interface DrawingRef {
   id: Id;
 }
 
-export type RoomTool = 'place' | 'erase' | 'exit' | 'ending';
+export type RoomTool = 'place' | 'erase' | 'pick' | 'exit' | 'ending';
 export type PaintTool = 'pencil' | 'fill';
 
 export interface EditorState {
@@ -38,6 +38,12 @@ export interface EditorState {
   dialog: Id | null;
   /** The cell in the room whose exit or ending is being changed. */
   marker: { x: number; y: number } | null;
+  /** The tune and blip picked in the sound tools. */
+  tune: Id | null;
+  blip: Id | null;
+  /** The grid over the room and drawings, and the walls hatched in the room. */
+  showGrid: boolean;
+  showWalls: boolean;
 }
 
 const initial: EditorState = {
@@ -49,6 +55,10 @@ const initial: EditorState = {
   libraryTab: 'sprites',
   dialog: null,
   marker: null,
+  tune: null,
+  blip: null,
+  showGrid: true,
+  showWalls: false,
 };
 
 export function createEditorState() {
@@ -89,6 +99,12 @@ export function createEditorState() {
           return 'colors';
         case 'game':
           return 'game';
+        case 'tune':
+          set({ tune: location.id });
+          return 'tunes';
+        case 'blip':
+          set({ blip: location.id });
+          return 'blips';
       }
     },
     /** A game was opened: start where the avatar is, with the avatar picked. */

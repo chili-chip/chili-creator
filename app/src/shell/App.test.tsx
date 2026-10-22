@@ -1,12 +1,47 @@
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFakePlatform } from '../chili-api/fake-platform';
 import { blankGame, renderCreator } from '../test/creator';
 
 const game = (title: string) => `${title}\n\n# BITSY VERSION 8.12\n\n! ROOM_FORMAT 1\n`;
 
 describe('App', () => {
+  it('closes a tool from its tab with the Delete key, with no button nested in the tab', async () => {
+    const user = userEvent.setup();
+    renderCreator();
+    await screen.findByRole('heading', { name: 'Your games' });
+    await user.click(within(screen.getByRole('navigation', { name: 'Tools' })).getByRole('button', { name: 'Find' }));
+    const tab = await screen.findByRole('tab', { name: 'Find' });
+    expect(within(tab).queryByRole('button')).toBeNull();
+    tab.focus();
+    await user.keyboard('{Delete}');
+    expect(screen.queryByRole('tab', { name: 'Find' })).not.toBeInTheDocument();
+  });
+
+  it('has no language switch while the creator is in English only', async () => {
+    renderCreator();
+    await screen.findByRole('heading', { name: 'Your games' });
+    expect(screen.queryByRole('combobox', { name: 'Language' })).toBeNull();
+  });
+
+  it('switches language from the status bar and remembers it', async () => {
+    const user = userEvent.setup();
+    const catalogs: Record<string, Record<string, string>> = { pl: { Room: 'Pokój', 'Your games': 'Twoje gry', Help: 'Pomoc' } };
+    const first = renderCreator({ languages: ['en', 'pl'], loadCatalog: async (id) => catalogs[id] ?? {} });
+    await screen.findByRole('heading', { name: 'Your games' });
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Language' }), 'Polski');
+    const tools = screen.getByRole('navigation', { name: 'Tools' });
+    expect(await within(tools).findByRole('button', { name: 'Pokój' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Twoje gry' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pomoc' })).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe('pl');
+    first.unmount();
+    renderCreator({ languages: ['en', 'pl'], loadCatalog: async (id) => catalogs[id] ?? {} });
+    expect(await screen.findByRole('heading', { name: 'Twoje gry' })).toBeInTheDocument();
+    localStorage.removeItem('chili.creator.language');
+  });
+
   it('shows the creator frame with a launcher for every registered tool', async () => {
     renderCreator();
     expect(screen.getByRole('banner')).toHaveTextContent('Chili Creator');
@@ -144,5 +179,57 @@ describe('App', () => {
     act(() => title.blur());
     await user.keyboard('{Control>}z{/Control}');
     expect(title).toHaveValue('Test game');
+  });
+
+  it('offers the layout presets as commands and in the status bar', async () => {
+    const user = userEvent.setup();
+    renderCreator();
+    expect(screen.getByRole('combobox', { name: 'Layout' })).toHaveDisplayValue('Choose a layout');
+    await user.keyboard('{Control>}k{/Control}');
+    for (const name of ['Everything', 'Drawing', 'Writing', 'Sound', 'Playtest']) {
+      expect(screen.getByRole('option', { name: new RegExp(`Layout: ${name}`) })).toBeInTheDocument();
+    }
+  });
+});
+
+/** Makes the creator think it is on a phone-sized screen. */
+function onPhone() {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query.includes('max-width'),
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+  }));
+}
+
+describe('App on a phone', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows one tool at a time, picked from the tool bar at the bottom', async () => {
+    const user = userEvent.setup();
+    onPhone();
+    const platform = createFakePlatform();
+    const saved = platform.addGame({ title: 'Test game', data: blankGame });
+    renderCreator({ platform, initialProject: String(saved.id) });
+    const tools = screen.getByRole('navigation', { name: 'Tools' });
+    expect(await screen.findByRole('application', { name: 'Room example room' })).toBeInTheDocument();
+    expect(within(tools).getByRole('button', { name: 'Room' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('application', { name: 'Drawing avatar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Layout' })).not.toBeInTheDocument();
+
+    await user.click(within(tools).getByRole('button', { name: 'Paint' }));
+    expect(screen.getByRole('application', { name: 'Drawing avatar' })).toBeVisible();
+    expect(screen.getByRole('application', { name: 'Room example room', hidden: true })).not.toBeVisible();
+    expect(within(tools).getByRole('button', { name: 'Paint' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('opens tools from commands too, like the problem count', async () => {
+    const user = userEvent.setup();
+    onPhone();
+    const platform = createFakePlatform();
+    const saved = platform.addGame({ title: 'Test game', data: blankGame });
+    renderCreator({ platform, initialProject: String(saved.id) });
+    await user.click(await screen.findByRole('button', { name: 'Problems: 1 warning' }));
+    expect(await screen.findByText('Players cannot finish this game yet: add an ending.')).toBeVisible();
   });
 });

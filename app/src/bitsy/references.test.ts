@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addRoom, byId, createWorld, parse } from '.';
 import { referencesTo, search } from './references';
+import { updateTune } from './sound';
 import { addEnding, addExit, setDialogText } from './story';
 import { validate } from './validate';
 
@@ -10,6 +11,20 @@ const fixture = (name: string) => parse(fixtures[`./fixtures/${name}.bitsy`]!).w
 const world = () => createWorld({ title: 'Test' });
 
 describe('referencesTo', () => {
+  it('finds the rooms that play a tune', () => {
+    expect(referencesTo(world(), { type: 'tune', id: '2' })).toEqual([{ label: 'example room', at: { type: 'room', room: '0' } }]);
+  });
+
+  it('finds the sprites, items and tunes that make a blip', () => {
+    const w = world();
+    updateTune(w, '3', (tune) => (tune.melody[0]![0] = { beats: 1, note: 0, octave: 4, blip: '2' }));
+    expect(referencesTo(w, { type: 'blip', id: '1' })).toEqual([{ label: 'cat', at: { type: 'drawing', kind: 'sprites', id: 'a' } }]);
+    expect(referencesTo(w, { type: 'blip', id: '2' })).toEqual([
+      { label: 'key', at: { type: 'drawing', kind: 'items', id: '1' } },
+      { label: 'rhythmic ruins', at: { type: 'tune', id: '3' } },
+    ]);
+  });
+
   it('finds the rooms a tile is painted in', () => {
     expect(referencesTo(world(), { type: 'drawing', kind: 'tiles', id: 'a' })).toEqual([
       { label: 'example room: 52 cells', at: { type: 'room', room: '0' } },
@@ -65,6 +80,18 @@ describe('search', () => {
     expect(search(w, 'example').map((r) => r.at)).toEqual([{ type: 'room', room: '0' }]);
     expect(search(w, 'a').some((r) => r.at.type === 'variable')).toBe(true);
     expect(search(w, '  ')).toEqual([]);
+    expect(search(w, 'fanfare')).toEqual([{ label: 'finale fanfare', at: { type: 'tune', id: '1' } }]);
+    expect(search(w, 'meow')).toEqual([{ label: 'meow', at: { type: 'blip', id: '1' } }]);
+  });
+
+  it('lists a whole category, or narrows a search to one', () => {
+    const w = world();
+    expect(search(w, '', 'rooms').map((r) => r.label)).toEqual(['example room']);
+    expect(search(w, '', 'drawings').map((r) => r.label)).toEqual(['block', 'avatar', 'cat', 'tea', 'key']);
+    expect(search(w, '', 'colors').map((r) => r.at.type)).toEqual(['palette']);
+    expect(search(w, '', 'sound').map((r) => r.at.type)).toEqual(['tune', 'tune', 'tune', 'blip', 'blip']);
+    expect(search(w, 'cat', 'dialog').map((r) => r.label)).toEqual(['cat dialog']);
+    expect(search(w, '', 'all')).toEqual([]);
   });
 });
 
@@ -124,6 +151,18 @@ describe('validate', () => {
     delete byId(w.sprites, 'A')!.position;
     expect(validate(w)).toEqual([
       { severity: 'error', message: 'The avatar is not in any room.', at: { type: 'drawing', kind: 'sprites', id: 'A' } },
+    ]);
+  });
+
+  it('warns about sounds that are gone', () => {
+    const w = world();
+    w.rooms[0]!.tune = '9';
+    byId(w.sprites, 'a')!.blip = '8';
+    updateTune(w, '1', (tune) => (tune.melody[0]![0] = { beats: 1, note: 0, octave: 4, blip: '7' }));
+    expect(validate(w).filter((p) => p.severity === 'warning' && /tune|blip/.test(p.message))).toEqual([
+      { severity: 'warning', message: 'example room plays tune 9, which does not exist.', at: { type: 'room', room: '0' } },
+      { severity: 'warning', message: 'cat makes blip 8, which does not exist.', at: { type: 'drawing', kind: 'sprites', id: 'a' } },
+      { severity: 'warning', message: 'finale fanfare plays blip 7, which does not exist.', at: { type: 'tune', id: '1' } },
     ]);
   });
 

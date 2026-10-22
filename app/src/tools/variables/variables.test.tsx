@@ -1,7 +1,7 @@
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { byId, dialogText, setDialogText } from '../../bitsy';
+import { byId, dialogText, setDialogText, startingItem } from '../../bitsy';
 import { renderTool } from '../../test/creator';
 import variables from '.';
 
@@ -59,5 +59,15 @@ describe('Variables', () => {
     await user.click(screen.getByRole('button', { name: 'Delete a' }));
     expect(world().variables).toEqual([]);
     expect(screen.getByText(/No variables yet/)).toBeInTheDocument();
+  });
+
+  it('sets the items the avatar starts with', async () => {
+    const user = userEvent.setup();
+    const { world } = await renderTool(Variables);
+    const key = screen.getByRole('spinbutton', { name: 'Starting key' });
+    expect(key).toHaveValue(0);
+    await user.clear(key);
+    await user.type(key, '3');
+    expect(startingItem(world(), '1')).toBe(3);
   });
 });

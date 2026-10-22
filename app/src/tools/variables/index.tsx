@@ -1,6 +1,6 @@
 import { Plus, Trash2, Variable as VariableIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { addVariable, byId, referencesTo, removeVariable, renameVariable, type Variable } from '../../bitsy';
+import { addVariable, byId, drawingName, referencesTo, removeVariable, renameVariable, setStartingItem, startingItem, type Variable } from '../../bitsy';
 import { defineTool } from '../../plugin-api';
 import { useCreator, useWorld } from '../../shell/creator-context';
 import { Button } from '../../ui/button';
@@ -101,6 +101,37 @@ function Variables() {
         <Plus />
         New variable
       </Button>
+
+      <section aria-label="Starting items" className="space-y-1.5 border-t border-line pt-3">
+        <h2 className="text-xs text-text">The avatar starts with</h2>
+        {world.items.length === 0 ? (
+          <p className="text-xs text-muted">No items yet.</p>
+        ) : (
+          <ul className="grid gap-1.5 sm:grid-cols-2">
+            {world.items.map((item) => {
+              const name = drawingName('items', item);
+              return (
+                <li key={item.id}>
+                  <label className="flex items-center justify-between gap-2 text-xs text-muted">
+                    {name}
+                    <Input
+                      type="number"
+                      min={0}
+                      aria-label={`Starting ${name}`}
+                      value={startingItem(world, item.id)}
+                      className="w-20 text-right tabular-nums"
+                      onChange={(event) => {
+                        const n = Math.max(0, Math.round(Number(event.target.value) || 0));
+                        creator.projects.updateWorld((w) => setStartingItem(w, item.id, n), { group: `start-${item.id}` });
+                      }}
+                    />
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
@@ -108,6 +139,7 @@ function Variables() {
 export default defineTool({
   id: 'variables',
   title: 'Variables',
+  help: 'Numbers and words the dialog can read and change, and the items the avatar starts with.',
   icon: VariableIcon,
   component: Variables,
   defaultPosition: 'within',

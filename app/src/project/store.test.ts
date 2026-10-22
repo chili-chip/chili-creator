@@ -95,6 +95,15 @@ describe('createProjectStore', () => {
     expect(posted).toContainEqual({ type: 'chili-project', id: String(platform.games[0]!.id) });
   });
 
+  it('imports a game as a new project and opens it', async () => {
+    const { store } = setup();
+    await store.start();
+    await store.create('Mossland', game('Mossland'));
+    expect(platform.games[0]!.title).toBe('Mossland');
+    expect(platform.games[0]!.data).toBe(game('Mossland'));
+    expect(store.getState().open.status).toBe('ready');
+  });
+
   it('autosaves a rename and reports the save state to the platform', async () => {
     const saved = platform.addGame({ title: 'old', data: game('old') });
     const { store, posted } = setup();
@@ -179,6 +188,16 @@ describe('createProjectStore', () => {
     await store.start();
     await store.duplicate(store.getState().list.projects[0]!.id);
     expect(store.getState().list.projects.map((p) => p.title)).toEqual(['a (copy)', 'a']);
+  });
+
+  it('sets the open game\'s cover', async () => {
+    const saved = platform.addGame({ title: 'a', data: game('a') });
+    const { store } = setup();
+    await store.start(String(saved.id));
+    await store.setCover('data:image/png;base64,AAAA');
+    expect(platform.games[0]!.cover).toMatch(/cover\.png$/);
+    const open = store.getState().open;
+    expect(open.status === 'ready' && open.project.cover).toMatch(/cover\.png$/);
   });
 
   it('counts released games against the limit', async () => {

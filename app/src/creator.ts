@@ -8,11 +8,13 @@ import {
   type KeyValueStore,
 } from './chili-api';
 import { createEmbedBridge } from './embed/bridge';
+import { createI18n, type Catalog } from './i18n';
 import { createCommandRegistry, createToolRegistry } from './plugin-api';
 import { createPlayer, type Player } from './player';
 import { editingCommands } from './project/commands';
 import { createEditorState } from './project/editor';
 import { createProjectStore, type NoticeKind } from './project/store';
+import { createSoundPreview, type SoundPreview } from './sound/preview';
 import { builtInTools } from './tools';
 
 export interface CreatorOptions {
@@ -27,6 +29,14 @@ export interface CreatorOptions {
   localStore?: KeyValueStore;
   /** Makes a player that paints into `paint`; the real one runs citsy in a worker. */
   createPlayer?: (paint: (pixels: Uint8ClampedArray) => void) => Player;
+  /** Plays tunes and blips in the sound tools. */
+  sound?: SoundPreview;
+  /** Offers the first-run tour to people who have not seen it. */
+  tour?: boolean;
+  /** Loads a language's translations; the built-in catalogs by default. */
+  loadCatalog?: (language: string) => Promise<Catalog>;
+  /** The languages on offer; English and those with a catalog by default. */
+  languages?: string[];
 }
 
 /** Everything the shell needs, wired once. Tests build their own. */
@@ -38,7 +48,13 @@ export function createCreator({
   fetch: fetchImpl,
   localStore,
   createPlayer: makePlayer = (paint) => createPlayer({ paint }),
+  sound = createSoundPreview(),
+  tour = true,
+  loadCatalog,
+  languages,
 }: CreatorOptions) {
+  const i18n = createI18n({ ...(loadCatalog ? { load: loadCatalog } : {}), ...(languages ? { available: languages } : {}) });
+  void i18n.start();
   const bridge = createEmbedBridge({ win: window, parent, origin });
   const transport = createTransport({
     baseUrl: apiBase,
@@ -85,7 +101,10 @@ export function createCreator({
     projects,
     editor,
     notify,
+    i18n,
     createPlayer: makePlayer,
+    sound,
+    tour,
     initialProject,
     tools,
     commands,

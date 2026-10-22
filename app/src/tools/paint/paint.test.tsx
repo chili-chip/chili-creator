@@ -133,4 +133,32 @@ describe('Paint', () => {
     act(() => creator.editor.set({ drawing: null }));
     expect(screen.getByText('Pick a tile, sprite or item in the Library to paint it.')).toBeInTheDocument();
   });
+
+  it('picks the blip a sprite or item makes, and plays it', async () => {
+    const user = userEvent.setup();
+    const { world, creator, sound } = await renderTool(Paint);
+    act(() => creator.editor.select({ kind: 'sprites', id: 'a' }));
+    const blip = screen.getByRole('combobox', { name: 'Sound' });
+    expect(blip).toHaveDisplayValue('meow');
+    await user.selectOptions(blip, 'pick up key');
+    expect(byId(world().sprites, 'a')!.blip).toBe('2');
+    await user.click(screen.getByRole('button', { name: 'Play sound' }));
+    expect(sound.playBlip).toHaveBeenCalledWith(expect.objectContaining({ id: '2' }));
+    await user.selectOptions(blip, 'None');
+    expect(byId(world().sprites, 'a')!.blip).toBeUndefined();
+    // Tiles make no sound.
+    act(() => creator.editor.select({ kind: 'tiles', id: 'a' }));
+    expect(screen.queryByRole('combobox', { name: 'Sound' })).toBeNull();
+  });
+
+  it('plays an animated drawing beside the frames, and hides the grid', async () => {
+    const user = userEvent.setup();
+    const { creator } = await renderTool(Paint);
+    act(() => creator.editor.select({ kind: 'sprites', id: 'a' }));
+    expect(screen.queryByRole('img', { name: 'Animation preview' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: 'Animated' }));
+    expect(screen.getByRole('img', { name: 'Animation preview' })).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: 'Grid' }));
+    expect(creator.editor.getState().showGrid).toBe(false);
+  });
 });

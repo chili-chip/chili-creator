@@ -1,9 +1,11 @@
-import { Copy, FolderOpen, Gamepad2, LayoutGrid, Plus, Trash2 } from 'lucide-react';
+import { Copy, FolderOpen, Gamepad2, LayoutGrid, Plus, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { MAX_GAMES, type ProjectSummary } from '../../chili-api';
 import { defineTool } from '../../plugin-api';
-import { useCreator, useProjects } from '../../shell/creator-context';
+import { useCreator, useProjects, useT } from '../../shell/creator-context';
+import { gameFromFile } from '../../export/files';
 import { Button } from '../../ui/button';
+import { cn } from '../../ui/cn';
 
 function when(iso: string): string {
   const date = new Date(iso);
@@ -106,6 +108,7 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete }: RowProps) 
 
 function Projects() {
   const creator = useCreator();
+  const t = useT();
   const state = useProjects();
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -122,6 +125,17 @@ function Projects() {
     }
   }
 
+  async function importFile(file: File) {
+    const game = gameFromFile(file.name, await file.text());
+    if ('error' in game) {
+      setError(game.error);
+      return;
+    }
+    setCreating(true);
+    await act(() => creator.projects.create(game.title, game.data));
+    setCreating(false);
+  }
+
   async function create() {
     setCreating(true);
     await act(() => creator.projects.create());
@@ -133,7 +147,7 @@ function Projects() {
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex flex-wrap items-end gap-3">
           <div className="mr-auto">
-            <h1 className="font-display text-2xl font-bold">Your games</h1>
+            <h1 className="font-display text-2xl font-bold">{t('Your games')}</h1>
             <p className="text-sm text-muted">
               {state.mode === 'local' &&
                 'Not signed in: games are saved in this browser only. Sign in on Chili Platform to keep them on your account.'}
@@ -141,6 +155,30 @@ function Projects() {
               {state.mode === 'unknown' && 'Loading…'}
             </p>
           </div>
+          <Button asChild variant="secondary">
+            <label
+              title="Open a .bitsy file or a game page exported from Bitsy as a new game"
+              className={cn(
+                'cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-phosphor',
+                (creating || atLimit || state.mode === 'unknown') && 'pointer-events-none opacity-50',
+              )}
+            >
+              <Upload />
+              Import
+              <input
+                type="file"
+                aria-label="Import a game"
+                accept=".bitsy,.txt,.html,.htm,text/plain,text/html"
+                className="sr-only"
+                disabled={creating || atLimit || state.mode === 'unknown'}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = '';
+                  if (file) void importFile(file);
+                }}
+              />
+            </label>
+          </Button>
           <Button variant="primary" onClick={create} disabled={creating || atLimit || state.mode === 'unknown'}>
             <Plus />
             New game
@@ -209,6 +247,7 @@ function Projects() {
 export default defineTool({
   id: 'projects',
   title: 'Projects',
+  help: 'Your games: make a new one, open, copy or delete one, or import a .bitsy file or web page.',
   icon: LayoutGrid,
   component: Projects,
   defaultPosition: 'center',

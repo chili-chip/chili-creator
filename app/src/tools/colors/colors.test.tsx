@@ -58,4 +58,27 @@ describe('Colors', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: 'Palette' }), 'blueprint');
     expect(world().rooms[0]!.palette).toBe('0');
   });
+
+  it('takes a typed hex colour', async () => {
+    const user = userEvent.setup();
+    const { world } = await renderTool(Colors);
+    const hex = screen.getByRole('textbox', { name: 'Background hex' });
+    await user.clear(hex);
+    await user.type(hex, '#ff0000');
+    expect(world().palettes[0]!.colors[0]).toEqual([255, 0, 0]);
+    await user.clear(hex);
+    await user.type(hex, 'nope');
+    expect(world().palettes[0]!.colors[0]).toEqual([255, 0, 0]);
+  });
+
+  it('deletes a palette after asking, but not the last one', async () => {
+    const user = userEvent.setup();
+    const { world } = await renderTool(Colors);
+    expect(screen.getByRole('button', { name: 'Delete palette' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'New palette' }));
+    await user.click(screen.getByRole('button', { name: 'Delete palette' }));
+    await user.click(screen.getByRole('button', { name: 'Delete for good' }));
+    expect(world().palettes).toHaveLength(1);
+    expect(world().rooms[0]!.palette).toBe(world().palettes[0]!.id);
+  });
 });
