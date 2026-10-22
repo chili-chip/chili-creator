@@ -21,9 +21,8 @@ Write the tests before the code they test. This applies to every change in behav
 
 ## Tests in this repo
 
-- **Unit and component (new creator):** Vitest with Testing Library, in a `*.test.ts(x)` file next to the code in `app/src`. Run `npm test`.
+- **Unit and component:** Vitest with Testing Library, in a `*.test.ts(x)` file next to the code in `app/src`. Run `npm test`.
 - **Integration with the platform:** the API client (`app/src/chili-api`) is tested against `app/src/chili-api/fake-platform.ts`, an in-memory copy of the games API (pagination, the 30 game limit, 1.5 MB, 403 and 409 answers) that follows chili-platform's `docs/openapi.yaml` and `src/games/`. Change it when the platform changes. The platform page contract (`app/src/embed`) has unit tests and an end-to-end test.
-- **File format and engine:** `.bitsy` fixtures in `app/src/bitsy/fixtures/` (citsy's `tests/data` and the classic editor's built-in games) must round-trip byte for byte; `app/src/player/citsy.test.ts` runs the real `citsy.wasm` in Node.
+- **File format and engine:** `.bitsy` fixtures in `app/src/bitsy/fixtures/` (citsy's `tests/data` and the Bitsy editor's built-in games) must round-trip byte for byte; `app/src/player/citsy.test.ts` runs the real `citsy.wasm` in Node.
 - **End to end:** Playwright in `e2e/`, against the production build, on desktop and phone sizes. `e2e/fake-platform.ts` stands in for the platform's `/creator` page. Run `npm run test:e2e`. For changes that need the real platform, also test on platform-dev.chilichip.eu and list the steps in the PR.
-- **Classic editor:** `npm run check` (`scripts/check.mjs`) checks its files without a browser. It has no unit tests; changes there list manual steps in the PR.
-- Run `npm run typecheck`, `npm test`, `npm run test:e2e` and `npm run check` before you push; CI runs them all.
+- Run `npm run typecheck`, `npm test` and `npm run test:e2e` before you push; CI runs them all.

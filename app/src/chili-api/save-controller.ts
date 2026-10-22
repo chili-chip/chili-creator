@@ -1,4 +1,4 @@
-// Autosave, ported from the classic editor's citsy/chili-projects.js: every
+// Autosave, ported from the classic editor's chili-projects.js: every
 // edit bumps a revision, the save follows once edits pause, one request is
 // in flight at a time, and edits made during a save are sent after it.
 

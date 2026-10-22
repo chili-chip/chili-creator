@@ -1,4 +1,4 @@
-# Checks the classic editor and tests and builds the new creator (app/) on
+# Tests and builds the creator (app/) on
 # every pull request and push.
 # A push to main whose package.json version has no tag yet tags it (v0.2.1)
 # and publishes a GitHub release; a tag pushed by hand publishes one too.
@@ -23,7 +23,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: npm run check
       - run: npm ci
       - run: npm run typecheck
       - run: npm test

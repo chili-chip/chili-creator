@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { byId, createWorld, parse, serialize } from '.';
 
 // citsy's tests/data fixtures (chili-chip/citsy 38dc742) and the classic
-// editor's built-in games (editor/script/generated/resources.js).
+// editor's built-in games (its script/generated/resources.js).
 const fixtures = import.meta.glob<string>('./fixtures/*.bitsy', {
   query: '?raw',
   import: 'default',
