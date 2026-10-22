@@ -252,13 +252,19 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
       set({ list: { ...state.list, projects: state.list.projects.filter((p) => p.id !== id) } });
     },
 
-    /** Releases a project with its latest changes saved, and tells the platform page. */
+    /** Releases a project, or a released game's unpublished changes, with its latest edits saved, and tells the platform page. */
     async release(id: string) {
       if (openProject()?.id === id) await autosave.flush();
       const released = await repo(id).release(id);
       const { data: _data, ...summary } = released;
       if (openProject()?.id === id && state.open.status === 'ready') {
-        set({ open: { ...state.open, project: { ...state.open.project, released: true } } });
+        const { released: isReleased, releaseNumber, hasUnreleasedChanges, updatedAt } = released;
+        set({
+          open: {
+            ...state.open,
+            project: { ...state.open.project, released: isReleased, releaseNumber, hasUnreleasedChanges, updatedAt },
+          },
+        });
       }
       set({ list: listed(summary) });
       post({ type: 'chili-released', id, slug: released.slug });

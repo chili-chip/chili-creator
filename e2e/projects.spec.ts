@@ -80,6 +80,29 @@ test('a project is released from the creator, and its game page opens on the pla
   await expect.poll(() => received(page)).toContainEqual({ type: 'chili-navigate', to: `/games/${game.id}`, v: 2 });
 });
 
+test('edits to a released game wait for Publish update before buyers get them (#38)', async ({ page }) => {
+  const platform = createFakePlatform({ token: 'host-token' });
+  const game = platform.addGame({ title: 'Mossland', data: defaultGame, released: true });
+  await servePlatform(page, platform);
+  const creator = await openInFakePlatform(page, ['host-token'], `/index.html?api=/api&project=${game.id}`);
+
+  await creator.getByRole('textbox', { name: 'Game title' }).fill('Mossland 2');
+  await expect.poll(() => platform.games[0]!.title).toBe('Mossland 2');
+  expect(platform.releaseOf(game.id)).toMatchObject({ number: 1, title: 'Mossland' });
+
+  await creator.getByRole('navigation', { name: 'Tools' }).getByRole('button', { name: 'Projects' }).click();
+  const released = creator.getByRole('list', { name: 'Released games' });
+  await expect(released.getByRole('listitem')).toHaveCount(1);
+  await expect(creator.getByRole('list', { name: 'Projects' }).getByRole('listitem')).toHaveCount(0);
+  await expect(released).toContainText('Release 1 · unpublished changes');
+  await creator.getByRole('button', { name: 'Publish update for Mossland 2' }).click();
+  await creator.getByRole('button', { name: 'Publish it' }).click();
+  await expect(released).toContainText('Release 2');
+  await expect(released).not.toContainText('unpublished changes');
+  expect(platform.releaseOf(game.id)).toMatchObject({ number: 2, title: 'Mossland 2' });
+  expect(await received(page)).toContainEqual({ type: 'chili-released', id: String(game.id), slug: 'mossland', v: 2 });
+});
+
 test('signed out, a new game is kept in this browser', async ({ page }) => {
   await page.goto('/index.html');
   await expect(page.getByText(/saved in this browser only/)).toBeVisible();

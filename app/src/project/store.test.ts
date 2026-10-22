@@ -91,6 +91,26 @@ describe('createProjectStore', () => {
     expect(state.list.released[0]!.cover).not.toBe('');
   });
 
+  it('keeps edits to a released game unpublished until it is released again (#38)', async () => {
+    const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
+    const { store, posted } = setup();
+    await store.start(String(saved.id));
+    await store.release(String(saved.id));
+    store.setTitle('Mossland 2');
+    await store.flush();
+    let state = store.getState();
+    expect(state.list.released[0]).toMatchObject({ releaseNumber: 1, hasUnreleasedChanges: true });
+    expect(state.open.status === 'ready' && state.open.project.hasUnreleasedChanges).toBe(true);
+    expect(platform.releaseOf(saved.id)?.title).toBe('Mossland');
+
+    await store.release(String(saved.id));
+    state = store.getState();
+    expect(state.list.released[0]).toMatchObject({ releaseNumber: 2, hasUnreleasedChanges: false });
+    expect(state.open.status === 'ready' && state.open.project).toMatchObject({ releaseNumber: 2, hasUnreleasedChanges: false });
+    expect(platform.releaseOf(saved.id)?.title).toBe('Mossland 2');
+    expect(posted.filter((m) => m.type === 'chili-released')).toHaveLength(2);
+  });
+
   it('keeps games on this device when nobody is signed in', async () => {
     const { store } = setup({ signedIn: false });
     await store.start();

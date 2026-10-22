@@ -2,8 +2,9 @@
 // (as the transport's fetch) and by the end-to-end tests (behind page.route).
 // It copies the real behaviour from chili-platform src/games/: 20 per page
 // with absolute `next` links, newest first, 30 games per account (released
-// ones count), 1.5 MB of data, owner-only writes, email verification, and
-// 409 when a bought game is deleted.
+// ones count), 1.5 MB of data, owner-only writes, email verification,
+// 409 when a bought game is deleted, and numbered releases: after a release,
+// edits stay in the owner's working copy until the next release (#38).
 
 export interface FakeGame {
   id: number;
@@ -13,6 +14,11 @@ export interface FakeGame {
   cover: string;
   data: string;
   released: boolean;
+  /** The release players get; null before the first one. */
+  release_number: number | null;
+  released_at: string | null;
+  /** Owner only: title or data changed since the current release. */
+  has_unreleased_changes: boolean;
   listing_slug: string;
   in_library: boolean;
   created_at: string;
@@ -31,6 +37,13 @@ export interface FakePlatformOptions {
 export const MAX_PROJECTS = 30;
 export const MAX_DATA_BYTES = 1_500_000;
 const PAGE_SIZE = 20;
+
+export interface FakeRelease {
+  number: number;
+  title: string;
+  data: string;
+  created_at: string;
+}
 
 function slugify(title: string): string {
   return (
@@ -56,6 +69,7 @@ export function createFakePlatform({
 }: FakePlatformOptions = {}) {
   const games: FakeGame[] = [];
   const bought = new Set<number>();
+  const releases = new Map<number, FakeRelease[]>();
   const requests: { method: string; path: string; body: unknown }[] = [];
   let nextId = 1;
   let clock = Date.parse('2026-10-19T10:00:00Z');
@@ -75,6 +89,9 @@ export function createFakePlatform({
       cover: '',
       data: '',
       released: false,
+      release_number: null,
+      released_at: null,
+      has_unreleased_changes: false,
       listing_slug: '',
       in_library: false,
       created_at: now,
@@ -84,11 +101,29 @@ export function createFakePlatform({
     };
     game.slug = partial.slug ?? slugify(game.title);
     games.push(game);
+    // A game added as released has its release 1, as the platform's migration gave them.
+    if (game.released && game.release_number === null) publish(game);
     return game;
   }
 
+  function publish(game: FakeGame) {
+    const list = releases.get(game.id) ?? [];
+    const release = { number: list.length + 1, title: game.title, data: game.data, created_at: stamp() };
+    releases.set(game.id, [...list, release]);
+    game.released = true;
+    game.release_number = release.number;
+    game.released_at = release.created_at;
+    game.has_unreleased_changes = false;
+    game.updated_at = release.created_at;
+  }
+
+  function releaseOf(id: number): FakeRelease | undefined {
+    return releases.get(id)?.at(-1);
+  }
+
   function view(game: FakeGame, viewer: string | null): FakeGame {
-    return { ...game, data: viewer === game.owner ? game.data : '' };
+    const owner = viewer === game.owner;
+    return { ...game, data: owner ? game.data : '', has_unreleased_changes: owner && game.has_unreleased_changes };
   }
 
   function newestFirst(list: FakeGame[]): FakeGame[] {
@@ -126,9 +161,14 @@ export function createFakePlatform({
   }
 
   function write(game: FakeGame, body: Record<string, unknown>) {
+    const changed =
+      (typeof body.title === 'string' && body.title.trim() !== game.title) ||
+      (typeof body.data === 'string' && body.data !== game.data);
+    if (changed && game.released) game.has_unreleased_changes = true;
     if (typeof body.title === 'string') {
       game.title = body.title.trim();
-      game.slug = slugify(game.title);
+      // A released game keeps its slug.
+      if (!game.released) game.slug = slugify(game.title);
     }
     if (typeof body.data === 'string') game.data = body.data;
     if ('cover' in body) game.cover = body.cover ? `${origin}/media/games/covers/${game.id}/cover.png` : '';
@@ -191,10 +231,14 @@ export function createFakePlatform({
       const visible = game && (game.released || game.owner === viewer);
       if (!game || !visible) return json(404, { detail: 'No Game matches the given query.' });
       if (method === 'GET' && !match[2]) return json(200, view(game, viewer));
+      if (method === 'GET' && match[2]) {
+        const release = releaseOf(game.id);
+        if (!release) return json(404, { detail: 'Not released yet.' });
+        return json(200, { ...release, data: viewer === game.owner || bought.has(game.id) ? release.data : '' });
+      }
       if (game.owner !== viewer) return json(403, { detail: 'You do not have permission to perform this action.' });
       if (match[2] && method === 'POST') {
-        game.released = true;
-        game.updated_at = stamp();
+        if (!game.released || game.has_unreleased_changes) publish(game);
         return json(200, view(game, viewer));
       }
       if (method === 'PUT' || method === 'PATCH') {
@@ -221,6 +265,13 @@ export function createFakePlatform({
     games,
     requests,
     addGame,
+    /** The release players get now. */
+    releaseOf,
+    /** The owner changes the working copy, as a PATCH would. */
+    edit: (id: number, changes: { title?: string; data?: string }) => {
+      const game = games.find((g) => g.id === id);
+      if (game) write(game, changes);
+    },
     /** Someone bought this game, so deleting it fails with 409. */
     markBought: (id: number) => bought.add(id),
     setEmailVerified: (value: boolean) => (state.emailVerified = value),

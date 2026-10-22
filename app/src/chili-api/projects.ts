@@ -12,6 +12,10 @@ export interface ProjectSummary {
   /** Media URL of the PNG cover, or "". */
   cover: string;
   released: boolean;
+  /** The release players get, from 1; null before the first release. */
+  releaseNumber: number | null;
+  /** The owner changed the title or data since that release (#38). */
+  hasUnreleasedChanges: boolean;
   /** Marketplace listing, or "" when not listed. */
   listingSlug: string;
   updatedAt: string;
@@ -38,7 +42,7 @@ export interface ProjectRepository {
   update(id: string, changes: ProjectChanges): Promise<Project>;
   remove(id: string): Promise<void>;
   duplicate(id: string): Promise<Project>;
-  /** Turns a project into a released game, with the version last saved. */
+  /** Releases the version last saved: a project's first release, or a released game's next one. */
   release(id: string): Promise<Project>;
 }
 
@@ -50,6 +54,9 @@ interface GameResponse {
   cover: string;
   data: string;
   released: boolean;
+  /** Missing on a platform from before releases (#38). */
+  release_number?: number | null;
+  has_unreleased_changes?: boolean;
   listing_slug: string;
   updated_at: string;
 }
@@ -66,6 +73,8 @@ function toProject(game: GameResponse): Project {
     slug: game.slug,
     cover: game.cover ?? '',
     released: game.released,
+    releaseNumber: game.release_number ?? null,
+    hasUnreleasedChanges: game.has_unreleased_changes ?? false,
     listingSlug: game.listing_slug ?? '',
     updatedAt: game.updated_at,
     data: game.data ?? '',

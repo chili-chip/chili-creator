@@ -26,6 +26,17 @@ describe('createPlatformProjects', () => {
     expect(platform.requests.at(-1)).toMatchObject({ method: 'POST', path: `/games/${game.id}/release/` });
   });
 
+  it('reads the release state of a released game (#38)', async () => {
+    const game = platform.addGame({ title: 'Mossland', data: 'v1' });
+    const repo = repository();
+    expect(await repo.get(String(game.id))).toMatchObject({ releaseNumber: null, hasUnreleasedChanges: false });
+    await repo.release(String(game.id));
+    const edited = await repo.update(String(game.id), { data: 'v2' });
+    expect(edited).toMatchObject({ released: true, releaseNumber: 1, hasUnreleasedChanges: true, data: 'v2' });
+    const again = await repo.release(String(game.id));
+    expect(again).toMatchObject({ releaseNumber: 2, hasUnreleasedChanges: false });
+  });
+
   it('lists every project, following the pages', async () => {
     for (let i = 1; i <= 45; i++) platform.addGame({ title: `game ${i}` });
     platform.addGame({ title: 'out', released: true });

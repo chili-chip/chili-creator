@@ -74,6 +74,39 @@ describe('Projects', () => {
     expect(screen.queryByRole('button', { name: 'Release Mossland' })).not.toBeInTheDocument();
   });
 
+  it('shows unpublished changes on a released game and publishes them after asking (#38)', async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    const out = platform.addGame({ title: 'Mossland', data: game('Mossland'), released: true });
+    platform.addGame({ title: 'Tea time', released: true });
+    platform.edit(out.id, { data: game('Mossland') + '\n' });
+    renderCreator({ platform });
+    const released = await screen.findByRole('list', { name: 'Released games' });
+    const row = within(released).getByText('Mossland').closest('li')!;
+    expect(row).toHaveTextContent('Release 1 · unpublished changes');
+    expect(screen.queryByRole('button', { name: 'Publish update for Tea time' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Publish update for Mossland' }));
+    expect(screen.getByText(/Buyers and devices get this version from now on/)).toBeInTheDocument();
+    expect(platform.releaseOf(out.id)?.number).toBe(1);
+    await user.click(screen.getByRole('button', { name: 'Publish it' }));
+    await waitFor(() => expect(row).toHaveTextContent('Release 2'));
+    expect(row).not.toHaveTextContent('unpublished changes');
+    expect(platform.releaseOf(out.id)?.number).toBe(2);
+    expect(screen.queryByRole('button', { name: 'Publish update for Mossland' })).not.toBeInTheDocument();
+  });
+
+  it('tells you edits to an open released game are not published yet (#38)', async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    platform.addGame({ title: 'Mossland', data: game('Mossland'), released: true });
+    renderCreator({ platform });
+    await user.click(await screen.findByRole('button', { name: 'Open Mossland' }));
+    const note = await screen.findByRole('note', { name: 'Release state' });
+    expect(note).toHaveTextContent('Release 1');
+    await user.type(screen.getByRole('textbox', { name: 'Game title' }), ' 2');
+    await waitFor(() => expect(note).toHaveTextContent(/unpublished changes/), { timeout: 4000 });
+  });
+
   it("opens a released game's page on the platform", async () => {
     const user = userEvent.setup();
     const platform = createFakePlatform();

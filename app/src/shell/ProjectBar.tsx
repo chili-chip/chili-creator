@@ -16,6 +16,7 @@ export function ProjectBar() {
 
   if (state.open.status !== 'ready') return null;
   const { save, history } = state;
+  const { project } = state.open;
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden border-l border-line pl-2 sm:gap-2 sm:pl-3">
@@ -50,6 +51,21 @@ export function ProjectBar() {
           <Redo2 />
         </Button>
       </span>
+      {project.released && project.releaseNumber ? (
+        <span
+          role="note"
+          aria-label="Release state"
+          title={
+            project.hasUnreleasedChanges
+              ? `Players have release ${project.releaseNumber}. Publish an update in Projects to send them your changes.`
+              : `Players have release ${project.releaseNumber}. Your edits stay with you until you publish an update.`
+          }
+          className="hidden shrink-0 rounded border border-line px-1.5 py-0.5 text-[11px] whitespace-nowrap text-muted sm:inline"
+        >
+          Release {project.releaseNumber}
+          {project.hasUnreleasedChanges && <span className="text-amber"> · unpublished changes</span>}
+        </span>
+      ) : null}
       <span role="status" aria-label="Save state" className="flex items-center gap-1 text-[11px] whitespace-nowrap text-muted">
         {save.state === 'saved' && (
           <>

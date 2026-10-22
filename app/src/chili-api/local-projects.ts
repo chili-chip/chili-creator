@@ -83,6 +83,8 @@ export function createLocalProjects(
         slug: '',
         cover: '',
         released: false,
+        releaseNumber: null,
+        hasUnreleasedChanges: false,
         listingSlug: '',
         updatedAt: now(),
         data,

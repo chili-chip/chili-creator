@@ -33,12 +33,14 @@ interface RowProps {
   onDuplicate?(): void;
   onDelete?(): Promise<void>;
   onRelease?(): Promise<void>;
+  /** Releases a released game's unpublished changes as its next release. */
+  onPublish?(): Promise<void>;
   /** Opens the released game's page on the platform. */
   onGamePage?(): void;
 }
 
-function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, onGamePage }: RowProps) {
-  const [confirming, setConfirming] = useState<'delete' | 'release' | null>(null);
+function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, onPublish, onGamePage }: RowProps) {
+  const [confirming, setConfirming] = useState<'delete' | 'release' | 'publish' | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -63,6 +65,8 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, o
           <p className="truncate font-medium">{project.title}</p>
           <p className="text-xs text-muted">
             {project.released ? 'Released' : 'Edited'} {when(project.updatedAt)}
+            {project.released && project.releaseNumber ? ` · Release ${project.releaseNumber}` : ''}
+            {project.hasUnreleasedChanges && <span className="text-amber"> · unpublished changes</span>}
             {open && <span className="text-chili"> · open</span>}
           </p>
         </div>
@@ -81,6 +85,18 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, o
             >
               <Rocket />
               <span className="hidden sm:inline">Release</span>
+            </Button>
+          )}
+          {onPublish && project.hasUnreleasedChanges && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setConfirming('publish')}
+              aria-label={`Publish update for ${project.title}`}
+              title="Publish update"
+            >
+              <Rocket />
+              <span className="hidden sm:inline">Publish update</span>
             </Button>
           )}
           {onGamePage && (
@@ -128,13 +144,33 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, o
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3 text-sm">
           <span className="mr-auto">
             Release “{project.title}”? It becomes a game you can sell, and you can keep editing it here. Buyers get
-            the version you last saved. Listing it for sale is a separate step on the platform.
+            the version you last saved; later edits reach them only when you publish an update. Listing it for sale is
+            a separate step on the platform.
           </span>
           <Button size="sm" variant="ghost" onClick={() => setConfirming(null)} disabled={busy}>
             Not yet
           </Button>
           <Button size="sm" variant="primary" onClick={() => void run(onRelease)} disabled={busy}>
             Release it
+          </Button>
+        </div>
+      )}
+      {confirming === 'publish' && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3 text-sm">
+          <span className="mr-auto">
+            Publish your changes to “{project.title}” as release {(project.releaseNumber ?? 0) + 1}? Buyers and devices
+            get this version from now on.
+          </span>
+          <Button size="sm" variant="ghost" onClick={() => setConfirming(null)} disabled={busy}>
+            Not yet
+          </Button>
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={() => void run(onPublish).then(() => setConfirming(null))}
+            disabled={busy}
+          >
+            Publish it
           </Button>
         </div>
       )}
@@ -268,7 +304,9 @@ function Projects() {
         {state.list.released.length > 0 && (
           <section className="space-y-3">
             <h2 className="text-xs font-semibold tracking-widest text-muted uppercase">Released</h2>
-            <p className="text-sm text-muted">Saved edits to a released game reach its players.</p>
+            <p className="text-sm text-muted">
+              Buyers keep the version you released. Edits stay with you until you publish an update.
+            </p>
             <ul aria-label="Released games" className="space-y-2">
               {state.list.released.map((project) => (
                 <ProjectRow
@@ -276,6 +314,7 @@ function Projects() {
                   project={project}
                   open={project.id === openId}
                   onOpen={() => void creator.projects.open(project.id)}
+                  onPublish={() => creator.projects.release(project.id)}
                   onGamePage={() => creator.bridge.post({ type: 'chili-navigate', to: `/games/${project.id}` })}
                 />
               ))}
@@ -290,7 +329,7 @@ function Projects() {
 export default defineTool({
   id: 'projects',
   title: 'Projects',
-  help: 'Your games: make a new one, open, copy or delete one, or import a .bitsy file or web page.',
+  help: 'Your games: make a new one, open, copy, release or delete one, publish updates to a released game, or import a .bitsy file or web page.',
   icon: LayoutGrid,
   component: Projects,
   defaultPosition: 'center',
