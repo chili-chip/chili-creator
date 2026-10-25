@@ -48,3 +48,16 @@ When that version reaches `main`, CI tags it and publishes a GitHub release. The
 ## License
 
 MIT. Parts of the creator are ported from the Bitsy editor, © Bitsy authors; see `docs/bitsy/LICENSE.md` and `docs/bitsy/CREDITS.md`.
+
+Thanks to Adam Le Doux and everyone in `docs/bitsy/CREDITS.md` for Bitsy.
+
+The licences ship with the creator, because the platform serves `dist/` as is:
+
+| File in `dist/` | What it is |
+|---|---|
+| `LICENSE.txt` | This repository's licence, with the Bitsy notice |
+| `CREDITS.md` | The Bitsy credits |
+| `citsy-LICENSE.txt` | citsy's licence (also `citsy/LICENSE`), with the notice for the Bitsy fonts in it |
+| `THIRD-PARTY-LICENSES.md` | The licences of the npm packages in the bundle, written by Vite (`build.license`) |
+
+A game exported as a web page carries the citsy and Bitsy notices in a comment at the top.

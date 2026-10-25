@@ -19,6 +19,33 @@ export interface HtmlOptions extends HtmlParts {
   size: 'fill' | number;
 }
 
+// citsy is in the page, and its fonts come from Bitsy: both MIT licences ask
+// for their notice in every copy.
+const notice = `<!--
+This page plays the game with citsy (https://github.com/chili-chip/citsy).
+citsy: Copyright (c) 2026 chilichip
+Bitsy fonts in citsy (https://codeberg.org/adamledoux/bitsy): Copyright (c) 2016-present, Bitsy authors
+Both are under the MIT License:
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->`;
+
 const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 /** Keeps "</script>" inside a script from ending it. */
 const inScript = (text: string) => text.replace(/<\/script/gi, '<\\/script');
@@ -33,6 +60,7 @@ export function exportHtml({ data, title, pageColor, size, citsyScript, wasm }: 
   const color = /^#[0-9a-f]{3,8}$/i.test(pageColor) ? pageColor : '#000000';
   const fit = size === 'fill' ? 'min(100vw, 100vh)' : `min(100vw, 100vh, var(--size))`;
   return `<!doctype html>
+${notice}
 <html>
 <head>
 <meta charset="utf-8">

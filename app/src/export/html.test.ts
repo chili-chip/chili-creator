@@ -26,6 +26,14 @@ describe('exportHtml', () => {
     expect(gameFromFile('cave.html', html)).toEqual({ title: 'Cave <1>', data });
   });
 
+  it('carries the licence notices for citsy and the Bitsy fonts in it', () => {
+    const html = exportHtml({ data, title: 'Cave', pageColor: '#000000', size: 'fill', ...parts });
+    const notice = html.slice(html.indexOf('<!--'), html.indexOf('-->'));
+    expect(notice).toContain('Copyright (c) 2026 chilichip');
+    expect(notice).toContain('Copyright (c) 2016-present, Bitsy authors');
+    expect(notice).toContain('Permission is hereby granted, free of charge');
+  });
+
   it('can keep the game at a fixed size', () => {
     const html = exportHtml({ data, title: 'Cave', pageColor: '#000000', size: 512, ...parts });
     expect(html).toContain('--size: 512px');
