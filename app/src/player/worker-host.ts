@@ -51,6 +51,9 @@ export function createWorkerHost({ post, loadEngine, every, now }: WorkerHostOpt
         lastSound = key;
         post({ type: 'sound', channels });
       },
+      onState(state) {
+        post({ type: 'state', state });
+      },
       onEnd() {
         halt();
         post({ type: 'ended' });

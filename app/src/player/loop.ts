@@ -1,4 +1,4 @@
-import type { CitsyEngine } from './citsy';
+import type { CitsyEngine, GameState } from './citsy';
 
 /** citsy's button indices. */
 export enum Button {
@@ -21,6 +21,8 @@ export interface PlayLoopHandlers {
   onFrame(pixels: Uint8ClampedArray): void;
   onSound(channels: SoundChannel[]): void;
   onEnd(): void;
+  /** The inventory and variables, on the first frame and after each change. */
+  onState?(state: GameState): void;
 }
 
 const firstFrameMs = 16.667;
@@ -31,6 +33,7 @@ export function createPlayLoop(engine: CitsyEngine, handlers: PlayLoopHandlers) 
   const held = [false, false, false, false, false, false];
   let tapped = false;
   let previous: number | null = null;
+  let stateVersion: number | null = null;
 
   return {
     setButton(button: Button, down: boolean) {
@@ -55,6 +58,14 @@ export function createPlayLoop(engine: CitsyEngine, handlers: PlayLoopHandlers) 
         volume: s[at + 2]!,
         pulse: s[at + 3]!,
       })));
+      if (handlers.onState) {
+        const version = engine.stateVersion();
+        if (version !== stateVersion) {
+          stateVersion = version;
+          const { inventory, variables } = JSON.parse(engine.stateJson()) as GameState;
+          handlers.onState({ inventory, variables });
+        }
+      }
       if (!running) handlers.onEnd();
       return running;
     },

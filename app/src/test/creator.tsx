@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 import { createMemoryStore } from '../chili-api';
 import { createFakePlatform, type FakePlatform } from '../chili-api/fake-platform';
 import { createCreator, type CreatorOptions } from '../creator';
-import type { Player, PlayerState } from '../player';
+import type { GameState, Player, PlayerState } from '../player';
 import { App } from '../shell/App';
 import { CreatorProvider } from '../shell/creator-context';
 import type { PreviewState, SoundPreview } from '../sound/preview';
@@ -18,8 +18,20 @@ export function fakePlayer() {
     state = next;
     listeners.forEach((listener) => listener(next));
   };
+  let gameState: GameState | null = null;
+  const gameListeners = new Set<(state: GameState | null) => void>();
   const player = {
     played: [] as string[],
+    gameState: () => gameState,
+    subscribeGameState(listener: (state: GameState | null) => void) {
+      gameListeners.add(listener);
+      return () => gameListeners.delete(listener);
+    },
+    /** What the worker reports about the running game. */
+    setGameState(next: GameState | null) {
+      gameState = next;
+      gameListeners.forEach((listener) => listener(next));
+    },
     pressed: [] as [number, boolean][],
     state: () => state,
     subscribe(listener: (state: PlayerState) => void) {

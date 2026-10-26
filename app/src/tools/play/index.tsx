@@ -17,7 +17,8 @@ import { encodeGif } from '../../export/gif';
 import { encodePng, pngDataUrl } from '../../export/png';
 import { createRecorder, type Recorder } from '../../export/recorder';
 import { defineTool } from '../../plugin-api';
-import { Button as Key, buttonForKey, type Player, type PlayerState } from '../../player';
+import { drawingName, type World } from '../../bitsy';
+import { Button as Key, buttonForKey, type GameState, type Player, type PlayerState } from '../../player';
 import { useCreator, useProjects } from '../../shell/creator-context';
 import { Button } from '../../ui/button';
 
@@ -62,6 +63,56 @@ function usePlayer(canvas: RefObject<HTMLCanvasElement | null>, recorder: Record
   return { player, state };
 }
 
+function useGameState(player: Player | null): GameState | null {
+  const [state, setState] = useState<GameState | null>(() => player?.gameState() ?? null);
+  useEffect(() => {
+    setState(player?.gameState() ?? null);
+    return player?.subscribeGameState(setState);
+  }, [player]);
+  return state;
+}
+
+function StateTable({ caption, empty, rows }: { caption: string; empty: string; rows: [string, string][] }) {
+  return (
+    <table className="w-full text-left text-xs">
+      <caption className="pb-1 text-left text-xs font-semibold tracking-wide text-muted uppercase">{caption}</caption>
+      <tbody>
+        {rows.length === 0 ? (
+          <tr>
+            <td className="text-muted">{empty}</td>
+          </tr>
+        ) : (
+          rows.map(([name, value]) => (
+            <tr key={name} className="border-t border-line">
+              <th scope="row" className="py-1 pr-2 font-normal text-text">
+                {name}
+              </th>
+              <td className="py-1 text-right font-mono text-text tabular-nums">{value}</td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  );
+}
+
+/** The running game's inventory and variables, as the classic editor showed them. */
+function LiveState({ world, state }: { world: World; state: GameState }) {
+  const items = world.items.map((item): [string, string] => [
+    drawingName('items', item),
+    String(state.inventory[item.id] ?? 0),
+  ]);
+  const variables = Object.entries(state.variables)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([name, value]): [string, string] => [name, JSON.stringify(value)]);
+  return (
+    <div className="mx-auto grid w-full max-w-[min(100%,512px)] gap-4 sm:grid-cols-2">
+      <StateTable caption="Inventory" empty="No items in this game." rows={items} />
+      <StateTable caption="Variables" empty="No variables in this game." rows={variables} />
+    </div>
+  );
+}
+
 function TouchButton({ label, button, player, children }: { label: string; button: Key; player: Player | null; children: ReactNode }) {
   return (
     <button
@@ -92,6 +143,7 @@ function Play() {
   const [hasPicture, setHasPicture] = useState(false);
   const [shot] = useState<Shot>(() => ({ pixels: null, onFirst: () => setHasPicture(true) }));
   const { player, state } = usePlayer(canvas, recorder, shot);
+  const gameState = useGameState(player);
   const ready = projects.open.status === 'ready';
   const running = state.status === 'playing' || state.status === 'loading';
 
@@ -296,6 +348,10 @@ function Play() {
           <span className="font-pixel text-[10px]">A</span>
         </TouchButton>
       </div>
+
+      {gameState && state.status !== 'idle' && projects.open.status === 'ready' && (
+        <LiveState world={projects.open.world} state={gameState} />
+      )}
     </div>
   );
 }

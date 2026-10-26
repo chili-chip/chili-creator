@@ -68,4 +68,27 @@ describe('citsy engine', () => {
     const after = run(citsy, 20, Button.Right);
     expect(differs(before, after)).toBeGreaterThan(0);
   });
+
+  it('reports the state of the running game', async () => {
+    const citsy = await engine();
+    expect(citsy.load(fixtures['../bitsy/fixtures/state.bitsy']!)).toBe(true);
+    const states: unknown[] = [];
+    const loop = createPlayLoop(citsy, { onFrame: () => {}, onSound: () => {}, onEnd: () => {}, onState: (s) => states.push(s) });
+    loop.tick(0);
+    expect(states).toEqual([{ inventory: {}, variables: { mood: 'happy', visits: 0 } }]);
+    expect(citsy.setItem('coin', 2)).toBe(true);
+    citsy.setVariable('mood', 'grumpy');
+    loop.tick(16);
+    expect(states.at(-1)).toEqual({ inventory: { 0: 2 }, variables: { mood: 'grumpy', visits: 0 } });
+  });
+
+  it('gives the line of a parse error', async () => {
+    const citsy = await engine();
+    const game = fixtures['../bitsy/fixtures/state.bitsy']!;
+    expect(citsy.validate(game)).toEqual({ ok: true, errors: [] });
+    expect(citsy.validate(game.replace('10111101', '1011110'))).toEqual({
+      ok: false,
+      errors: [{ line: 39, message: "tile row must be exactly 8 characters, got '1011110'" }],
+    });
+  });
 });

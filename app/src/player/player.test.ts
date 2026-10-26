@@ -101,6 +101,20 @@ describe('createPlayer', () => {
     expect(t.synth.dispose).toHaveBeenCalled();
   });
 
+  it('keeps the latest game state and tells its subscribers', () => {
+    const t = setup();
+    const seen: unknown[] = [];
+    t.player.subscribeGameState((state) => seen.push(state));
+    expect(t.player.gameState()).toBeNull();
+    t.player.play('GAME');
+    const state = { inventory: { 0: 1 }, variables: { n: 2 } };
+    t.worker.emit({ type: 'state', state });
+    expect(t.player.gameState()).toEqual(state);
+    t.player.play('GAME');
+    expect(t.player.gameState()).toBeNull();
+    expect(seen).toEqual([state, null]);
+  });
+
   it('tells subscribers about each change', () => {
     const t = setup();
     t.player.play('GAME');
