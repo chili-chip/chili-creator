@@ -14,6 +14,11 @@ function setup(overrides: Partial<CitsyEngine> = {}) {
     frame: vi.fn(() => running),
     pixels: () => new Uint8Array(65536),
     sound: () => new Float32Array(8),
+    stateVersion: () => 1,
+    stateJson: () => '{"version":1,"inventory":{"0":2},"variables":{"n":1}}',
+    setVariable: vi.fn(),
+    setItem: vi.fn(() => true),
+    validate: () => ({ ok: true, errors: [] }),
     ...overrides,
   };
   const sent: FromWorker[] = [];
@@ -69,6 +74,24 @@ describe('createWorkerHost', () => {
     t.step();
     const sound = t.sent.filter((m) => m.type === 'sound');
     expect(sound).toHaveLength(2);
+  });
+
+  it('sends the game state when it changes', async () => {
+    const t = setup();
+    await t.host.handle({ type: 'play', data: 'GAME' });
+    t.step();
+    t.step();
+    const states = t.sent.filter((m) => m.type === 'state');
+    expect(states).toEqual([{ type: 'state', state: { inventory: { 0: 2 }, variables: { n: 1 } } }]);
+  });
+
+  it('sends the state again for a new game', async () => {
+    const t = setup();
+    await t.host.handle({ type: 'play', data: 'GAME' });
+    t.step();
+    await t.host.handle({ type: 'play', data: 'GAME' });
+    t.step();
+    expect(t.sent.filter((m) => m.type === 'state')).toHaveLength(2);
   });
 
   it('passes buttons to the game', async () => {

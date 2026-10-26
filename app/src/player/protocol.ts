@@ -1,3 +1,4 @@
+import type { GameState } from './citsy';
 import type { Button, SoundChannel } from './loop';
 
 /** Messages from the page to the player worker. */
@@ -13,5 +14,7 @@ export type FromWorker =
   /** 128×128 RGBA, transferred. */
   | { type: 'frame'; pixels: ArrayBuffer }
   | { type: 'sound'; channels: SoundChannel[] }
+  /** Sent when the inventory or a variable changes. */
+  | { type: 'state'; state: GameState }
   | { type: 'ended' }
   | { type: 'error'; message: string };

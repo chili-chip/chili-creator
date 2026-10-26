@@ -1,3 +1,4 @@
+import type { GameState } from './citsy';
 import type { Button } from './loop';
 import type { FromWorker, ToWorker } from './protocol';
 import { createSquareSynth, type Synth } from './synth';
@@ -26,6 +27,14 @@ export function createPlayer({ createWorker = defaultWorker, paint, createSynth 
   let synth: Synth | null = null;
   let current: PlayerState = { status: 'idle' };
   const listeners = new Set<(state: PlayerState) => void>();
+  let game: GameState | null = null;
+  const gameListeners = new Set<(state: GameState | null) => void>();
+
+  function setGame(state: GameState | null) {
+    if (state === game) return;
+    game = state;
+    gameListeners.forEach((listener) => listener(state));
+  }
 
   function set(state: PlayerState) {
     current = state;
@@ -52,6 +61,9 @@ export function createPlayer({ createWorker = defaultWorker, paint, createSynth 
         case 'sound':
           synth?.apply(message.channels);
           break;
+        case 'state':
+          setGame(message.state);
+          break;
         case 'ended':
           set({ status: 'ended' });
           break;
@@ -76,9 +88,16 @@ export function createPlayer({ createWorker = defaultWorker, paint, createSynth 
       return () => listeners.delete(listener);
     },
     /** Starts (or restarts) a game from its `.bitsy` text. Call it from a user gesture so sound can start. */
+    /** The running game's inventory and variables; null until its first frame. */
+    gameState: () => game,
+    subscribeGameState(listener: (state: GameState | null) => void): () => void {
+      gameListeners.add(listener);
+      return () => gameListeners.delete(listener);
+    },
     play(data: string) {
       synth ??= createSynth();
       ensureWorker();
+      setGame(null);
       set({ status: 'loading' });
       send({ type: 'play', data });
     },
@@ -99,6 +118,7 @@ export function createPlayer({ createWorker = defaultWorker, paint, createSynth 
       synth?.dispose();
       synth = null;
       listeners.clear();
+      gameListeners.clear();
     },
   };
 }

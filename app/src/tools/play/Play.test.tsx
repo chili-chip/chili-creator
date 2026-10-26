@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { createFakePlatform } from '../../chili-api/fake-platform';
 import { Button } from '../../player';
-import { renderCreator } from '../../test/creator';
+import { blankGame, renderCreator } from '../../test/creator';
 
 const saved = vi.hoisted(() => ({ files: [] as { name: string; content: Uint8Array; type: string }[] }));
 vi.mock('../../export/files', async (importOriginal) => ({
@@ -13,9 +13,9 @@ vi.mock('../../export/files', async (importOriginal) => ({
 
 const game = (title: string) => `${title}\n\n# BITSY VERSION 8.12\n\n! ROOM_FORMAT 1\n`;
 
-async function withOpenGame() {
+async function withOpenGame(data = game('Mossland')) {
   const platform = createFakePlatform();
-  const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
+  const saved = platform.addGame({ title: 'Mossland', data });
   const view = renderCreator({ platform, initialProject: String(saved.id) });
   await screen.findByRole('textbox', { name: 'Game title' });
   showPlay();
@@ -132,5 +132,40 @@ describe('Play', () => {
     await user.click(screen.getByRole('button', { name: 'Use as cover' }));
     expect(await screen.findByText('Cover set.')).toBeInTheDocument();
     expect(platform.games[0]!.cover).toMatch(/cover\.png$/);
+  });
+
+  it('shows the inventory and variables while the game runs', async () => {
+    const user = userEvent.setup();
+    const { player } = await withOpenGame(blankGame);
+    expect(screen.queryByRole('table', { name: 'Inventory' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Play game' }));
+    act(() => player.setGameState({ inventory: {}, variables: { a: 42 } }));
+    const inventory = screen.getByRole('table', { name: 'Inventory' });
+    expect(within(inventory).getByRole('row', { name: 'tea 0' })).toBeInTheDocument();
+    expect(within(inventory).getByRole('row', { name: 'key 0' })).toBeInTheDocument();
+    const variables = screen.getByRole('table', { name: 'Variables' });
+    expect(within(variables).getByRole('row', { name: 'a 42' })).toBeInTheDocument();
+  });
+
+  it('updates the counts and values as they change', async () => {
+    const user = userEvent.setup();
+    const { player } = await withOpenGame(blankGame);
+    await user.click(screen.getByRole('button', { name: 'Play game' }));
+    act(() => player.setGameState({ inventory: {}, variables: { a: 42 } }));
+    act(() => player.setGameState({ inventory: { 1: 1 }, variables: { a: 'opened', b: true } }));
+    const inventory = screen.getByRole('table', { name: 'Inventory' });
+    expect(within(inventory).getByRole('row', { name: 'key 1' })).toBeInTheDocument();
+    const variables = screen.getByRole('table', { name: 'Variables' });
+    expect(within(variables).getByRole('row', { name: 'a "opened"' })).toBeInTheDocument();
+    expect(within(variables).getByRole('row', { name: 'b true' })).toBeInTheDocument();
+  });
+
+  it('says when a game has no items or variables', async () => {
+    const user = userEvent.setup();
+    const { player } = await withOpenGame();
+    await user.click(screen.getByRole('button', { name: 'Play game' }));
+    act(() => player.setGameState({ inventory: {}, variables: {} }));
+    expect(screen.getByText('No items in this game.')).toBeInTheDocument();
+    expect(screen.getByText('No variables in this game.')).toBeInTheDocument();
   });
 });

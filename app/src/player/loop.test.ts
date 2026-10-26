@@ -16,6 +16,11 @@ function fakeEngine(overrides: Partial<CitsyEngine> = {}): CitsyEngine & { calls
     },
     pixels: () => new Uint8Array(128 * 128 * 4).fill(7),
     sound: () => new Float32Array([1, 440, 0.5, 2, 0, 0, 0, 0]),
+    stateVersion: () => 0,
+    stateJson: () => '{"version":0,"inventory":{},"variables":{}}',
+    setVariable: vi.fn(),
+    setItem: vi.fn(() => true),
+    validate: () => ({ ok: true, errors: [] }),
     ...overrides,
   };
 }
@@ -70,6 +75,23 @@ describe('createPlayLoop', () => {
     expect(onSound).toHaveBeenCalledWith([
       { on: true, frequency: 440, volume: 0.5, pulse: 2 },
       { on: false, frequency: 0, volume: 0, pulse: 0 },
+    ]);
+  });
+
+  it('reports the game state on the first frame and whenever its version moves', () => {
+    const versions = [1, 1, 2];
+    let n = 0;
+    const stateJson = vi.fn(() => `{"version":${versions[n - 1]},"inventory":{"0":${n}},"variables":{"a":"x"}}`);
+    const engine = fakeEngine({ stateVersion: () => versions[n++]!, stateJson });
+    const onState = vi.fn();
+    const loop = createPlayLoop(engine, { onFrame: () => {}, onSound: () => {}, onEnd: () => {}, onState });
+    loop.tick(0);
+    loop.tick(16);
+    loop.tick(32);
+    expect(stateJson).toHaveBeenCalledTimes(2);
+    expect(onState.mock.calls).toEqual([
+      [{ inventory: { 0: 1 }, variables: { a: 'x' } }],
+      [{ inventory: { 0: 3 }, variables: { a: 'x' } }],
     ]);
   });
 
