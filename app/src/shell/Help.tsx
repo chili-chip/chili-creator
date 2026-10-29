@@ -4,7 +4,10 @@ import type { ToolDefinition } from '../plugin-api';
 import { Button } from '../ui/button';
 import { cn } from '../ui/cn';
 
-export const BITSY_DOCS = 'https://make.bitsy.org/docs/';
+export const CREATOR_DOCS = 'https://creator.chilichip.eu/';
+
+/** The tool's page in the creator docs (docs/tools/<id>.md). */
+export const toolDocs = (id: string) => `${CREATOR_DOCS}tools/${id}/`;
 
 /** What each tool is for, with a way to open it, and where to learn more. */
 export function Help({
@@ -44,11 +47,11 @@ export function Help({
       </div>
       <p className="text-xs text-muted">
         This creator makes Bitsy games. The{' '}
-        <a href={BITSY_DOCS} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-phosphor underline">
-          Bitsy docs
+        <a href={CREATOR_DOCS} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-phosphor underline">
+          Creator docs
           <ExternalLink className="size-3" aria-hidden />
         </a>{' '}
-        explain rooms, dialog scripting and more. {!phone && 'Press Ctrl+K to find any command.'}
+        have a tutorial, a page for every tool and dialog scripting. {!phone && 'Press Ctrl+K to find any command.'}
       </p>
       <Button size="sm" variant="secondary" className="w-fit" onClick={onTour}>
         Take the tour
@@ -62,6 +65,15 @@ export function Help({
               <div className="min-w-0 flex-1">
                 <h3 className="text-text">{tool.title}</h3>
                 {tool.help && <p className="text-muted">{tool.help}</p>}
+                <a
+                  href={toolDocs(tool.id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Learn more about ${tool.title}`}
+                  className="text-phosphor underline"
+                >
+                  Learn more
+                </a>
               </div>
               <Button size="sm" variant="ghost" aria-label={`Open ${tool.title}`} onClick={() => onOpenTool(tool.id)}>
                 Open

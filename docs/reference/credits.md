@@ -1,0 +1,27 @@
+---
+title: Credits and licences
+description: Bitsy, citsy and the people behind them, and the licences the Chili Creator ships with.
+---
+
+# Credits and licences
+
+The Chili Creator stands on [Bitsy](https://bitsy.org) by **Adam Le Doux**. Parts of the creator are ported from the Bitsy editor. Thank you to everyone who made Bitsy.
+
+## Licences
+
+| Part | Licence | Where |
+|---|---|---|
+| Chili Creator | MIT | [LICENSE](https://github.com/chili-chip/chili-creator/blob/main/LICENSE) |
+| Parts ported from the Bitsy editor | MIT, © Bitsy authors | [docs/bitsy/LICENSE.md](https://github.com/chili-chip/chili-creator/blob/main/docs/bitsy/LICENSE.md) |
+| citsy | MIT, with the notice for the Bitsy fonts | [citsy LICENSE](https://github.com/chili-chip/citsy/blob/main/LICENSE) |
+| npm packages in the creator | Their own | `THIRD-PARTY-LICENSES.md` in the built creator |
+
+The licences ship with the creator. A game you export as a web page carries the citsy and Bitsy notices in a comment at the top.
+
+Your games are yours. The licences above cover the creator and the engine, not what you make with them.
+
+## Bitsy credits
+
+These are the Bitsy credits, as they ship with the creator.
+
+--8<-- "bitsy/CREDITS.md"

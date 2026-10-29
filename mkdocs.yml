@@ -1,0 +1,138 @@
+site_name: Chili Creator docs
+site_description: Make Bitsy games in the Chili Creator, release them on Chili Platform and play them on VGC Zero.
+site_url: https://creator.chilichip.eu/
+repo_url: https://github.com/chili-chip/chili-creator
+repo_name: chili-chip/chili-creator
+edit_uri: edit/main/docs/
+copyright: >
+  Chili Creator is MIT licensed. Bitsy is by Adam Le Doux and the
+  <a href="https://creator.chilichip.eu/reference/credits/">Bitsy contributors</a>.
+
+exclude_docs: |
+  /requirements.txt
+  /bitsy/
+
+theme:
+  name: material
+  logo: assets/chili.svg
+  favicon: assets/chili.svg
+  icon:
+    repo: fontawesome/brands/github
+  font:
+    text: Inter
+    code: IBM Plex Mono
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - navigation.instant
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+    - content.action.edit
+    - toc.follow
+
+extra_css:
+  - assets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/xB9sPYKBZc
+      name: chilichip on Discord
+    - icon: fontawesome/brands/github
+      link: https://github.com/chili-chip
+      name: chili-chip on GitHub
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.snippets:
+      base_path: [docs]
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Get started:
+      - get-started/index.md
+      - Open the creator: get-started/open-the-creator.md
+      - The workspace: get-started/workspace.md
+      - On a phone: get-started/phone.md
+  - Tutorial:
+      - tutorial/index.md
+      - 1. Rooms: tutorial/1-rooms.md
+      - 2. Avatar and sprites: tutorial/2-avatar-and-sprites.md
+      - 3. Items: tutorial/3-items.md
+      - 4. Dialog: tutorial/4-dialog.md
+      - 5. Exits and endings: tutorial/5-exits-and-endings.md
+      - 6. Variables: tutorial/6-variables.md
+      - 7. Test and release: tutorial/7-test-and-release.md
+  - Tools:
+      - tools/index.md
+      - Projects: tools/projects.md
+      - Room: tools/room.md
+      - Paint: tools/paint.md
+      - Library: tools/library.md
+      - Colors: tools/colors.md
+      - Dialog: tools/dialog.md
+      - Exits & endings: tools/exits.md
+      - Variables: tools/variables.md
+      - Tunes: tools/tunes.md
+      - Blips: tools/blips.md
+      - Problems: tools/problems.md
+      - Play: tools/play.md
+      - Game: tools/game.md
+      - Download: tools/download.md
+      - Find: tools/find.md
+  - Reference:
+      - reference/index.md
+      - Dialog scripting: reference/dialog-scripting.md
+      - Keyboard shortcuts: reference/keyboard-shortcuts.md
+      - Play on VGC Zero: reference/vgc-zero.md
+      - Differences from Bitsy: reference/differences.md
+      - FAQ: reference/faq.md
+      - Credits and licences: reference/credits.md
+  - Develop:
+      - develop/index.md
+      - Platform contract: develop/platform-contract.md
+      - Releasing: develop/releasing.md
+      - Writing these docs: develop/docs.md
+      - Overhaul plan: develop/overhaul-plan.md

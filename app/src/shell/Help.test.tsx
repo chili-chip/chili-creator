@@ -5,16 +5,20 @@ import { builtInTools } from '../tools';
 import { renderCreator } from '../test/creator';
 
 describe('Help', () => {
-  it('opens from the footer with the Bitsy docs and what each tool is for', async () => {
+  it('opens from the footer with the creator docs and what each tool is for', async () => {
     const user = userEvent.setup();
     renderCreator();
     await screen.findByRole('heading', { name: 'Your games' });
     await user.click(screen.getByRole('button', { name: 'Help' }));
     const help = screen.getByRole('dialog', { name: 'Help' });
-    expect(within(help).getByRole('link', { name: /Bitsy docs/ })).toHaveAttribute('href', 'https://make.bitsy.org/docs/');
+    expect(within(help).getByRole('link', { name: /Creator docs/ })).toHaveAttribute('href', 'https://creator.chilichip.eu/');
     for (const tool of builtInTools) {
       expect(tool.help, tool.id).toBeTruthy();
       expect(within(help).getByText(tool.help!)).toBeInTheDocument();
+      expect(within(help).getByRole('link', { name: `Learn more about ${tool.title}` })).toHaveAttribute(
+        'href',
+        `https://creator.chilichip.eu/tools/${tool.id}/`,
+      );
     }
     await user.click(within(help).getByRole('button', { name: 'Open Dialog' }));
     expect(screen.queryByRole('dialog', { name: 'Help' })).not.toBeInTheDocument();
