@@ -34,6 +34,18 @@ describe('Play', () => {
     expect(await screen.findByText('Open a game to play it.')).toBeInTheDocument();
   });
 
+  // jsdom has no layout; the e2e test (e2e/play-screen.spec.ts) checks the real size (#40).
+  it('sizes the screen from the space it has, and never stretches the picture', async () => {
+    await withOpenGame();
+    const gameScreen = screen.getByRole('application', { name: 'Game screen' });
+    const area = gameScreen.parentElement!;
+    expect(area.className).toContain('[container-type:size]');
+    expect(area.className).toContain('flex-1');
+    expect(gameScreen.className).toContain('size-[min(100cqw,100cqh,512px)]');
+    expect(gameScreen.className).toContain('shrink-0');
+    expect(gameScreen.querySelector('canvas')!.className).toContain('object-contain');
+  });
+
   it('plays the open game and stops it', async () => {
     const user = userEvent.setup();
     const { player } = await withOpenGame();
