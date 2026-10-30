@@ -40,7 +40,8 @@ export interface ProjectRepository {
   listProjects(): Promise<ProjectSummary[]>;
   listReleased(username: string): Promise<ProjectSummary[]>;
   get(id: string): Promise<Project>;
-  create(input: { title: string; data: string }): Promise<Project>;
+  /** `engine` is saved with the game; the platform keeps games without one as Bitsy games. */
+  create(input: { title: string; data: string; engine?: string }): Promise<Project>;
   update(id: string, changes: ProjectChanges): Promise<Project>;
   remove(id: string): Promise<void>;
   duplicate(id: string): Promise<Project>;
@@ -135,7 +136,7 @@ export function createPlatformProjects(transport: Transport): ProjectRepository 
     },
     async duplicate(id) {
       const source = await repository.get(id);
-      return repository.create({ title: copyTitle(source.title), data: source.data });
+      return repository.create({ title: copyTitle(source.title), data: source.data, ...(source.engine ? { engine: source.engine } : {}) });
     },
     async release(id) {
       return toProject(await transport.request<GameResponse>(`/games/${id}/release/`, { method: 'POST' }));

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { expect, test, type FrameLocator, type Locator } from '@playwright/test';
 import { createFakePlatform } from '../app/src/chili-api/fake-platform';
 import { openInFakePlatform, received, servePlatform } from './fake-platform';
+import { newBitsyGame } from './helpers';
 
 const defaultGame = readFileSync(join(__dirname, '../app/src/bitsy/fixtures/editor-default.bitsy'), 'utf8');
 
@@ -55,7 +56,7 @@ test('a new game starts on the platform and is listed', async ({ page }) => {
   const platform = await servePlatform(page, createFakePlatform({ token: 'host-token' }));
   const creator = await openInFakePlatform(page, ['host-token']);
   await expect(creator.getByText('0 of 30 games')).toBeVisible();
-  await creator.getByRole('button', { name: 'New game' }).click();
+  await newBitsyGame(creator);
   await expect(creator.getByRole('textbox', { name: 'Game title' })).toHaveValue('Untitled game');
   // The new game's room comes to the front; the dashboard lists it.
   await expect(creator.getByRole('application', { name: 'Room example room' })).toBeVisible();
@@ -106,7 +107,7 @@ test('edits to a released game wait for Publish update before buyers get them (#
 test('signed out, a new game is kept in this browser', async ({ page }) => {
   await page.goto('/index.html');
   await expect(page.getByText(/saved in this browser only/)).toBeVisible();
-  await page.getByRole('button', { name: 'New game' }).click();
+  await newBitsyGame(page);
   const title = page.getByRole('textbox', { name: 'Game title' });
   await expect(title).toHaveValue('Untitled game');
   await title.fill('Kept here');

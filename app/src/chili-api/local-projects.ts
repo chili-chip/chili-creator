@@ -76,10 +76,11 @@ export function createLocalProjects(
     },
     listReleased: async () => [],
     get: read,
-    async create({ title, data }) {
+    async create({ title, data, engine }) {
       const project: Project = {
         id: newId(),
         title,
+        ...(engine ? { engine } : {}),
         slug: '',
         cover: '',
         released: false,
@@ -112,7 +113,7 @@ export function createLocalProjects(
     },
     async duplicate(id) {
       const source = await read(id);
-      return repository.create({ title: copyTitle(source.title), data: source.data });
+      return repository.create({ title: copyTitle(source.title), data: source.data, ...(source.engine ? { engine: source.engine } : {}) });
     },
   };
   return repository;

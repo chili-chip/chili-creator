@@ -241,7 +241,7 @@ export function createProjectStore({ engines, profile, platform, local, post, no
     async create(title = NEW_GAME_TITLE, data?: string, engineId?: string) {
       if (!(await settle())) return;
       const engine = engines.get(engineId) ?? engines.default();
-      const project = await repo().create({ title, data: data ?? engine.newGame(title) });
+      const project = await repo().create({ title, data: data ?? engine.newGame(title), engine: engine.id });
       await refresh();
       show(project);
     },
