@@ -136,3 +136,5 @@ nav:
       - Releasing: develop/releasing.md
       - Writing these docs: develop/docs.md
       - Overhaul plan: develop/overhaul-plan.md
+      - "Plan: engines and editors": develop/engines-plan.md
+      - "Plan: Chili Beat engine": develop/beat-engine-plan.md

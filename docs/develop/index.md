@@ -93,3 +93,5 @@ Or run `npm link` here and `npm link @chili-chip/creator` in chili-platform-fron
 - [Releasing](releasing.md)
 - [Writing these docs](docs.md)
 - [Overhaul plan](overhaul-plan.md): the plan behind the current creator
+- [Plan: engines and editors](engines-plan.md): host more than one engine and editor (proposal)
+- [Plan: the Chili Beat engine](beat-engine-plan.md): a new, very simple no-code engine for the web and the console (proposal)

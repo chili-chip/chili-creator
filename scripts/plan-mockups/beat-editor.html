@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- Mockup for docs/develop/beat-engine-plan.md. Not the real editor.
+     Render: node scripts/plan-mockups/render.mjs (set CHROMIUM to a Chrome path if Playwright has no browser) -->
+<html><head><meta charset="utf-8"><style>
+:root{--bg:#16181d;--panel:#1f2229;--line:#2e333d;--text:#e8e6e3;--muted:#9aa0aa;--chili:#e04b3a;--when:#3a7bd5;--if:#b07cd8;--then:#3fa36b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 Inter,system-ui,sans-serif}
+.app{display:grid;grid-template-columns:420px 1fr;gap:12px;padding:12px;width:1100px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.tab{padding:8px 12px;border-bottom:1px solid var(--line);font-weight:600;display:flex;gap:8px;align-items:center}
+.tab span{color:var(--muted);font-weight:400}
+canvas{image-rendering:pixelated;display:block;margin:16px auto;width:384px;height:384px;border-radius:4px}
+.trace{padding:0 16px 14px;color:var(--muted);font-size:12px}
+.trace b{color:#f2c641}
+.rules{padding:12px;display:flex;flex-direction:column;gap:10px}
+.card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#242832}
+.card.lit{border-color:#f2c641;box-shadow:0 0 0 2px #f2c64155}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:3px 0}
+.k{font-size:11px;font-weight:700;letter-spacing:.06em;width:44px;border-radius:4px;padding:2px 0;text-align:center}
+.k.when{background:var(--when)}.k.if{background:var(--if)}.k.then{background:var(--then)}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#30353f;border:1px solid #3b414d;border-radius:6px;padding:3px 8px}
+.chip canvas{margin:0;width:16px;height:16px}
+.word{color:var(--muted)}
+.n{position:absolute;right:10px;top:8px;color:var(--muted);font-size:12px}
+.card{position:relative}
+.add{border:1px dashed var(--line);border-radius:10px;padding:8px;text-align:center;color:var(--muted)}
+</style></head><body>
+<div class="app">
+  <div class="panel"><div class="tab">Play <span>Bee Home · beat 41</span></div>
+    <canvas id="screen" width="128" height="128"></canvas>
+    <div class="trace">Rules that just ran: <b>2</b> Bee bumps Flower · <b>4</b> Wasp moves toward you</div>
+  </div>
+  <div class="panel"><div class="tab">Rules <span>7 cards · Recipes ▾</span></div>
+    <div class="rules" id="rules"></div>
+  </div>
+</div>
+<script>
+const PAL=['#1d2b23','#4f8a3c','#f2c641','#e04b3a'];
+const S={
+b:["00000000","01100110","01111110","02323220","23232322","02323220","00222200","00000000"],
+f:["00033000","00322300","03322330","00322300","00033000","00010000","00111000","00010000"],
+u:["00000000","00000000","00000000","00022000","00011000","00010000","00111000","00010000"],
+w:["00000000","01100110","01111110","03232330","32323233","03232330","00030300","00000000"],
+h:["00222200","02222220","22111122","22222222","21111112","22222222","02211220","00222200"],
+'#':["01101101","11111111","10111011","11111111","11011101","11111111","01110111","10101010"],
+g:["00000000","00000000","00010000","00000000","00000000","00000100","00000000","00000000"]};
+function draw(ctx,key,x,y){const s=S[key];for(let r=0;r<8;r++)for(let c=0;c<8;c++){const v=+s[r][c];if(v){ctx.fillStyle=PAL[v];ctx.fillRect(x+c,y+r,1,1)}}}
+const map=["################","#....f......f..#","#..............#","#.f....###.....#","#......#h#...f.#","#..............#","#...........w..#","#.f............#","#.....b........#","#..u.......f...#","#..............#","#.....###......#","#..f...........#","#..........f...#","################"];
+const ctx=document.getElementById('screen').getContext('2d');
+ctx.fillStyle=PAL[0];ctx.fillRect(0,0,128,128);
+for(let y=0;y<15;y++)for(let x=0;x<16;x++){if((x*7+y*3)%5==0)draw(ctx,'g',x*8,8+y*8);const k=map[y][x];if(k!=='.')draw(ctx,k,x*8,8+y*8)}
+// bar: pollen icon + count
+draw(ctx,'f',1,0);ctx.fillStyle=PAL[2];
+const digits={3:["111","001","111","001","111"],5:["111","100","111","001","111"],"/":["001","001","010","100","100"]};
+let px=11;for(const d of "3/5"){const g=digits[d];for(let r=0;r<5;r++)for(let c=0;c<3;c++)if(g[r][c]=='1')ctx.fillRect(px+c,2+r,1,1);px+=4}
+function chip(key,text){return `<span class="chip">${key?`<canvas data-k="${key}" width="8" height="8"></canvas>`:''}${text}</span>`}
+const w=t=>`<span class="word">${t}</span>`;
+const cards=[
+ {n:1,rows:[["when",[w('you press'),chip('','arrow')]],["then",[chip('','you'),w('move'),chip('','that way')]]]},
+ {n:2,lit:1,rows:[["when",[chip('b','Bee'),w('bumps'),chip('f','Flower')]],["then",[chip('f','Flower'),w('becomes'),chip('u','Bud')]],["",[chip('f','Pollen'),w('goes up'),chip('','1')]],["",[w('Play'),chip('','♪ coin')]]]},
+ {n:3,rows:[["when",[w('Every'),chip('','8'),w('beats'),chip('u','Bud')]],["then",[w('becomes'),chip('f','Flower')]]]},
+ {n:4,lit:1,rows:[["when",[w('Every'),chip('','2'),w('beats'),chip('w','Wasp')]],["then",[w('moves'),chip('','toward you')]]]},
+ {n:6,rows:[["when",[chip('b','Bee'),w('bumps'),chip('h','Hive')]],["if",[chip('f','Pollen'),w('is at least'),chip('','5')]],["then",[w('You win'),chip('','“The hive is happy.”')]]]},
+];
+document.getElementById('rules').innerHTML=cards.map(c=>`<div class="card${c.lit?' lit':''}"><span class="n">${c.n}</span>${c.rows.map(([k,parts])=>`<div class="row"><span class="k ${k}">${k.toUpperCase()}</span>${parts.join('')}</div>`).join('')}</div>`).join('')+'<div class="add">+ Add a rule</div>';
+document.querySelectorAll('canvas[data-k]').forEach(c=>{const x=c.getContext('2d');draw(x,c.dataset.k,0,0)});
+</script></body></html>
