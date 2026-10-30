@@ -10,7 +10,7 @@ import { defineConfig } from 'vitest/config';
 const licences = (): Plugin => ({
   name: 'licences',
   generateBundle() {
-    const files = { 'LICENSE.txt': 'LICENSE', 'CREDITS.md': 'docs/bitsy/CREDITS.md', 'citsy-LICENSE.txt': 'citsy/LICENSE' };
+    const files = { 'LICENSE.txt': 'LICENSE', 'CREDITS.md': 'docs/bitsy/CREDITS.md', 'citsy-LICENSE.txt': 'citsy/LICENSE', 'chili-beat-LICENSE.txt': 'chili-beat/LICENSE' };
     for (const [fileName, path] of Object.entries(files)) {
       this.emitFile({ type: 'asset', fileName, source: readFileSync(path, 'utf8') });
     }

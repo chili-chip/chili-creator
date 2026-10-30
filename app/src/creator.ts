@@ -16,6 +16,7 @@ import { editingCommands } from './project/commands';
 import { createEditorState } from './project/editor';
 import { createProjectStore, type NoticeKind } from './project/store';
 import { createSoundPreview, type SoundPreview } from './sound/preview';
+import { beatEngine } from './engines/beat';
 import { bitsyEngine } from './engines/bitsy';
 import { createEngineRegistry } from './engines/registry';
 import type { EditorDefinition, EngineModule } from './engines/types';
@@ -61,7 +62,8 @@ export function createCreator({
   tour = true,
   loadCatalog,
   languages,
-  engines: engineModules = [bitsyEngine],
+  // Chili Beat is in progress: turn it on with ?engines=beat.
+  engines: engineModules = [bitsyEngine, beatEngine as EngineModule],
   enabledEngines = ['bitsy'],
   search = typeof location === 'undefined' ? '' : location.search,
 }: CreatorOptions) {
