@@ -14,11 +14,17 @@ The Chili Creator stands on [Bitsy](https://bitsy.org) by **Adam Le Doux**. Part
 | Chili Creator | MIT | [LICENSE](https://github.com/chili-chip/chili-creator/blob/main/LICENSE) |
 | Parts ported from the Bitsy editor | MIT, © Bitsy authors | [docs/bitsy/LICENSE.md](https://github.com/chili-chip/chili-creator/blob/main/docs/bitsy/LICENSE.md) |
 | citsy | MIT, with the notice for the Bitsy fonts | [citsy LICENSE](https://github.com/chili-chip/citsy/blob/main/LICENSE) |
+| Chili Beat engine | MIT | [chili-beat LICENSE](https://github.com/chili-chip/chili-beat/blob/main/LICENSE) |
 | npm packages in the creator | Their own | `THIRD-PARTY-LICENSES.md` in the built creator |
 
 The licences ship with the creator. A game you export as a web page carries the citsy and Bitsy notices in a comment at the top.
 
 Your games are yours. The licences above cover the creator and the engine, not what you make with them.
+
+## Sweetie 16
+
+Chili Beat games use the **Sweetie 16** palette by
+[GrafxKid](https://lospec.com/palette-list/sweetie-16). Thank you!
 
 ## Bitsy credits
 

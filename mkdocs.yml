@@ -124,6 +124,7 @@ nav:
       - Find: tools/find.md
   - Chili Beat:
       - beat/index.md
+      - Bee Home tutorial: beat/tutorial.md
   - Reference:
       - reference/index.md
       - Dialog scripting: reference/dialog-scripting.md

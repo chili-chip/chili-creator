@@ -28,3 +28,7 @@ The creator is made of 15 tools. Each one has a button in the tool bar and a pag
 Everything you pick is shared between tools: pick a sprite in Library and Paint draws it, Room places it and Dialog shows what it says.
 
 To arrange the tools, see [The workspace](../get-started/workspace.md).
+
+These are the tools for Bitsy games. A Chili Beat game shows its own tools
+(Screens, Things, Rules, Sounds, Play, Problems and Game) next to Projects.
+They are on the [Chili Beat](../beat/index.md) page.
