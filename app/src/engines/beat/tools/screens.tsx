@@ -42,7 +42,7 @@ function WorldMap({ game, current, onPick, onAdd }: { game: Game; current: strin
             aria-label={`Add a screen at ${x}, ${y}`}
             title="Add a screen here"
             onClick={() => onAdd(x, y)}
-            className="size-5 rounded-sm border border-dashed border-line/50 opacity-40 hover:opacity-100"
+            className="size-5 rounded-sm border border-dashed border-muted/40 hover:border-chili"
           />
         );
       })}
