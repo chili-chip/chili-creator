@@ -1,8 +1,8 @@
 # Chili Creator 🌶️
 
-The game creator for [Chili Platform](https://platform.chilichip.eu): a [Bitsy](https://github.com/le-doux/bitsy)-compatible editor that saves projects to the platform and play-tests with the [citsy](https://github.com/chili-chip/citsy) runtime.
+The game creator for [Chili Platform](https://platform.chilichip.eu): a collection of game editors that save projects to the platform. The [Bitsy](https://github.com/le-doux/bitsy)-compatible editor play-tests with the [citsy](https://github.com/chili-chip/citsy) runtime, and the [Chili Beat](https://github.com/chili-chip/chili-beat) editor with the Chili Beat engine.
 
-**Docs: [creator.chilichip.eu](https://creator.chilichip.eu/)**, with a tutorial, a page for every tool, dialog scripting and the developer guide. Their source is in [`docs/`](docs/).
+**Docs: [creator.chilichip.eu](https://creator.chilichip.eu/)**, with a section for each editor (tutorial and a page for every tool) and the developer guide. Their source is in [`docs/`](docs/).
 
 It moved here from `chili-platform-frontend` (`public/creator`), history included.
 
@@ -12,6 +12,8 @@ It moved here from `chili-platform-frontend` (`public/creator`), history include
 |---|---|
 | `app/` | The creator: React, TypeScript, Vite, Dockview, Tailwind. Builds to `dist/`. |
 | `citsy/citsy.js`, `citsy.wasm`, `citsy-player.js` | citsy runtime and web player, also used by the platform's `/play` page |
+| `chili-beat/` | Chili Beat engine (wasm) and web player, from chili-chip/chili-beat, also used by the platform's `/play` page |
+| `app/src/engines/` | One folder per engine and its editor (`bitsy`, `beat`), see [Engines and editors](docs/develop/engines.md) |
 | `e2e/` | Playwright tests |
 | `docs/`, `mkdocs.yml` | The docs site (MkDocs Material, deployed to Cloudflare Pages) |
 

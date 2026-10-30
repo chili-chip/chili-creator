@@ -17,7 +17,9 @@ describe('Help', () => {
       expect(within(help).getByText(tool.help!)).toBeInTheDocument();
       expect(within(help).getByRole('link', { name: `Learn more about ${tool.title}` })).toHaveAttribute(
         'href',
-        `https://creator.chilichip.eu/tools/${tool.id}/`,
+        tool.id === 'projects'
+          ? 'https://creator.chilichip.eu/get-started/projects/'
+          : `https://creator.chilichip.eu/editors/bitsy/tools/${tool.id}/`,
       );
     }
     await user.click(within(help).getByRole('button', { name: 'Open Dialog' }));

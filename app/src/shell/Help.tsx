@@ -6,18 +6,25 @@ import { cn } from '../ui/cn';
 
 export const CREATOR_DOCS = 'https://creator.chilichip.eu/';
 
-/** The tool's page in the creator docs (docs/tools/<id>.md). */
-export const toolDocs = (id: string) => `${CREATOR_DOCS}tools/${id}/`;
+/** Tools every editor shares; their pages are in Get started. */
+const SHARED = new Set(['projects']);
+
+/** The tool's page in the creator docs: docs/editors/<editor>/tools/<id>.md, or docs/get-started/<id>.md for shared tools. */
+export const toolDocs = (id: string, editor: string) =>
+  SHARED.has(id) ? `${CREATOR_DOCS}get-started/${id}/` : `${CREATOR_DOCS}editors/${editor}/tools/${id}/`;
 
 /** What each tool is for, with a way to open it, and where to learn more. */
 export function Help({
   tools,
+  editor,
   phone,
   onOpenTool,
   onTour,
   onClose,
 }: {
   tools: readonly ToolDefinition[];
+  /** The editor whose tools are showing, for the docs links. */
+  editor: string;
   phone: boolean;
   onOpenTool(id: string): void;
   onTour(): void;
@@ -46,12 +53,12 @@ export function Help({
         </Button>
       </div>
       <p className="text-xs text-muted">
-        This creator makes Bitsy games. The{' '}
+        The creator has an editor for each kind of game. The{' '}
         <a href={CREATOR_DOCS} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-phosphor underline">
           Creator docs
           <ExternalLink className="size-3" aria-hidden />
         </a>{' '}
-        have a tutorial, a page for every tool and dialog scripting. {!phone && 'Press Ctrl+K to find any command.'}
+        have a tutorial and a page for every tool of each editor. {!phone && 'Press Ctrl+K to find any command.'}
       </p>
       <Button size="sm" variant="secondary" className="w-fit" onClick={onTour}>
         Take the tour
@@ -66,7 +73,7 @@ export function Help({
                 <h3 className="text-text">{tool.title}</h3>
                 {tool.help && <p className="text-muted">{tool.help}</p>}
                 <a
-                  href={toolDocs(tool.id)}
+                  href={toolDocs(tool.id, editor)}
                   target="_blank"
                   rel="noreferrer"
                   aria-label={`Learn more about ${tool.title}`}

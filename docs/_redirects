@@ -1,0 +1,10 @@
+# Old addresses from before the docs were split by editor (Cloudflare Pages).
+/tools/projects/ /get-started/projects/ 301
+/tools/ /editors/bitsy/tools/ 301
+/tools/* /editors/bitsy/tools/:splat 301
+/tutorial/* /editors/bitsy/tutorial/:splat 301
+/tutorial/ /editors/bitsy/tutorial/ 301
+/reference/dialog-scripting/ /editors/bitsy/dialog-scripting/ 301
+/reference/differences/ /editors/bitsy/differences/ 301
+/beat/tutorial/ /editors/beat/tutorial/ 301
+/beat/ /editors/beat/ 301

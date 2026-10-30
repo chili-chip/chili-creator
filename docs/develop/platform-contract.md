@@ -41,7 +41,7 @@ Every message has `v: 2`.
 | `chili-project-new` | The new project | A project is made |
 | `chili-project-removed` | The project | A project is deleted |
 | `chili-save-state` | `{ state, unsaved }` | The save state changes. The page warns before leaving with unsaved work. |
-| `chili-released` | `{ id, slug }` | A game was released from [Projects](../tools/projects.md) |
+| `chili-released` | `{ id, slug }` | A game was released from [Projects](../get-started/projects.md) |
 | `chili-navigate` | `{ to }` | Open a platform page, such as `/games/12` |
 | `chili-auth-request` | `{ id, reason? }` | The creator needs an access token |
 

@@ -1,5 +1,5 @@
 site_name: Chili Creator docs
-site_description: Make Bitsy games in the Chili Creator, release them on Chili Platform and play them on VGC Zero.
+site_description: The Chili Creator is a collection of game editors. Make Bitsy and Chili Beat games, release them on Chili Platform and play them on VGC Zero.
 site_url: https://creator.chilichip.eu/
 repo_url: https://github.com/chili-chip/chili-creator
 repo_name: chili-chip/chili-creator
@@ -95,42 +95,55 @@ nav:
       - get-started/index.md
       - Open the creator: get-started/open-the-creator.md
       - The workspace: get-started/workspace.md
+      - Projects: get-started/projects.md
       - On a phone: get-started/phone.md
-  - Tutorial:
-      - tutorial/index.md
-      - 1. Rooms: tutorial/1-rooms.md
-      - 2. Avatar and sprites: tutorial/2-avatar-and-sprites.md
-      - 3. Items: tutorial/3-items.md
-      - 4. Dialog: tutorial/4-dialog.md
-      - 5. Exits and endings: tutorial/5-exits-and-endings.md
-      - 6. Variables: tutorial/6-variables.md
-      - 7. Test and release: tutorial/7-test-and-release.md
-  - Tools:
-      - tools/index.md
-      - Projects: tools/projects.md
-      - Room: tools/room.md
-      - Paint: tools/paint.md
-      - Library: tools/library.md
-      - Colors: tools/colors.md
-      - Dialog: tools/dialog.md
-      - Exits & endings: tools/exits.md
-      - Variables: tools/variables.md
-      - Tunes: tools/tunes.md
-      - Blips: tools/blips.md
-      - Problems: tools/problems.md
-      - Play: tools/play.md
-      - Game: tools/game.md
-      - Download: tools/download.md
-      - Find: tools/find.md
-  - Chili Beat:
-      - beat/index.md
-      - Bee Home tutorial: beat/tutorial.md
+  - Editors:
+      - editors/index.md
+  - Bitsy editor:
+      - editors/bitsy/index.md
+      - Tutorial:
+          - editors/bitsy/tutorial/index.md
+          - 1. Rooms: editors/bitsy/tutorial/1-rooms.md
+          - 2. Avatar and sprites: editors/bitsy/tutorial/2-avatar-and-sprites.md
+          - 3. Items: editors/bitsy/tutorial/3-items.md
+          - 4. Dialog: editors/bitsy/tutorial/4-dialog.md
+          - 5. Exits and endings: editors/bitsy/tutorial/5-exits-and-endings.md
+          - 6. Variables: editors/bitsy/tutorial/6-variables.md
+          - 7. Test and release: editors/bitsy/tutorial/7-test-and-release.md
+      - Tools:
+          - editors/bitsy/tools/index.md
+          - Room: editors/bitsy/tools/room.md
+          - Paint: editors/bitsy/tools/paint.md
+          - Library: editors/bitsy/tools/library.md
+          - Colors: editors/bitsy/tools/colors.md
+          - Dialog: editors/bitsy/tools/dialog.md
+          - Exits & endings: editors/bitsy/tools/exits.md
+          - Variables: editors/bitsy/tools/variables.md
+          - Tunes: editors/bitsy/tools/tunes.md
+          - Blips: editors/bitsy/tools/blips.md
+          - Problems: editors/bitsy/tools/problems.md
+          - Play: editors/bitsy/tools/play.md
+          - Game: editors/bitsy/tools/game.md
+          - Download: editors/bitsy/tools/download.md
+          - Find: editors/bitsy/tools/find.md
+      - Dialog scripting: editors/bitsy/dialog-scripting.md
+      - Differences from Bitsy: editors/bitsy/differences.md
+  - Chili Beat editor:
+      - editors/beat/index.md
+      - Bee Home tutorial: editors/beat/tutorial.md
+      - Tools:
+          - editors/beat/tools/index.md
+          - Screens: editors/beat/tools/beat-screens.md
+          - Things: editors/beat/tools/beat-things.md
+          - Rules: editors/beat/tools/beat-rules.md
+          - Sounds: editors/beat/tools/beat-sounds.md
+          - Play: editors/beat/tools/beat-play.md
+          - Problems: editors/beat/tools/beat-problems.md
+          - Game: editors/beat/tools/beat-game.md
   - Reference:
       - reference/index.md
-      - Dialog scripting: reference/dialog-scripting.md
       - Keyboard shortcuts: reference/keyboard-shortcuts.md
       - Play on VGC Zero: reference/vgc-zero.md
-      - Differences from Bitsy: reference/differences.md
       - FAQ: reference/faq.md
       - Credits and licences: reference/credits.md
   - Develop:

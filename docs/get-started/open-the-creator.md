@@ -27,7 +27,7 @@ The creator opens on **Projects**, the list of your games.
 
 | You want to | Do this |
 |---|---|
-| Start from scratch | Choose **New game**. You get one room with walls, the avatar, a cat that talks, a cup of tea and a key. |
+| Start from scratch | Choose **New game**, then pick an editor: [Bitsy](../editors/bitsy/index.md) for story games, [Chili Beat](../editors/beat/index.md) for games on the beat. Or pick one of the example games under an editor. |
 | Keep working on a game | Choose **Open** on it. |
 | Bring in a game from the Bitsy editor | Choose **Import** and pick a `.bitsy` file, or a web page exported from Bitsy (`.html`). It becomes a new game. |
 | Try something without changing a game | Choose **Duplicate** (the copy icon) and open the copy. |
@@ -48,8 +48,8 @@ The dot next to the game title shows the state:
 
 If you try to leave the page while a change has not saved yet, the platform asks you first.
 
-!!! tip "Keep your own copy"
-    Use **Download → Download .bitsy** now and then. The `.bitsy` file is plain text, works in the [Bitsy editor](https://make.bitsy.org) too, and you can **Import** it again any time. See [Download](../tools/download.md).
+!!! tip "Keep your own copy of a Bitsy game"
+    In the Bitsy editor, use **Download → Download .bitsy** now and then. The `.bitsy` file is plain text, works in the [Bitsy editor](https://make.bitsy.org) too, and you can **Import** it again any time. See [Download](../editors/bitsy/tools/download.md).
 
 ### Not signed in
 
