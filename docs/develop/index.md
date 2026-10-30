@@ -48,7 +48,7 @@ New code goes in `app/src`, one folder per module.
 |---|---|
 | `plugin-api/` | Registries for tools and commands |
 | `embed/` | The [platform page contract](platform-contract.md) |
-| `bitsy/` | The typed `.bitsy` world model: `parse` and `serialize` (byte for byte on unchanged parts), `edit` and `story` for tool edits, `render` for the editor's pixels, `script` for reading dialog scripts, `references` for who uses what, `sound` for typed tunes and blips, `validate` for [Problems](../tools/problems.md) |
+| `bitsy/` | The typed `.bitsy` world model: `parse` and `serialize` (byte for byte on unchanged parts), `edit` and `story` for tool edits, `render` for the editor's pixels, `script` for reading dialog scripts, `references` for who uses what, `sound` for typed tunes and blips, `validate` for [Problems](../editors/bitsy/tools/problems.md) |
 | `player/` | citsy in a Web Worker |
 | `sound/` | Previews of tunes, blips and notes in the tools, through the player's synth |
 | `export/` | Import from a `.bitsy` or web page file. Export as `.bitsy`, a one-page web player with citsy inline, or a GIF recorded in Play. |

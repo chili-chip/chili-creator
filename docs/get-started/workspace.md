@@ -5,38 +5,40 @@ description: The tool bar, docked tools, layout presets, the command palette, un
 
 # The workspace
 
-Everything in the creator is a **tool**: Room, Paint, Dialog, Play and so on. Tools open as tabs in a workspace that you arrange the way you like.
+Everything in the creator is a **tool**. **Projects** is the same in every editor, and each [editor](../editors/index.md) adds its own tools: Room, Paint and Dialog in the Bitsy editor, Screens, Things and Rules in the Chili Beat editor, and so on. Tools open as tabs in a workspace that you arrange the way you like. Each editor remembers its own layout.
 
-![The workspace with its parts: top bar, tool bar on the left, Room in the middle, Paint and Library on the right, and the footer](../assets/screenshots/workspace.png){ .shot }
+![The workspace with a Bitsy game open: top bar, tool bar on the left, Room in the middle, Paint and Library on the right, and the footer](../assets/screenshots/workspace.png){ .shot }
 
 | Part | Where | What it does |
 |---|---|---|
 | Top bar | Top | The game's title (click to rename), **Undo** and **Redo**, the save state, **Commands**, and your account |
 | Tool bar | Left edge | One button per tool. Click one to open it or bring it to the front. |
 | Workspace | Middle | The open tools, as tabs in groups. Drag a tab to move it beside, above or below another group. Drag the line between groups to resize them. |
-| Footer | Bottom | Whether you are in Chili Platform, the number of [problems](../tools/problems.md), **Help**, the **Layout** menu, and a reminder of ++ctrl+k++ |
+| Footer | Bottom | Whether you are in Chili Platform, the number of [problems](../editors/bitsy/tools/problems.md), **Help**, the **Layout** menu, and a reminder of ++ctrl+k++ |
 
 Your arrangement is remembered in this browser.
 
 ## The tools
 
+These are the tools of the Bitsy editor. The Chili Beat editor's are listed in [Chili Beat tools](../editors/beat/tools/index.md).
+
 | Icon order | Tool | For |
 |---|---|---|
-| 1 | [Projects](../tools/projects.md) | Your games: new, open, import, release |
-| 2 | [Room](../tools/room.md) | Draw the room, place sprites and items, add exits and endings |
-| 3 | [Paint](../tools/paint.md) | Draw a tile, sprite or item, and animate it |
-| 4 | [Library](../tools/library.md) | Every tile, sprite and item; pick one to paint or place |
-| 5 | [Colors](../tools/colors.md) | The palettes |
-| 6 | [Dialog](../tools/dialog.md) | What sprites and items say |
-| 7 | [Exits & endings](../tools/exits.md) | Where exits lead, locks, transitions, ending text |
-| 8 | [Variables](../tools/variables.md) | Numbers and words the dialog remembers; starting items |
-| 9 | [Tunes](../tools/tunes.md) | Music for rooms |
-| 10 | [Blips](../tools/blips.md) | Short sounds for sprites and items |
-| 11 | [Problems](../tools/problems.md) | Things that would break the game |
-| 12 | [Play](../tools/play.md) | Play the game, record a GIF, set the cover |
-| 13 | [Game](../tools/game.md) | Title, font, text direction and size, raw `.bitsy` text |
-| 14 | [Download](../tools/download.md) | `.bitsy` file or a web page |
-| 15 | [Find](../tools/find.md) | Search everything, see where a drawing is used |
+| 1 | [Projects](projects.md) | Your games: new, open, import, release |
+| 2 | [Room](../editors/bitsy/tools/room.md) | Draw the room, place sprites and items, add exits and endings |
+| 3 | [Paint](../editors/bitsy/tools/paint.md) | Draw a tile, sprite or item, and animate it |
+| 4 | [Library](../editors/bitsy/tools/library.md) | Every tile, sprite and item; pick one to paint or place |
+| 5 | [Colors](../editors/bitsy/tools/colors.md) | The palettes |
+| 6 | [Dialog](../editors/bitsy/tools/dialog.md) | What sprites and items say |
+| 7 | [Exits & endings](../editors/bitsy/tools/exits.md) | Where exits lead, locks, transitions, ending text |
+| 8 | [Variables](../editors/bitsy/tools/variables.md) | Numbers and words the dialog remembers; starting items |
+| 9 | [Tunes](../editors/bitsy/tools/tunes.md) | Music for rooms |
+| 10 | [Blips](../editors/bitsy/tools/blips.md) | Short sounds for sprites and items |
+| 11 | [Problems](../editors/bitsy/tools/problems.md) | Things that would break the game |
+| 12 | [Play](../editors/bitsy/tools/play.md) | Play the game, record a GIF, set the cover |
+| 13 | [Game](../editors/bitsy/tools/game.md) | Title, font, text direction and size, raw `.bitsy` text |
+| 14 | [Download](../editors/bitsy/tools/download.md) | `.bitsy` file or a web page |
+| 15 | [Find](../editors/bitsy/tools/find.md) | Search everything, see where a drawing is used |
 
 ## Layouts
 
@@ -78,4 +80,4 @@ The first time you open the creator, a six-step tour shows the tool bar, Project
 
 ## Next
 
-On a phone? Read [On a phone](phone.md). Otherwise start the [tutorial](../tutorial/index.md).
+On a phone? Read [On a phone](phone.md). Otherwise start the [tutorial](../editors/bitsy/tutorial/index.md).

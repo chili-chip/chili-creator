@@ -18,7 +18,7 @@ On a screen narrower than 640 pixels, the creator shows **one tool at a time**. 
 | On a computer | On a phone |
 |---|---|
 | Tools dock side by side | One tool fills the screen |
-| Tool bar on the left edge | Tool bar along the bottom. Slide it sideways to see all 15 tools. |
+| Tool bar on the left edge | Tool bar along the bottom. Slide it sideways to see all the tools of the editor. |
 | Drag tabs to arrange | No arranging, no layouts |
 | Arrow keys or WASD in Play | On-screen **Up**, **Down**, **Left**, **Right** and **Ok** buttons under the game |
 | Click to draw | Tap or drag with a finger |
@@ -31,4 +31,4 @@ On a screen narrower than 640 pixels, the creator shows **one tool at a time**. 
 
 ## Next
 
-Start the [tutorial](../tutorial/index.md).
+Start a tutorial: [Chili Garden](../editors/bitsy/tutorial/index.md) in the Bitsy editor or [Bee Home](../editors/beat/tutorial.md) in the Chili Beat editor.

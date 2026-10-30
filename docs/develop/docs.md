@@ -29,16 +29,18 @@ Before you push, build the site the way CI does. `--strict` fails on a broken li
 |---|---|
 | `mkdocs.yml` | Site settings, theme and the nav. Add every new page to `nav`. |
 | `docs/get-started/` | First steps |
-| `docs/tutorial/` | The Chili Garden tutorial, one page per step |
-| `docs/tools/` | One page per tool, named after the tool's `id` |
-| `docs/reference/` | Dialog scripting, shortcuts, VGC Zero, differences, FAQ, credits |
+| `docs/get-started/` | Pages for every editor, including the shared Projects tool |
+| `docs/editors/index.md` | The editors side by side |
+| `docs/editors/<editor>/` | One section per editor (`bitsy`, `beat`): overview, tutorial and `tools/`, one page per tool, named after the tool's `id` |
+| `docs/_redirects` | Cloudflare Pages redirects from old addresses |
+| `docs/reference/` | Shortcuts, VGC Zero, FAQ, credits |
 | `docs/develop/` | These pages |
 | `docs/assets/screenshots/` | Screenshots, made by the script below |
 | `docs/assets/tutorial/chili-garden.bitsy` | The finished tutorial game |
 | `docs/assets/extra.css` | Chili colours and the `.shot`, `.pixel` and `.phones` classes |
 | `docs/bitsy/` | Bitsy's `LICENSE.md` and `CREDITS.md`. Not pages: the build copies them into `dist/`. |
 
-The **Learn more** link on each tool in the creator's Help panel opens `https://creator.chilichip.eu/tools/<id>/`. `app/src/shell/docs-pages.test.ts` fails when a tool has no page, so a new tool needs a page in `docs/tools/` and the nav.
+The **Learn more** link on each tool in the creator's Help panel opens `https://creator.chilichip.eu/editors/<editor>/tools/<id>/`, or `get-started/<id>/` for a tool every editor shares. `app/src/shell/docs-pages.test.ts` fails when a tool has no page, so a new tool needs a page in its editor's `tools/` folder and the nav. A new editor gets its own folder in `docs/editors/`.
 
 ## Style
 
@@ -69,7 +71,7 @@ Add a screenshot with `shot(locator, 'name')` in the script, then use it on a pa
 `docs/assets/tutorial/chili-garden.bitsy` is the game the tutorial builds, and the screenshots use it. `app/src/bitsy/tutorial.test.ts` checks that it:
 
 - parses with no issues and round-trips byte for byte;
-- has no [problems](../tools/problems.md);
+- has no [problems](../editors/bitsy/tools/problems.md);
 - plays in the real `citsy.wasm`, with the gardener talking when the avatar walks up to him.
 
 Change the game and the tutorial together, and run `npm test`.

@@ -1,11 +1,11 @@
 ---
 title: Credits and licences
-description: Bitsy, citsy and the people behind them, and the licences the Chili Creator ships with.
+description: Bitsy, citsy, Chili Beat and the people behind them, and the licences the Chili Creator ships with.
 ---
 
 # Credits and licences
 
-The Chili Creator stands on [Bitsy](https://bitsy.org) by **Adam Le Doux**. Parts of the creator are ported from the Bitsy editor. Thank you to everyone who made Bitsy.
+The Chili Creator's Bitsy editor stands on [Bitsy](https://bitsy.org) by **Adam Le Doux**. Parts of the creator are ported from the Bitsy editor. Thank you to everyone who made Bitsy. The Chili Beat editor plays games with [Chili Beat](https://github.com/chili-chip/chili-beat), and its colours come from Sweetie 16 by GrafxKid (below).
 
 ## Licences
 

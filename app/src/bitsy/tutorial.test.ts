@@ -8,7 +8,7 @@ import { createCitsy, type CitsyEngine } from '../player/citsy';
 import { Button, createPlayLoop } from '../player/loop';
 import { parse, serialize, validate } from '.';
 
-// The game the docs tutorial builds (docs/tutorial/) and offers as a download.
+// The game the docs tutorial builds (docs/editors/bitsy/tutorial/) and offers as a download.
 const game = readFileSync(fileURLToPath(new URL('../../../docs/assets/tutorial/chili-garden.bitsy', import.meta.url)), 'utf8');
 
 describe('the docs tutorial game', () => {

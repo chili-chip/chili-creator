@@ -327,6 +327,7 @@ function Shell({ creator }: { creator: Creator }) {
       {helping && (
         <Help
           tools={tools}
+          editor={editor.id}
           phone={phone}
           onOpenTool={(id) => {
             setHelping(false);
