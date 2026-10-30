@@ -122,6 +122,8 @@ nav:
       - Game: tools/game.md
       - Download: tools/download.md
       - Find: tools/find.md
+  - Chili Beat:
+      - beat/index.md
   - Reference:
       - reference/index.md
       - Dialog scripting: reference/dialog-scripting.md
