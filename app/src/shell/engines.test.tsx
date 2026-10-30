@@ -37,6 +37,18 @@ describe('engines in the shell', () => {
     expect(creator.projects.engine()?.id).toBe('fake');
   });
 
+  it('starts a game from an engine template', async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    const withTemplate = { ...fakeEngine, templates: [{ title: 'Example', make: (title: string) => `FAKE\n${title} (example)` }] };
+    renderCreator({ platform, engines: [bitsyEngine, withTemplate], enabledEngines: ['bitsy', 'fake'] });
+    await screen.findByRole('heading', { name: 'Your games' });
+    await user.click(screen.getByRole('button', { name: 'New game' }));
+    await user.click(within(screen.getByRole('group', { name: 'Pick an engine' })).getByRole('button', { name: 'Example' }));
+    await screen.findByRole('textbox', { name: 'Game title' });
+    expect(platform.games[0]).toMatchObject({ title: 'Example', data: 'FAKE\nExample (example)' });
+  });
+
   it('makes a Bitsy game at once when Bitsy is the only engine on', async () => {
     const user = userEvent.setup();
     const platform = createFakePlatform();

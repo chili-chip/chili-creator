@@ -9,6 +9,8 @@ import game from './game';
 import play from './play';
 import rules from './rules';
 import screens from './screens';
+import sounds from './sounds';
+import problems from './problems';
 import things from './things';
 
 vi.mock('../player', () => ({
@@ -18,6 +20,7 @@ vi.mock('../player', () => ({
     start: vi.fn(),
     stop: vi.fn(),
     press: vi.fn(),
+    enableSound: vi.fn(),
     muted: false,
     onStep: null,
   })),
@@ -90,6 +93,15 @@ describe('Chili Beat tools', () => {
     expect(doc().rules[0]!.when).toEqual({ bump: ['you', '#'] });
   });
 
+  it('Rules: adds a recipe, with the things and counters it needs', async () => {
+    const user = userEvent.setup();
+    const { doc } = await open(rules);
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Add a recipe' }), 'door-and-key');
+    expect(doc().things.map((t) => t.name)).toEqual(['Hero', 'Wall', 'Key', 'Door']);
+    expect(doc().counters!.map((c) => c.name)).toEqual(['Keys']);
+    expect(screen.getAllByRole('listitem', { name: /^Rule/ })).toHaveLength(3);
+  });
+
   it('Rules: lights up the cards that just ran', async () => {
     const { creator } = await open(rules);
     act(() => selectionOf(creator).set({ lit: [0] }));
@@ -108,6 +120,28 @@ describe('Chili Beat tools', () => {
     expect(doc().time).toBe('turns');
     await user.click(screen.getByRole('button', { name: 'Add counter' }));
     expect(doc().counters).toEqual([{ id: 'counter-1', name: 'Counter 1', icon: '@', start: 0 }]);
+  });
+
+  it('Sounds: adds a sound effect and a tune, and writes notes', async () => {
+    const user = userEvent.setup();
+    const { doc } = await open(sounds);
+    await user.click(screen.getByRole('button', { name: 'Add sound' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'blip-1 preset' }), 'coin');
+    expect(doc().blips).toEqual([{ id: 'blip-1', preset: 'coin', pitch: 4, length: 3, slide: 0 }]);
+    await user.click(screen.getByRole('button', { name: 'Add tune' }));
+    await user.click(screen.getByRole('gridcell', { name: 'Note 5, step 1' }));
+    await user.click(screen.getByRole('gridcell', { name: 'Kick, step 1' }));
+    expect(doc().tunes![0]!.lead[0]).toBe(5);
+    expect(doc().tunes![0]!.beat[0]).toBe(8);
+    await user.click(screen.getByRole('button', { name: 'Play tune' }));
+    expect(await screen.findByRole('button', { name: 'Stop' })).toBeInTheDocument();
+  });
+
+  it('Problems: lists what is wrong', async () => {
+    const broken = parseGame(data).doc;
+    broken.things[0]!.you = false;
+    await open(problems, JSON.stringify(broken));
+    expect(screen.getByRole('list', { name: 'Problems' })).toHaveTextContent('Nothing on the start screen is "you"');
   });
 
   it('Play: shows why a game cannot play', async () => {

@@ -6,6 +6,7 @@ import { Button } from '../../../ui/button';
 import { cn } from '../../../ui/cn';
 import { Input, Select } from '../../../ui/input';
 import { addRule, defaultAction, defaultTrigger, moveRule } from '../edit';
+import { RECIPES } from '../recipes';
 import { LIMITS, type Action, type Condition, type Game, type Rule } from '../model';
 import { useGame, useSelection, useUpdate } from '../state';
 import { ThingImage } from './things';
@@ -385,9 +386,27 @@ function Rules() {
           />
         ))}
       </ol>
-      <Button size="sm" className="mt-2" onClick={() => edit((g) => addRule(g))}>
-        <Plus /> Add rule
-      </Button>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <Button size="sm" onClick={() => edit((g) => addRule(g))}>
+          <Plus /> Add rule
+        </Button>
+        <Select
+          aria-label="Add a recipe"
+          value=""
+          className="h-8"
+          onChange={(event) => {
+            const recipe = RECIPES.find((r) => r.id === event.target.value);
+            if (recipe) edit((g) => recipe.apply(g));
+          }}
+        >
+          <option value="">Add a recipe…</option>
+          {RECIPES.map((recipe) => (
+            <option key={recipe.id} value={recipe.id}>
+              {recipe.title}
+            </option>
+          ))}
+        </Select>
+      </div>
       {error && (
         <p role="alert" className="mt-2 text-chili">
           {error}

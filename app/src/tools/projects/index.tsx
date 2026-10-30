@@ -226,10 +226,10 @@ function Projects() {
     setCreating(false);
   }
 
-  async function create(engine?: string) {
+  async function create(engine?: string, data?: string, title?: string) {
     setPicking(false);
     setCreating(true);
-    await act(() => creator.projects.create(undefined, undefined, engine));
+    await act(() => creator.projects.create(title, data, engine));
     setCreating(false);
   }
 
@@ -286,18 +286,34 @@ function Projects() {
             {offered.map((engine) => {
               const Icon = engine.icon;
               return (
-                <button
-                  key={engine.id}
-                  type="button"
-                  onClick={() => void create(engine.id)}
-                  className="flex items-start gap-3 rounded-lg border border-line bg-bg-2 p-3 text-left hover:border-chili/60 focus-visible:outline-2 focus-visible:outline-phosphor"
-                >
-                  <Icon className="mt-0.5 size-5 shrink-0 text-chili" aria-hidden />
-                  <span>
-                    <span className="block font-medium">{engine.title}</span>
-                    <span className="block text-sm text-muted">{engine.description}</span>
-                  </span>
-                </button>
+                <div key={engine.id} className="rounded-lg border border-line bg-bg-2 has-[button:hover]:border-chili/60">
+                  <button
+                    type="button"
+                    onClick={() => void create(engine.id)}
+                    className="flex w-full items-start gap-3 p-3 text-left focus-visible:outline-2 focus-visible:outline-phosphor"
+                  >
+                    <Icon className="mt-0.5 size-5 shrink-0 text-chili" aria-hidden />
+                    <span>
+                      <span className="block font-medium">{engine.title}</span>
+                      <span className="block text-sm text-muted">{engine.description}</span>
+                    </span>
+                  </button>
+                  {engine.templates && (
+                    <div className="flex flex-wrap items-center gap-1 px-3 pb-3 text-xs">
+                      <span className="text-muted">Or start from</span>
+                      {engine.templates.map((template) => (
+                        <Button
+                          key={template.title}
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => void create(engine.id, template.make(template.title), template.title)}
+                        >
+                          {template.title}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>

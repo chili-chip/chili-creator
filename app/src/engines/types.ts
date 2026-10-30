@@ -33,6 +33,8 @@ export interface EngineModule<Doc = unknown> {
   };
   /** The text of a new, blank game. */
   newGame(title: string): string;
+  /** Example games to start from, offered next to a blank one. */
+  templates?: { title: string; make(title: string): string }[];
   /** The game's title, for project lists. */
   gameTitle(doc: Doc): string;
   setTitle(doc: Doc, title: string): void;
