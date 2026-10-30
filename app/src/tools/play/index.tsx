@@ -216,7 +216,7 @@ function Play() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-auto p-3">
+    <div data-play-panel className="flex h-full flex-col gap-3 overflow-auto p-3">
       <div className="flex flex-wrap items-center gap-2">
         {running ? (
           <Button size="sm" onClick={() => player?.stop()}>
@@ -287,35 +287,40 @@ function Play() {
         </span>
       </div>
 
-      <div
-        ref={screen}
-        role="application"
-        aria-label="Game screen"
-        tabIndex={0}
-        className="relative mx-auto aspect-square w-full max-w-[min(100%,512px)] overflow-hidden rounded-lg border border-line bg-black focus-visible:outline-2 focus-visible:outline-phosphor"
-        onKeyDown={(event) => onKey(event, true)}
-        onKeyUp={(event) => onKey(event, false)}
-        onPointerDown={() => running && player?.tap()}
-      >
-        <canvas
-          ref={canvas}
-          width={SIZE}
-          height={SIZE}
-          className="size-full [image-rendering:pixelated]"
-        />
-        {!running && state.status !== 'ended' && (
-          <button
-            type="button"
-            onClick={start}
-            className="absolute inset-0 grid place-items-center bg-black/60 text-sm text-text"
-            tabIndex={-1}
-            aria-hidden
-          >
-            <span className="flex items-center gap-2">
-              <PlayIcon className="size-5" /> Play
-            </span>
-          </button>
-        )}
+      {/* The space left under the toolbar. The screen is the largest square that fits in it,
+          so it stays square whatever shape the panel has (#40). It never gets shorter than the
+          game's own 128 px: in a short panel the panel scrolls instead. */}
+      <div className="flex min-h-32 flex-1 items-center justify-center [container-type:size]">
+        <div
+          ref={screen}
+          role="application"
+          aria-label="Game screen"
+          tabIndex={0}
+          className="relative size-[min(100cqw,100cqh,512px)] shrink-0 overflow-hidden rounded-lg border border-line bg-black focus-visible:outline-2 focus-visible:outline-phosphor"
+          onKeyDown={(event) => onKey(event, true)}
+          onKeyUp={(event) => onKey(event, false)}
+          onPointerDown={() => running && player?.tap()}
+        >
+          <canvas
+            ref={canvas}
+            width={SIZE}
+            height={SIZE}
+            className="size-full object-contain [image-rendering:pixelated]"
+          />
+          {!running && state.status !== 'ended' && (
+            <button
+              type="button"
+              onClick={start}
+              className="absolute inset-0 grid place-items-center bg-black/60 text-sm text-text"
+              tabIndex={-1}
+              aria-hidden
+            >
+              <span className="flex items-center gap-2">
+                <PlayIcon className="size-5" /> Play
+              </span>
+            </button>
+          )}
+        </div>
       </div>
 
       {state.status === 'error' && (
