@@ -15,7 +15,7 @@ async function open(page: Page) {
   const platform = createFakePlatform({ token: 'docs' });
   const saved = platform.addGame({ title: 'Bee Home', data: beeHome });
   await servePlatform(page, platform);
-  const creator = await openInFakePlatform(page, ['docs'], `/index.html?api=/api&engines=beat&project=${saved.id}`);
+  const creator = await openInFakePlatform(page, ['docs'], `/index.html?api=/api&project=${saved.id}`);
   await expect(creator.getByRole('textbox', { name: 'Game title' })).toHaveValue('Bee Home');
   return creator;
 }

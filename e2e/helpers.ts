@@ -23,10 +23,16 @@ export async function litPixels(canvas: Locator): Promise<number> {
   });
 }
 
+/** Presses New game and picks the Bitsy engine. */
+export async function newBitsyGame(creator: FrameLocator | Page) {
+  await creator.getByRole('button', { name: 'New game' }).click();
+  await creator.getByRole('group', { name: 'Pick an engine' }).getByRole('button', { name: /^Bitsy/ }).click();
+}
+
 export async function newGame(page: Page) {
   const platform = await servePlatform(page, createFakePlatform({ token: 'host-token' }));
   const creator: FrameLocator = await openInFakePlatform(page, ['host-token']);
-  await creator.getByRole('button', { name: 'New game' }).click();
+  await newBitsyGame(creator);
   await expect(creator.getByRole('textbox', { name: 'Game title' })).toHaveValue('Untitled game');
   return { platform, creator };
 }

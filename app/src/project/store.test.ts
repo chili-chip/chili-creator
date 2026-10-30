@@ -426,6 +426,7 @@ describe('createProjectStore with more than one engine', () => {
     await store.start();
     await store.create('New one', undefined, 'fake');
     expect(platform.games[0]!.data).toBe('FAKE\nNew one');
+    expect(platform.games[0]!.engine).toBe('fake');
     expect(store.engine()?.id).toBe('fake');
     await store.create('Bitsy one');
     expect(store.engine()?.id).toBe('bitsy');

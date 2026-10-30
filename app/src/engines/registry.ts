@@ -3,7 +3,7 @@ import type { EngineModule } from './types';
 export interface EngineRegistryOptions {
   /** Engines offered for new games. All of them by default. */
   enabled?: string[];
-  /** The page address's query: `?engines=beat` turns on more engines while they are in progress. */
+  /** The page address's query: `?engines=<id>` turns on an engine that is still in progress. */
   search?: string;
 }
 

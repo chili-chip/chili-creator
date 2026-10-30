@@ -62,9 +62,8 @@ export function createCreator({
   tour = true,
   loadCatalog,
   languages,
-  // Chili Beat is in progress: turn it on with ?engines=beat.
   engines: engineModules = [bitsyEngine, beatEngine as EngineModule],
-  enabledEngines = ['bitsy'],
+  enabledEngines = ['bitsy', 'beat'],
   search = typeof location === 'undefined' ? '' : location.search,
 }: CreatorOptions) {
   const engines = createEngineRegistry(engineModules, { enabled: enabledEngines, search });

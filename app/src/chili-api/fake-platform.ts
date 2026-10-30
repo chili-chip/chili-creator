@@ -222,7 +222,12 @@ export function createFakePlatform({
         }
         const invalid = validate(body, false);
         if (invalid) return invalid;
-        const game = addGame({ owner: viewer!, title: String(body.title).trim(), data: String(body.data) });
+        const game = addGame({
+          owner: viewer!,
+          title: String(body.title).trim(),
+          data: String(body.data),
+          ...(typeof body.engine === 'string' ? { engine: body.engine } : {}),
+        });
         return json(201, view(game, viewer));
       }
     }

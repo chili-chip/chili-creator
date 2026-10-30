@@ -97,6 +97,8 @@ export function renderCreator({ signedIn = true, platform = createFakePlatform()
     },
     sound: fakeSound() as unknown as SoundPreview,
     tour: false,
+    // One engine, so New game makes a Bitsy game at once; engine tests pass their own.
+    enabledEngines: ['bitsy'],
     ...options,
   });
   const view = render(<App creator={creator} />);

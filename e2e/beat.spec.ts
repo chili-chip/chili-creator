@@ -15,7 +15,7 @@ test('makes a Chili Beat game from Blank, adds a rule and wins it', async ({ pag
   // The rule trace needs Rules and Play side by side, which a phone can't show.
   test.skip(info.project.name === 'phone');
   await servePlatform(page, createFakePlatform({ token: 'host-token' }));
-  const creator = await openInFakePlatform(page, ['host-token'], '/index.html?api=/api&engines=beat');
+  const creator = await openInFakePlatform(page, ['host-token'], '/index.html?api=/api');
   await creator.getByRole('button', { name: 'New game' }).click();
   await creator.getByRole('group', { name: 'Pick an engine' }).getByRole('button', { name: /Chili Beat/ }).click();
   await expect(creator.getByRole('textbox', { name: 'Game title' })).toHaveValue('Untitled game');
@@ -43,7 +43,7 @@ test('makes a Chili Beat game from Blank, adds a rule and wins it', async ({ pag
 test('builds a game from Blank with a recipe: paint the flag, walk into it, win', async ({ page }, info) => {
   test.skip(info.project.name === 'phone');
   await servePlatform(page, createFakePlatform({ token: 'host-token' }));
-  const creator = await openInFakePlatform(page, ['host-token'], '/index.html?api=/api&engines=beat');
+  const creator = await openInFakePlatform(page, ['host-token'], '/index.html?api=/api');
   await creator.getByRole('button', { name: 'New game' }).click();
   await creator.getByRole('group', { name: 'Pick an engine' }).getByRole('button', { name: /Chili Beat/ }).click();
   await expect(creator.getByRole('textbox', { name: 'Game title' })).toHaveValue('Untitled game');
