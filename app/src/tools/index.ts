@@ -15,12 +15,14 @@ import room from './room';
 import tunes from './tunes';
 import variables from './variables';
 
+/** Tools every engine shares. */
+export const shellTools: ToolDefinition[] = [projects];
+
 /**
- * Built-in tools, registered exactly like future ones. A fresh workspace
- * opens them in this order, so a tool's `defaultReference` comes first.
+ * The Bitsy editor's tools. A fresh workspace opens them in this order, after
+ * the shell's, so a tool's `defaultReference` comes first.
  */
-export const builtInTools: ToolDefinition[] = [
-  projects,
+export const bitsyTools: ToolDefinition[] = [
   room,
   paint,
   library,
@@ -36,3 +38,6 @@ export const builtInTools: ToolDefinition[] = [
   download,
   find,
 ];
+
+/** Every built-in tool: the shell's and the Bitsy editor's. */
+export const builtInTools: ToolDefinition[] = [...shellTools, ...bitsyTools];

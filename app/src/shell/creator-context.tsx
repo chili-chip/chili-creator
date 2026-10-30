@@ -32,7 +32,7 @@ export function useEditor(): EditorState {
 /** The open game's world, or null when none is open. */
 export function useWorld(): World | null {
   const { open } = useProjects();
-  return open.status === 'ready' ? open.world : null;
+  return open.status === 'ready' && open.engine === 'bitsy' ? (open.doc as World) : null;
 }
 
 /** The picked room and drawing as they are in the open world now. */

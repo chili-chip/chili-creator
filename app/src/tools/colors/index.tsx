@@ -52,7 +52,7 @@ function Colors() {
   const palette = (room.palette !== undefined && byId(world.palettes, room.palette)) || world.palettes[0];
 
   function edit(recipe: (w: World) => void, group?: string) {
-    creator.projects.updateWorld(recipe, group === undefined ? {} : { group });
+    creator.projects.updateDoc<World>(recipe, group === undefined ? {} : { group });
   }
 
   function newPalette() {

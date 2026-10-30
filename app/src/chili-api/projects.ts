@@ -8,6 +8,8 @@ export const MAX_GAMES = 30;
 export interface ProjectSummary {
   id: string;
   title: string;
+  /** The game's engine, when the platform knows it. Games without one are Bitsy games. */
+  engine?: string;
   slug: string;
   /** Media URL of the PNG cover, or "". */
   cover: string;
@@ -59,6 +61,8 @@ interface GameResponse {
   has_unreleased_changes?: boolean;
   listing_slug: string;
   updated_at: string;
+  /** Missing on a platform from before engines (chili-platform#170). */
+  engine?: string;
 }
 
 interface Page<T> {
@@ -77,6 +81,7 @@ function toProject(game: GameResponse): Project {
     hasUnreleasedChanges: game.has_unreleased_changes ?? false,
     listingSlug: game.listing_slug ?? '',
     updatedAt: game.updated_at,
+    ...(game.engine ? { engine: game.engine } : {}),
     data: game.data ?? '',
   };
 }

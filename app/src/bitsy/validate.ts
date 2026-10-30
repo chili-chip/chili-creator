@@ -123,7 +123,7 @@ export function validate(world: World): Problem[] {
 }
 
 /** "1 error, 2 warnings". */
-export function problemSummary(problems: readonly Problem[]): string {
+export function problemSummary(problems: readonly { severity: string }[]): string {
   const errors = problems.filter((p) => p.severity === 'error').length;
   const warnings = problems.length - errors;
   const count = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;

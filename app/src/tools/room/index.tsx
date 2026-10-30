@@ -72,7 +72,7 @@ function RoomTool() {
           : `Click to put down ${brush}`;
 
   function edit(recipe: (w: World) => void, group: string) {
-    creator.projects.updateWorld(recipe, { group });
+    creator.projects.updateDoc<World>(recipe, { group });
   }
 
   function paint(x: number, y: number, first: boolean) {
@@ -121,7 +121,7 @@ function RoomTool() {
 
   function newRoom() {
     let id = '';
-    creator.projects.updateWorld((w) => {
+    creator.projects.updateDoc<World>((w) => {
       id = addRoom(w);
     });
     creator.editor.set({ room: id, marker: null });
@@ -129,14 +129,14 @@ function RoomTool() {
 
   function copyRoom() {
     let id = '';
-    creator.projects.updateWorld((w) => {
+    creator.projects.updateDoc<World>((w) => {
       id = duplicateRoom(w, roomId);
     });
     if (id) creator.editor.set({ room: id, marker: null });
   }
 
   function deleteRoom() {
-    creator.projects.updateWorld((w) => void removeRoom(w, roomId));
+    creator.projects.updateDoc<World>((w) => void removeRoom(w, roomId));
     setConfirming(false);
     creator.editor.set({ room: null, marker: null });
   }
@@ -258,7 +258,7 @@ function RoomTool() {
           title="The sprite the player is in this room"
           onChange={(event) => {
             const value = event.target.value;
-            creator.projects.updateWorld((w) => {
+            creator.projects.updateDoc<World>((w) => {
               const target = byId(w.rooms, roomId);
               if (!target) return;
               if (value) target.avatar = value;
@@ -285,7 +285,7 @@ function RoomTool() {
           className="flex-1"
           onChange={(event) => {
             const value = event.target.value;
-            creator.projects.updateWorld((w) => {
+            creator.projects.updateDoc<World>((w) => {
               const target = byId(w.rooms, roomId);
               if (!target) return;
               if (value) target.tune = value;

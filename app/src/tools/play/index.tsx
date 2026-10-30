@@ -156,7 +156,7 @@ function Play() {
   }
 
   function title() {
-    return projects.open.status === 'ready' ? (projects.open.world.title.split('\n')[0] ?? '') : '';
+    return projects.open.status === 'ready' ? (((projects.open.doc) as World).title.split('\n')[0] ?? '') : '';
   }
 
   function picture(scale: number) {
@@ -355,7 +355,7 @@ function Play() {
       </div>
 
       {gameState && state.status !== 'idle' && projects.open.status === 'ready' && (
-        <LiveState world={projects.open.world} state={gameState} />
+        <LiveState world={((projects.open.doc) as World)} state={gameState} />
       )}
     </div>
   );

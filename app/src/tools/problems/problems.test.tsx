@@ -1,3 +1,4 @@
+import type { World } from '../../bitsy';
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -12,7 +13,7 @@ describe('Problems', () => {
     const user = userEvent.setup();
     const { creator } = await renderTool(Problems);
     act(() =>
-      creator.projects.updateWorld((w) => {
+      creator.projects.updateDoc<World>((w) => {
         w.sprites.find((s) => s.id === 'a')!.dialog = 'gone';
       }),
     );
@@ -23,7 +24,7 @@ describe('Problems', () => {
 
   it('says when nothing is wrong', async () => {
     const { creator } = await renderTool(Problems);
-    act(() => creator.projects.updateWorld((w) => void addEnding(w, '0', 5, 5)));
+    act(() => creator.projects.updateDoc<World>((w) => void addEnding(w, '0', 5, 5)));
     expect(screen.getByText('No problems found.')).toBeInTheDocument();
   });
 });

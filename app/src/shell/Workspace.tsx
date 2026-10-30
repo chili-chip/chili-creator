@@ -97,11 +97,13 @@ function ToolTab({ api }: IDockviewPanelHeaderProps) {
 
 interface WorkspaceProps {
   tools: readonly ToolDefinition[];
+  /** The editor whose layout this is. */
+  editor?: string;
   onReady: (api: DockviewApi) => void;
 }
 
 /** The dockable workspace: every tool is a panel users can dock, split or float. */
-export function Workspace({ tools, onReady }: WorkspaceProps) {
+export function Workspace({ tools, editor, onReady }: WorkspaceProps) {
   const components = useMemo(() => {
     const map: Record<string, FunctionComponent<IDockviewPanelProps>> = {};
     for (const tool of tools) {
@@ -112,7 +114,7 @@ export function Workspace({ tools, onReady }: WorkspaceProps) {
   }, [tools]);
 
   function ready({ api }: DockviewReadyEvent) {
-    const saved = loadLayout();
+    const saved = loadLayout(editor);
     let restored = false;
     if (saved) {
       try {
@@ -125,7 +127,7 @@ export function Workspace({ tools, onReady }: WorkspaceProps) {
     if (!restored) {
       openDefaultTools(api, tools);
     }
-    api.onDidLayoutChange(() => saveLayout(api.toJSON()));
+    api.onDidLayoutChange(() => saveLayout(api.toJSON(), editor));
     onReady(api);
   }
 

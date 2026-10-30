@@ -1,3 +1,4 @@
+import type { World } from './bitsy';
 import { toast } from 'sonner';
 import {
   createIndexedDbStore,
@@ -15,7 +16,10 @@ import { editingCommands } from './project/commands';
 import { createEditorState } from './project/editor';
 import { createProjectStore, type NoticeKind } from './project/store';
 import { createSoundPreview, type SoundPreview } from './sound/preview';
-import { builtInTools } from './tools';
+import { bitsyEngine } from './engines/bitsy';
+import { createEngineRegistry } from './engines/registry';
+import type { EditorDefinition, EngineModule } from './engines/types';
+import { shellTools } from './tools';
 
 export interface CreatorOptions {
   apiBase: string;
@@ -37,6 +41,11 @@ export interface CreatorOptions {
   loadCatalog?: (language: string) => Promise<Catalog>;
   /** The languages on offer; English and those with a catalog by default. */
   languages?: string[];
+  /** Engines the creator knows. The first one opens games that have no engine. */
+  engines?: EngineModule[];
+  /** Engines offered for new games; more can be turned on with `?engines=` in `search`. */
+  enabledEngines?: string[];
+  search?: string;
 }
 
 /** Everything the shell needs, wired once. Tests build their own. */
@@ -52,7 +61,11 @@ export function createCreator({
   tour = true,
   loadCatalog,
   languages,
+  engines: engineModules = [bitsyEngine],
+  enabledEngines = ['bitsy'],
+  search = typeof location === 'undefined' ? '' : location.search,
 }: CreatorOptions) {
+  const engines = createEngineRegistry(engineModules, { enabled: enabledEngines, search });
   const i18n = createI18n({ ...(loadCatalog ? { load: loadCatalog } : {}), ...(languages ? { available: languages } : {}) });
   void i18n.start();
   const bridge = createEmbedBridge({ win: window, parent, origin });
@@ -72,6 +85,7 @@ export function createCreator({
   }
 
   const projects = createProjectStore({
+    engines,
     profile,
     platform: createPlatformProjects(transport),
     local: createLocalProjects(localStore ?? createIndexedDbStore()),
@@ -87,14 +101,31 @@ export function createCreator({
     const id = open.status === 'ready' ? open.project.id : null;
     if (id === shown) return;
     shown = id;
-    if (open.status === 'ready') editor.reset(open.world);
+    if (open.status === 'ready' && open.engine === 'bitsy') editor.reset(open.doc as World);
   });
 
+  // The shell's tools, plus the tools of the open game's editor.
   const tools = createToolRegistry();
-  builtInTools.forEach((tool) => tools.register(tool));
+  shellTools.forEach((tool) => tools.register(tool));
+  const activeEditor = createActiveEditor();
+  let unregisterEditor: (() => void)[] = [];
+  function showEditor(next: EditorDefinition) {
+    if (next === activeEditor.get()) return;
+    unregisterEditor.forEach((fn) => fn());
+    unregisterEditor = next.tools.map((tool) => tools.register(tool));
+    activeEditor.set(next);
+  }
+  showEditor(engines.default().editors[0]!);
+  projects.subscribe(() => {
+    const engine = projects.engine();
+    if (engine) showEditor(engine.editors[0]!);
+  });
+
   const commands = createCommandRegistry();
   editingCommands({ projects, editor }).forEach((command) => commands.register(command));
   return {
+    engines,
+    activeEditor,
     bridge,
     transport,
     profile,
@@ -112,3 +143,20 @@ export function createCreator({
 }
 
 export type Creator = ReturnType<typeof createCreator>;
+
+/** The editor whose tools are showing, for the shell to follow. */
+function createActiveEditor() {
+  let current: EditorDefinition | null = null;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => current!,
+    set(next: EditorDefinition) {
+      current = next;
+      listeners.forEach((listener) => listener());
+    },
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => void listeners.delete(listener);
+    },
+  };
+}

@@ -1,14 +1,14 @@
 import type { DockviewApi } from 'dockview-react';
 import { AlertTriangle, CircleCheck, Command, UserRound } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { problemSummary, validate } from '../bitsy';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { problemSummary } from '../bitsy';
 import { Toaster } from 'sonner';
 import type { Creator } from '../creator';
 import { Button } from '../ui/button';
 import { cn } from '../ui/cn';
 import { Select } from '../ui/input';
 import { CommandPalette } from './CommandPalette';
-import { CreatorProvider, useI18nState, useProjects, useT, useWorld } from './creator-context';
+import { CreatorProvider, useCreator, useI18nState, useProjects, useT } from './creator-context';
 import { clearLayout } from './layout-storage';
 import { PhoneWorkspace } from './PhoneWorkspace';
 import { applyPreset, layoutPresets } from './presets';
@@ -41,9 +41,13 @@ function Account() {
 
 /** The open game's problem count; it opens the Problems tool. */
 function ProblemCount({ onOpen }: { onOpen(): void }) {
-  const world = useWorld();
-  const problems = useMemo(() => (world ? validate(world) : []), [world]);
-  if (!world) return null;
+  const { open } = useProjects();
+  const { projects } = useCreator();
+  const doc = open.status === 'ready' ? open.doc : null;
+  const engine = open.status === 'ready' ? projects.engine() : null;
+  // Info notes are tips, not problems.
+  const problems = useMemo(() => (engine && doc ? engine.check(doc).filter((p) => p.severity !== 'info') : []), [engine, doc]);
+  if (!doc) return null;
   const summary = problemSummary(problems);
   return (
     <button
@@ -62,6 +66,7 @@ function Shell({ creator }: { creator: Creator }) {
   const t = useT();
   const { language } = useI18nState();
   const tools = useRegistry(creator.tools);
+  const editor = useSyncExternalStore(creator.activeEditor.subscribe, creator.activeEditor.get, creator.activeEditor.get);
   const commands = useRegistry(creator.commands);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [touring, setTouring] = useState(() => creator.tour && !tourDone());
@@ -100,7 +105,7 @@ function Shell({ creator }: { creator: Creator }) {
         title: 'Reset layout',
         category: 'Layout',
         run: () => {
-          clearLayout();
+          clearLayout(creator.activeEditor.get().id);
           if (dock.current && !isPhone.current) openDefaultTools(dock.current, creator.tools.list());
         },
       }),
@@ -151,8 +156,10 @@ function Shell({ creator }: { creator: Creator }) {
       const id = open.status === 'ready' ? open.project.id : null;
       if (id === shown) return;
       shown = id;
-      if (isPhone.current) setPhoneTool(id ? 'room' : 'projects');
-      else if (dock.current) showTool(dock.current, id ? 'room' : 'projects');
+      // The editor's first tool, for example Bitsy's Room.
+      const first = id ? (creator.activeEditor.get().tools[0]?.id ?? 'projects') : 'projects';
+      if (isPhone.current) setPhoneTool(first);
+      else if (dock.current) showTool(dock.current, first);
     });
   }, [creator]);
 
@@ -264,7 +271,13 @@ function Shell({ creator }: { creator: Creator }) {
       {!phone && toolBar}
 
       <main className="min-h-0 min-w-0" data-tour="workspace">
-        {phone ? <PhoneWorkspace tools={tools} current={phoneTool} /> : <Workspace tools={tools} onReady={(api) => (dock.current = api)} />}
+        {phone ? <PhoneWorkspace tools={tools} current={phoneTool} /> : <Workspace
+            // A new editor brings its own tools and layout.
+            key={editor.id}
+            editor={editor.id}
+            tools={tools}
+            onReady={(api) => (dock.current = api)}
+          />}
       </main>
 
       <footer className={cn('flex h-6 items-center gap-4 border-t border-line bg-bg-2 px-3 text-[11px] text-muted', !phone && 'col-span-2')}>

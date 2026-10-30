@@ -133,6 +133,7 @@ nav:
   - Develop:
       - develop/index.md
       - Platform contract: develop/platform-contract.md
+      - Engines and editors: develop/engines.md
       - Releasing: develop/releasing.md
       - Writing these docs: develop/docs.md
       - Overhaul plan: develop/overhaul-plan.md

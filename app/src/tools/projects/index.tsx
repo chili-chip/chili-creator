@@ -26,6 +26,14 @@ function Cover({ project }: { project: ProjectSummary }) {
   );
 }
 
+/** The engine's name, for games that are not Bitsy games. */
+function EngineBadge({ id }: { id?: string }) {
+  const { engines } = useCreator();
+  const engine = engines.get(id);
+  if (!engine || engine === engines.default()) return null;
+  return <span className="ml-2 rounded border border-line px-1 py-0.5 text-[10px] font-normal text-muted">{engine.title}</span>;
+}
+
 interface RowProps {
   project: ProjectSummary;
   open: boolean;
@@ -62,7 +70,10 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, o
       <div className="flex items-center gap-3">
         <Cover project={project} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium">{project.title}</p>
+          <p className="truncate font-medium">
+            {project.title}
+            <EngineBadge id={project.engine} />
+          </p>
           <p className="text-xs text-muted">
             {project.released ? 'Released' : 'Edited'} {when(project.updatedAt)}
             {project.released && project.releaseNumber ? ` · Release ${project.releaseNumber}` : ''}
@@ -188,6 +199,8 @@ function Projects() {
   const t = useT();
   const state = useProjects();
   const [creating, setCreating] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const offered = creator.engines.offered();
   const [error, setError] = useState('');
   const openId = state.open.status === 'ready' ? state.open.project.id : null;
   const used = creator.projects.gamesUsed();
@@ -213,9 +226,10 @@ function Projects() {
     setCreating(false);
   }
 
-  async function create() {
+  async function create(engine?: string) {
+    setPicking(false);
     setCreating(true);
-    await act(() => creator.projects.create());
+    await act(() => creator.projects.create(undefined, undefined, engine));
     setCreating(false);
   }
 
@@ -256,11 +270,38 @@ function Projects() {
               />
             </label>
           </Button>
-          <Button variant="primary" onClick={create} disabled={creating || atLimit || state.mode === 'unknown'}>
+          <Button
+            variant="primary"
+            onClick={() => (offered.length > 1 ? setPicking((p) => !p) : void create())}
+            aria-expanded={offered.length > 1 ? picking : undefined}
+            disabled={creating || atLimit || state.mode === 'unknown'}
+          >
             <Plus />
             New game
           </Button>
         </div>
+
+        {picking && (
+          <div role="group" aria-label="Pick an engine" className="grid gap-2 sm:grid-cols-2">
+            {offered.map((engine) => {
+              const Icon = engine.icon;
+              return (
+                <button
+                  key={engine.id}
+                  type="button"
+                  onClick={() => void create(engine.id)}
+                  className="flex items-start gap-3 rounded-lg border border-line bg-bg-2 p-3 text-left hover:border-chili/60 focus-visible:outline-2 focus-visible:outline-phosphor"
+                >
+                  <Icon className="mt-0.5 size-5 shrink-0 text-chili" aria-hidden />
+                  <span>
+                    <span className="block font-medium">{engine.title}</span>
+                    <span className="block text-sm text-muted">{engine.description}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {atLimit && (
           <p className="rounded-lg border border-amber/40 bg-amber/10 p-3 text-sm text-amber">

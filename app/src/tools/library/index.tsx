@@ -1,3 +1,4 @@
+import type { World } from '../../bitsy';
 import { Box, Copy, Ghost, Grid2x2, Library as LibraryIcon, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -44,7 +45,7 @@ function Library() {
 
   function make() {
     let id = '';
-    creator.projects.updateWorld((w) => {
+    creator.projects.updateDoc<World>((w) => {
       id = addDrawing(w, kind);
     });
     creator.editor.select({ kind, id });
@@ -53,7 +54,7 @@ function Library() {
   function duplicate() {
     if (!current) return;
     let id: string | null = null;
-    creator.projects.updateWorld((w) => {
+    creator.projects.updateDoc<World>((w) => {
       id = duplicateDrawing(w, kind, current.id);
     });
     if (id) creator.editor.select({ kind, id });
@@ -61,11 +62,11 @@ function Library() {
 
   function remove() {
     if (!current) return;
-    creator.projects.updateWorld((w) => void removeDrawing(w, kind, current.id));
+    creator.projects.updateDoc<World>((w) => void removeDrawing(w, kind, current.id));
     setConfirming(false);
     const { open } = creator.projects.getState();
     if (open.status !== 'ready') return;
-    const next = kind === 'sprites' ? AVATAR : drawingsOf(open.world, kind)[0]?.id;
+    const next = kind === 'sprites' ? AVATAR : drawingsOf((open.doc as World), kind)[0]?.id;
     creator.editor.set({ drawing: next === undefined ? null : { kind, id: next }, frame: 0 });
   }
 

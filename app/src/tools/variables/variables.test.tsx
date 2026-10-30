@@ -1,3 +1,4 @@
+import type { World } from '../../bitsy';
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -10,7 +11,7 @@ const Variables = variables.component;
 describe('Variables', () => {
   it('lists variables with their start values and where they are used', async () => {
     const { creator } = await renderTool(Variables);
-    act(() => creator.projects.updateWorld((w) => setDialogText(w, '0', '{a = a + 1}')));
+    act(() => creator.projects.updateDoc<World>((w) => setDialogText(w, '0', '{a = a + 1}')));
     expect(screen.getByRole('textbox', { name: 'Name of a' })).toHaveValue('a');
     expect(screen.getByRole('textbox', { name: 'Start value of a' })).toHaveValue('42');
     expect(screen.getByText('Used in 1 dialog')).toBeInTheDocument();
@@ -28,7 +29,7 @@ describe('Variables', () => {
   it('renames a variable in the dialogs too, when the name is let go', async () => {
     const user = userEvent.setup();
     const { creator, world } = await renderTool(Variables);
-    act(() => creator.projects.updateWorld((w) => setDialogText(w, '0', '{say a}')));
+    act(() => creator.projects.updateDoc<World>((w) => setDialogText(w, '0', '{say a}')));
     const name = screen.getByRole('textbox', { name: 'Name of a' });
     await user.clear(name);
     await user.type(name, 'meows{Enter}');

@@ -1,3 +1,4 @@
+import type { World } from '../bitsy';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parse, serialize } from '../bitsy';
 import {
@@ -9,6 +10,9 @@ import {
 } from '../chili-api';
 import { createFakePlatform, type FakePlatform } from '../chili-api/fake-platform';
 import type { EmbedMessage } from '../embed/bridge';
+import { bitsyEngine } from '../engines/bitsy';
+import { fakeEngine } from '../engines/fake';
+import { createEngineRegistry } from '../engines/registry';
 import { createProjectStore } from './store';
 
 const game = (title: string) => `${title}\n\n# BITSY VERSION 8.12\n\n! ROOM_FORMAT 1\n`;
@@ -24,6 +28,7 @@ function setup({ signedIn = true } = {}) {
   const posted: EmbedMessage[] = [];
   const notices: { kind: string; message: string }[] = [];
   const store = createProjectStore({
+    engines: createEngineRegistry([bitsyEngine]),
     profile: createProfileService(transport),
     platform: createPlatformProjects(transport),
     local: createLocalProjects(createMemoryStore()),
@@ -129,7 +134,7 @@ describe('createProjectStore', () => {
     expect(open.status).toBe('ready');
     if (open.status !== 'ready') return;
     expect(open.project.title).toBe('mossland');
-    expect(open.world.title).toBe('mossland');
+    expect((open.doc as World).title).toBe('mossland');
     expect(store.data()).toBe(game('mossland'));
     expect(posted).toContainEqual({ type: 'chili-project', id: String(saved.id) });
   });
@@ -181,14 +186,14 @@ describe('createProjectStore', () => {
     const saved = platform.addGame({ title: 'old', data: game('old') });
     const { store } = setup();
     await store.start(String(saved.id));
-    store.updateWorld((world) => {
+    store.updateDoc<World>((world) => {
       world.flags.TXT_MODE = '1';
     });
     await store.flush();
     expect(platform.games[0]!.data).toBe(`${game('old')}`.replace('! ROOM_FORMAT 1\n', '! ROOM_FORMAT 1\n! TXT_MODE 1\n'));
     // The open world is a new object, so React sees the change.
     const open = store.getState().open;
-    expect(open.status === 'ready' && serialize(open.world)).toBe(platform.games[0]!.data);
+    expect(open.status === 'ready' && serialize((open.doc as World))).toBe(platform.games[0]!.data);
   });
 
   it('tells the user once when saving fails', async () => {
@@ -289,7 +294,7 @@ describe('createProjectStore', () => {
     }
     const flag = (store: ReturnType<typeof setup>['store']) => {
       const open = store.getState().open;
-      return open.status === 'ready' ? open.world.flags.TXT_MODE : 'not open';
+      return open.status === 'ready' ? (open.doc as World).flags.TXT_MODE : 'not open';
     };
     const setFlag = (value: string) => (world: { flags: Record<string, string> }) => {
       world.flags.TXT_MODE = value;
@@ -298,7 +303,7 @@ describe('createProjectStore', () => {
     it('undoes and redoes an edit, and saves each', async () => {
       const { store } = await opened();
       expect(store.getState().history).toEqual({ canUndo: false, canRedo: false });
-      store.updateWorld(setFlag('1'));
+      store.updateDoc<World>(setFlag('1'));
       expect(store.getState().history).toEqual({ canUndo: true, canRedo: false });
 
       expect(store.undo()).toBe(true);
@@ -321,11 +326,11 @@ describe('createProjectStore', () => {
 
     it('makes one step of the edits in a group, like one paint stroke', async () => {
       const { store } = await opened();
-      store.updateWorld(setFlag('1'), { group: 'stroke-1' });
-      store.updateWorld(setFlag('2'), { group: 'stroke-1' });
-      store.updateWorld(setFlag('3'), { group: 'stroke-2' });
-      store.updateWorld(setFlag('4'));
-      store.updateWorld(setFlag('5'));
+      store.updateDoc<World>(setFlag('1'), { group: 'stroke-1' });
+      store.updateDoc<World>(setFlag('2'), { group: 'stroke-1' });
+      store.updateDoc<World>(setFlag('3'), { group: 'stroke-2' });
+      store.updateDoc<World>(setFlag('4'));
+      store.updateDoc<World>(setFlag('5'));
       store.undo();
       expect(flag(store)).toBe('4');
       store.undo();
@@ -343,32 +348,86 @@ describe('createProjectStore', () => {
       store.setTitle('new');
       store.undo();
       const open = store.getState().open;
-      expect(open.status === 'ready' && open.world.title).toBe('old');
+      expect(open.status === 'ready' && (open.doc as World).title).toBe('old');
     });
 
     it('forgets what was undone once something new is done', async () => {
       const { store } = await opened();
-      store.updateWorld(setFlag('1'));
+      store.updateDoc<World>(setFlag('1'));
       store.undo();
-      store.updateWorld(setFlag('2'));
+      store.updateDoc<World>(setFlag('2'));
       expect(store.redo()).toBe(false);
       expect(store.getState().history.canRedo).toBe(false);
     });
 
     it('starts over when another game opens', async () => {
       const { store, other } = await opened();
-      store.updateWorld(setFlag('1'));
+      store.updateDoc<World>(setFlag('1'));
       await store.open(other);
       expect(store.getState().history).toEqual({ canUndo: false, canRedo: false });
     });
 
     it('keeps the last 100 steps', async () => {
       const { store } = await opened();
-      for (let i = 1; i <= 105; i++) store.updateWorld(setFlag(String(i)));
+      for (let i = 1; i <= 105; i++) store.updateDoc<World>(setFlag(String(i)));
       let steps = 0;
       while (store.undo()) steps++;
       expect(steps).toBe(100);
       expect(flag(store)).toBe('5');
     });
+  });
+});
+
+describe('createProjectStore with more than one engine', () => {
+  function setupEngines() {
+    const transport = createTransport({
+      baseUrl: 'https://api.test/api',
+      tokens: { getToken: async () => 'good-token' },
+      fetch: platform.fetch,
+    });
+    return createProjectStore({
+      engines: createEngineRegistry([bitsyEngine, fakeEngine]),
+      profile: createProfileService(transport),
+      platform: createPlatformProjects(transport),
+      local: createLocalProjects(createMemoryStore()),
+      post: () => {},
+      notify: () => {},
+    });
+  }
+
+  it('opens a game with the engine that reads it', async () => {
+    const saved = platform.addGame({ title: 'f', data: 'FAKE\nMy fake' });
+    const store = setupEngines();
+    await store.start(String(saved.id));
+    const open = store.getState().open;
+    expect(open.status === 'ready' && open.engine).toBe('fake');
+    expect(open.status === 'ready' && open.doc).toEqual({ title: 'My fake' });
+    expect(store.engine()?.id).toBe('fake');
+  });
+
+  it('saves, titles and undoes with the open game engine', async () => {
+    const saved = platform.addGame({ title: 'f', data: 'FAKE\nOne' });
+    const store = setupEngines();
+    await store.start(String(saved.id));
+    store.setTitle('Two');
+    await store.flush();
+    expect(platform.games[0]!.data).toBe('FAKE\nTwo');
+    expect(platform.games[0]!.title).toBe('Two');
+    store.updateDoc<{ title: string }>((doc) => {
+      doc.title = 'Three';
+    });
+    expect(store.data()).toBe('FAKE\nThree');
+    store.undo();
+    expect(store.data()).toBe('FAKE\nTwo');
+  });
+
+  it('creates a new game of the chosen engine', async () => {
+    const store = setupEngines();
+    await store.start();
+    await store.create('New one', undefined, 'fake');
+    expect(platform.games[0]!.data).toBe('FAKE\nNew one');
+    expect(store.engine()?.id).toBe('fake');
+    await store.create('Bitsy one');
+    expect(store.engine()?.id).toBe('bitsy');
   });
 });
