@@ -288,8 +288,9 @@ function Play() {
       </div>
 
       {/* The space left under the toolbar. The screen is the largest square that fits in it,
-          so it stays square whatever shape the panel has (#40). */}
-      <div className="flex min-h-0 flex-1 items-center justify-center [container-type:size]">
+          so it stays square whatever shape the panel has (#40). It never gets shorter than the
+          game's own 128 px: in a short panel the panel scrolls instead. */}
+      <div className="flex min-h-32 flex-1 items-center justify-center [container-type:size]">
         <div
           ref={screen}
           role="application"
