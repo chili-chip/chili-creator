@@ -28,7 +28,7 @@ test('makes a Chili Beat game from Blank, adds a rule and wins it', async ({ pag
   await card.getByRole('combobox', { name: 'Action' }).selectOption('win');
 
   await tools.getByRole('button', { name: 'Play', exact: true }).click();
-  await creator.getByRole('button', { name: 'Play', exact: true }).click();
+  await creator.getByRole('button', { name: 'Play game' }).click();
   await creator.getByRole('button', { name: 'Stop' }).waitFor();
 
   // Walk left into the wall: the win card lights up.

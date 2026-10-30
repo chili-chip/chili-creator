@@ -115,14 +115,14 @@ describe('Chili Beat tools', () => {
     const broken = parseGame(data).doc;
     broken.rules = [{ when: { start: true }, do: [{ become: 'nothing' }] }];
     await open(play, JSON.stringify(broken, null, 2).replace('"become":"nothing"', '"become": "nothing"'));
-    await user.click(screen.getByRole('button', { name: 'Play' }));
+    await user.click(screen.getByRole('button', { name: 'Play game' }));
     expect(await screen.findByRole('alert')).toHaveTextContent("This game can't play yet: rules[0].do[0].become: must be a thing key");
   });
 
   it('Play: starts the engine with the open game', async () => {
     const user = userEvent.setup();
     await open(play);
-    await user.click(screen.getByRole('button', { name: 'Play' }));
+    await user.click(screen.getByRole('button', { name: 'Play game' }));
     expect(await screen.findByRole('button', { name: 'Stop' })).toBeInTheDocument();
   });
 });

@@ -68,7 +68,7 @@ function Play() {
           </Button>
         ) : (
           <Button size="sm" variant="primary" onClick={() => void play()}>
-            <PlayIcon /> Play
+            <PlayIcon /> Play game
           </Button>
         )}
         <Button size="sm" variant="ghost" disabled={!playing} onClick={() => void play()}>
