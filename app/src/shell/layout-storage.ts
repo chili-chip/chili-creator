@@ -3,26 +3,31 @@
 
 export const LAYOUT_KEY = 'chili.creator.layout.v5';
 
-export function loadLayout(): unknown {
+/** Each editor keeps its own layout. Bitsy's keeps the key it always had. */
+export function layoutKey(editor = 'bitsy'): string {
+  return editor === 'bitsy' ? LAYOUT_KEY : `${LAYOUT_KEY}.${editor}`;
+}
+
+export function loadLayout(editor?: string): unknown {
   try {
-    const raw = localStorage.getItem(LAYOUT_KEY);
+    const raw = localStorage.getItem(layoutKey(editor));
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-export function saveLayout(layout: unknown): void {
+export function saveLayout(layout: unknown, editor?: string): void {
   try {
-    localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+    localStorage.setItem(layoutKey(editor), JSON.stringify(layout));
   } catch {
     // Private windows and blocked storage: keep the layout for this visit only.
   }
 }
 
-export function clearLayout(): void {
+export function clearLayout(editor?: string): void {
   try {
-    localStorage.removeItem(LAYOUT_KEY);
+    localStorage.removeItem(layoutKey(editor));
   } catch {
     // Nothing stored to clear.
   }

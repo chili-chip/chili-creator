@@ -7,7 +7,7 @@ import { useCreator, useProjects } from './creator-context';
 export function ProjectBar() {
   const creator = useCreator();
   const state = useProjects();
-  const worldTitle = state.open.status === 'ready' ? state.open.world.title : '';
+  const worldTitle = state.open.status === 'ready' ? (creator.projects.engine()?.gameTitle(state.open.doc) ?? '') : '';
   const [title, setTitle] = useState(worldTitle);
   const openId = state.open.status === 'ready' ? state.open.project.id : null;
 

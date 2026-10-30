@@ -80,7 +80,7 @@ function DialogTool() {
 
   function write(next: string) {
     if (id === undefined) return;
-    creator.projects.updateWorld((w) => setDialogText(w, id, next), { group: `dialog-${id}` });
+    creator.projects.updateDoc<World>((w) => setDialogText(w, id, next), { group: `dialog-${id}` });
   }
 
   function insert(label: string) {
@@ -103,7 +103,7 @@ function DialogTool() {
   function giveOwnerDialog() {
     if (!drawing || !kind) return;
     let made: string | null = null;
-    creator.projects.updateWorld((w) => {
+    creator.projects.updateDoc<World>((w) => {
       made = giveDialog(w, kind, drawing.id);
     });
     if (made !== null) creator.editor.set({ dialog: made });
@@ -111,7 +111,7 @@ function DialogTool() {
 
   function newDialog(copyOf?: string) {
     let made: string | undefined;
-    creator.projects.updateWorld((w) => {
+    creator.projects.updateDoc<World>((w) => {
       const source = copyOf === undefined ? undefined : byId(w.dialogs, copyOf);
       made = addDialog(w, source ? (dialogText(w, source.id) ?? '') : '', source ? `${dialogName(source)} copy` : undefined);
     });
@@ -160,7 +160,7 @@ function DialogTool() {
             question={`Delete “${dialogName(dialog)}”?${saidBy.length ? ` ${saidBy.join(', ')} will have nothing to say.` : ''}`}
             onKeep={() => setDeleting(false)}
             onDelete={() => {
-              creator.projects.updateWorld((w) => void removeDialog(w, dialog.id));
+              creator.projects.updateDoc<World>((w) => void removeDialog(w, dialog.id));
               setDeleting(false);
               creator.editor.set({ dialog: null });
             }}
@@ -197,7 +197,7 @@ function DialogTool() {
               className="w-40"
               onChange={(event) => {
                 const value = event.target.value;
-                creator.projects.updateWorld(
+                creator.projects.updateDoc<World>(
                   (w) => {
                     const target = byId(w.dialogs, dialog.id);
                     if (!target) return;

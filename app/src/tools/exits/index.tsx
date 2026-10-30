@@ -80,7 +80,7 @@ function ExitsTool() {
   function changeExit(recipe: (exit: Exit, w: World, index: number) => void, group?: string) {
     const index = marker?.exit;
     if (index === undefined) return;
-    creator.projects.updateWorld(
+    creator.projects.updateDoc<World>(
       (w) => {
         const target = byId(w.rooms, roomId)?.exits[index];
         if (target) recipe(target, w, index);
@@ -94,7 +94,7 @@ function ExitsTool() {
 
   function changeBack(recipe: (exit: Exit) => void) {
     if (!back) return;
-    creator.projects.updateWorld((w) => {
+    creator.projects.updateDoc<World>((w) => {
       const target = byId(w.rooms, back.room)?.exits[back.index];
       if (target) recipe(target);
     });
@@ -294,7 +294,7 @@ function ExitsTool() {
                   onChange={(event) => {
                     const value = event.target.value;
                     const id = exit.dialog!;
-                    creator.projects.updateWorld((w) => setDialogText(w, id, value), { group: `exit-dialog-${id}` });
+                    creator.projects.updateDoc<World>((w) => setDialogText(w, id, value), { group: `exit-dialog-${id}` });
                   }}
                   onBlur={() => creator.projects.endGroup()}
                 />
@@ -329,7 +329,7 @@ function ExitsTool() {
               question={back ? 'Delete this exit and its way back?' : 'Delete this exit?'}
               onKeep={() => setDeleting(null)}
               onDelete={() => {
-                creator.projects.updateWorld((w) => void removeExit(w, roomId, marker.x, marker.y));
+                creator.projects.updateDoc<World>((w) => void removeExit(w, roomId, marker.x, marker.y));
                 setDeleting(null);
                 creator.editor.set({ marker: null });
               }}
@@ -351,7 +351,7 @@ function ExitsTool() {
             className={cn('min-h-24')}
             onChange={(event) => {
               const value = event.target.value;
-              creator.projects.updateWorld((w) => setDialogText(w, ending, value), { group: `ending-${ending}` });
+              creator.projects.updateDoc<World>((w) => setDialogText(w, ending, value), { group: `ending-${ending}` });
             }}
             onBlur={() => creator.projects.endGroup()}
           />
@@ -361,7 +361,7 @@ function ExitsTool() {
               question="Delete this ending and its text?"
               onKeep={() => setDeleting(null)}
               onDelete={() => {
-                creator.projects.updateWorld((w) => void removeEndingAt(w, roomId, marker.x, marker.y));
+                creator.projects.updateDoc<World>((w) => void removeEndingAt(w, roomId, marker.x, marker.y));
                 setDeleting(null);
                 creator.editor.set({ marker: null });
               }}

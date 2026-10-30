@@ -7,6 +7,8 @@
 // edits stay in the owner's working copy until the next release (#38).
 
 export interface FakeGame {
+  /** Set by platforms with engines (chili-platform#170). */
+  engine?: string;
   id: number;
   title: string;
   slug: string;

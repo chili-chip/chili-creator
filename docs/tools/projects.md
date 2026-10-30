@@ -19,7 +19,7 @@ Below **Projects**, a **Released** section lists the games you released. *Buyers
 
 | Button | Where | Does |
 |---|---|---|
-| **New game** | Top | Starts a game from the default Bitsy game: a room, the avatar, a cat, tea, a key, three tunes and two blips |
+| **New game** | Top | Starts a game from the default Bitsy game: a room, the avatar, a cat, tea, a key, three tunes and two blips. When more than one engine is on, it first asks which one ([Engines and editors](../develop/engines.md)) |
 | **Import** | Top | Makes a new game from a `.bitsy` file or a web page exported from the Bitsy editor (`.bitsy`, `.txt`, `.html`) |
 | **Open** | Each row | Opens the game in every tool |
 | **Release** | Project rows | Turns the project into a game you can sell. Asks first. |

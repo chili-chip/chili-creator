@@ -65,7 +65,7 @@ function Paint() {
 
   /** Changes the picked drawing in the world. */
   function edit(recipe: (d: Drawing, w: World) => void, group?: string) {
-    creator.projects.updateWorld(
+    creator.projects.updateDoc<World>(
       (w) => {
         const target = byId(drawingsOf(w, kind!), id);
         if (target) recipe(target, w);

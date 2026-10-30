@@ -42,7 +42,7 @@ function GameData() {
   function apply() {
     const parsed = parse(draft);
     setIssues(parsed.issues.map((issue) => `Line ${issue.line}: ${issue.message}`));
-    creator.projects.updateWorld((world) => replaceWorld(world, parsed.world));
+    creator.projects.updateDoc<World>((world) => replaceWorld(world, parsed.world));
   }
 
   return (
@@ -96,7 +96,7 @@ function Game() {
       return;
     }
     setFontError('');
-    creator.projects.updateWorld((w) => setCustomFont(w, font));
+    creator.projects.updateDoc<World>((w) => setCustomFont(w, font));
   }
 
   return (
@@ -112,7 +112,7 @@ function Game() {
           value={world.defaultFont ?? 'ascii_small'}
           onChange={(event) => {
             const font = event.target.value;
-            creator.projects.updateWorld((w) => {
+            creator.projects.updateDoc<World>((w) => {
               if (font === 'ascii_small') delete w.defaultFont;
               else w.defaultFont = font;
             });
@@ -168,7 +168,7 @@ function Game() {
           label="Text direction"
           value={world.textDirection === 'RTL' ? 'RTL' : 'LTR'}
           options={directions}
-          onChange={(value) => creator.projects.updateWorld((w) => void (w.textDirection = value))}
+          onChange={(value) => creator.projects.updateDoc<World>((w) => void (w.textDirection = value))}
         />
       </div>
 
@@ -178,7 +178,7 @@ function Game() {
           label="Text size"
           value={world.flags.TXT_MODE === '1' ? '1' : '0'}
           options={textModes}
-          onChange={(value) => creator.projects.updateWorld((w) => void (w.flags.TXT_MODE = value))}
+          onChange={(value) => creator.projects.updateDoc<World>((w) => void (w.flags.TXT_MODE = value))}
         />
       </div>
 

@@ -1,3 +1,4 @@
+import type { World } from '../../bitsy';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -70,7 +71,7 @@ describe('Dialog', () => {
     const user = userEvent.setup();
     const { creator } = await renderTool(Dialog);
     act(() => {
-      creator.projects.updateWorld((w) =>
+      creator.projects.updateDoc<World>((w) =>
         setDialogText(w, '0', '{cycle\n  - hi\n  - bye\n}\n{\n  - a > 1 ?\n    {a = a + 1}\n  - else ?\n    {end}\n}'),
       );
       creator.editor.select({ kind: 'sprites', id: 'a' });
@@ -91,7 +92,7 @@ describe('Dialog', () => {
     const user = userEvent.setup();
     const view = await renderTool(Dialog);
     act(() => {
-      view.creator.projects.updateWorld((w) => setDialogText(w, '0', script));
+      view.creator.projects.updateDoc<World>((w) => setDialogText(w, '0', script));
       view.creator.editor.select({ kind: 'sprites', id: 'a' });
     });
     await user.click(screen.getByRole('radio', { name: 'Blocks' }));
@@ -161,7 +162,7 @@ describe('Dialog', () => {
   it('shows the problems in this dialog', async () => {
     const { creator } = await renderTool(Dialog);
     act(() => {
-      creator.projects.updateWorld((w) => setDialogText(w, '0', '{exit "attic" 1 1}'));
+      creator.projects.updateDoc<World>((w) => setDialogText(w, '0', '{exit "attic" 1 1}'));
       creator.editor.select({ kind: 'sprites', id: 'a' });
     });
     expect(screen.getByText('cat dialog exits to room "attic", which does not exist.')).toBeInTheDocument();

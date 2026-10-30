@@ -1,3 +1,4 @@
+import type { World } from '../../bitsy';
 import { AudioLines, Copy, Play, Plus, Square, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -100,7 +101,7 @@ function Blips() {
 
   function newBlip() {
     let made: Blip | undefined;
-    creator.projects.updateWorld((w) => {
+    creator.projects.updateDoc<World>((w) => {
       made = blipOf(w, addBlip(w, kind));
     });
     setConfirming(false);
@@ -114,7 +115,7 @@ function Blips() {
     if (!blip) return;
     const id = blip.id;
     let changed: Blip | undefined;
-    creator.projects.updateWorld(
+    creator.projects.updateDoc<World>(
       (w) => {
         updateBlip(w, id, (b) => {
           change(b);
@@ -169,7 +170,7 @@ function Blips() {
               title="Copy blip"
               onClick={() => {
                 let id: string | null = null;
-                creator.projects.updateWorld((w) => {
+                creator.projects.updateDoc<World>((w) => {
                   id = duplicateBlip(w, blip.id);
                 });
                 if (id !== null) creator.editor.set({ blip: id });
@@ -187,7 +188,7 @@ function Blips() {
             question={`Delete “${blipName(blip)}”${uses.length ? `? ${uses.map((u) => u.label).join(', ')} will go quiet` : ''}?`}
             onKeep={() => setConfirming(false)}
             onDelete={() => {
-              creator.projects.updateWorld((w) => void removeBlip(w, blip.id));
+              creator.projects.updateDoc<World>((w) => void removeBlip(w, blip.id));
               setConfirming(false);
               creator.editor.set({ blip: null });
             }}

@@ -1,3 +1,4 @@
+import type { World } from '../../bitsy';
 import { ArrowLeft, ArrowRight, Copy, CopyPlus, Music, Play, Plus, Square, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import {
@@ -127,7 +128,7 @@ function Tunes() {
 
   function newTune() {
     let id = '';
-    creator.projects.updateWorld((w) => {
+    creator.projects.updateDoc<World>((w) => {
       id = addTune(w);
     });
     pick(id);
@@ -152,7 +153,7 @@ function Tunes() {
   const playhead = isPlaying && playing.bar === bar ? playing.beat : null;
 
   function edit(change: (t: Tune) => void, group?: string) {
-    creator.projects.updateWorld((w) => void updateTune(w, id, change), group === undefined ? {} : { group });
+    creator.projects.updateDoc<World>((w) => void updateTune(w, id, change), group === undefined ? {} : { group });
   }
 
   function hear(row: number) {
@@ -250,7 +251,7 @@ function Tunes() {
           title="Copy tune"
           onClick={() => {
             let copy: string | null = null;
-            creator.projects.updateWorld((w) => {
+            creator.projects.updateDoc<World>((w) => {
               copy = duplicateTune(w, id);
             });
             if (copy !== null) pick(copy);
@@ -267,7 +268,7 @@ function Tunes() {
             onKeep={() => setConfirming(false)}
             onDelete={() => {
               if (isPlaying) creator.sound.stop();
-              creator.projects.updateWorld((w) => void removeTune(w, id));
+              creator.projects.updateDoc<World>((w) => void removeTune(w, id));
               setConfirming(false);
               creator.editor.set({ tune: null });
             }}

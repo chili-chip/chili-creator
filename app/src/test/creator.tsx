@@ -131,7 +131,7 @@ export async function renderTool(Tool: ComponentType, { data = blankGame }: { da
   const world = (): World => {
     const { open } = creator.projects.getState();
     if (open.status !== 'ready') throw new Error('no game is open');
-    return open.world;
+    return (open.doc as World);
   };
   return { creator, platform, world, sound, ...view };
 }

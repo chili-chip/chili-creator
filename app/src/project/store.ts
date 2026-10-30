@@ -1,4 +1,3 @@
-import { createWorld, parse, serialize, type ParseIssue, type World } from '../bitsy';
 import {
   ApiError,
   createSaveController,
@@ -10,13 +9,16 @@ import {
   type SaveStatus,
 } from '../chili-api';
 import type { EmbedMessage } from '../embed/bridge';
+import type { EngineRegistry } from '../engines/registry';
+import type { EngineModule } from '../engines/types';
 
 export type NoticeKind = 'success' | 'error' | 'info';
 
 export type OpenState =
   | { status: 'none' }
   | { status: 'loading'; id: string }
-  | { status: 'ready'; project: Project; world: World; issues: ParseIssue[] }
+  /** `doc` is the engine's own type: a Bitsy `World`, a Chili Beat `Game`, … */
+  | { status: 'ready'; project: Project; engine: string; doc: unknown; issues: { message: string }[] }
   | { status: 'error'; id: string; message: string };
 
 export interface ProjectsState {
@@ -41,6 +43,8 @@ export interface EditOptions {
 }
 
 export interface ProjectStoreOptions {
+  /** Parses, saves and titles each game with its own engine. */
+  engines: EngineRegistry;
   profile: ProfileService;
   platform: ProjectRepository;
   local: ProjectRepository;
@@ -63,7 +67,7 @@ function isLocal(id: string): boolean {
 }
 
 /** The open project, the project lists and autosave, for every tool to share. */
-export function createProjectStore({ profile, platform, local, post, notify }: ProjectStoreOptions) {
+export function createProjectStore({ engines, profile, platform, local, post, notify }: ProjectStoreOptions) {
   let state: ProjectsState = {
     mode: 'unknown',
     list: { status: 'idle', projects: [], released: [] },
@@ -74,9 +78,9 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
   const listeners = new Set<() => void>();
   let reportedFailure = false;
   let started: Promise<void> | null = null;
-  // Worlds are replaced, never changed, on every edit, so history keeps them as they are.
-  let past: World[] = [];
-  let future: World[] = [];
+  // Documents are replaced, never changed, on every edit, so history keeps them as they are.
+  let past: unknown[] = [];
+  let future: unknown[] = [];
   let lastGroup: string | undefined;
 
   function set(patch: Partial<ProjectsState>) {
@@ -90,10 +94,14 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
     return state.open.status === 'ready' ? state.open.project : null;
   }
 
+  function openEngine(): EngineModule | null {
+    return state.open.status === 'ready' ? engines.get(state.open.engine)! : null;
+  }
+
   async function saveOpen(data: string) {
     const project = openProject();
     if (!project || state.open.status !== 'ready') return;
-    const title = state.open.world.title.split('\n')[0]!.trim() || 'untitled';
+    const title = openEngine()!.gameTitle(state.open.doc).split('\n')[0]!.trim() || 'untitled';
     const saved = await repo(project.id).update(project.id, { title, data });
     if (openProject()?.id === saved.id && state.open.status === 'ready') {
       set({ open: { ...state.open, project: { ...saved, data } } });
@@ -160,19 +168,20 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
     return { canUndo: past.length > 0, canRedo: future.length > 0 };
   }
 
-  /** Puts a world from history back and saves it. */
-  function restore(world: World) {
+  /** Puts a document from history back and saves it. */
+  function restore(doc: unknown) {
     if (state.open.status !== 'ready') return;
     lastGroup = undefined;
-    set({ open: { ...state.open, world }, history: historyState() });
-    autosave.edit(serialize(world));
+    set({ open: { ...state.open, doc }, history: historyState() });
+    autosave.edit(openEngine()!.format.serialize(doc));
   }
 
   function show(project: Project) {
-    const { world, issues } = parse(project.data);
+    const engine = engines.of(project.data, project.engine);
+    const { doc, issues } = engine.format.parse(project.data);
     autosave.reset();
     forget();
-    set({ open: { status: 'ready', project, world, issues }, history: historyState() });
+    set({ open: { status: 'ready', project, engine: engine.id, doc, issues }, history: historyState() });
     if (!isLocal(project.id)) post({ type: 'chili-project', id: project.id });
   }
 
@@ -228,10 +237,11 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
       post({ type: 'chili-project-new' });
     },
 
-    /** Starts a new game, from the blank template or from imported data, and opens it. */
-    async create(title = NEW_GAME_TITLE, data?: string) {
+    /** Starts a new game of an engine (the default one if not given), or from imported data, and opens it. */
+    async create(title = NEW_GAME_TITLE, data?: string, engineId?: string) {
       if (!(await settle())) return;
-      const project = await repo().create({ title, data: data ?? serialize(createWorld({ title })) });
+      const engine = engines.get(engineId) ?? engines.default();
+      const project = await repo().create({ title, data: data ?? engine.newGame(title) });
       await refresh();
       show(project);
     },
@@ -283,20 +293,20 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
       set({ list: { ...state.list, projects: withCover(state.list.projects), released: withCover(state.list.released) } });
     },
 
-    /** Changes the open world on a copy, keeps the old one for undo, and autosaves. */
-    updateWorld(recipe: (world: World) => void, { group }: EditOptions = {}) {
+    /** Changes the open document on a copy, keeps the old one for undo, and autosaves. */
+    updateDoc<Doc>(recipe: (doc: Doc) => void, { group }: EditOptions = {}) {
       if (state.open.status !== 'ready') return;
-      const before = state.open.world;
-      const world = structuredClone(before);
-      recipe(world);
+      const before = state.open.doc;
+      const doc = structuredClone(before) as Doc;
+      recipe(doc);
       if (group === undefined || group !== lastGroup) {
         past.push(before);
         if (past.length > HISTORY_LIMIT) past.shift();
       }
       future = [];
       lastGroup = group;
-      set({ open: { ...state.open, world }, history: historyState() });
-      autosave.edit(serialize(world));
+      set({ open: { ...state.open, doc }, history: historyState() });
+      autosave.edit(openEngine()!.format.serialize(doc));
     },
 
     /** Ends the current group, so the next edit is its own undo step. */
@@ -305,33 +315,32 @@ export function createProjectStore({ profile, platform, local, post, notify }: P
     },
 
     undo(): boolean {
-      const world = past.pop();
-      if (!world || state.open.status !== 'ready') return false;
-      future.push(state.open.world);
-      restore(world);
+      const doc = past.pop();
+      if (doc === undefined || state.open.status !== 'ready') return false;
+      future.push(state.open.doc);
+      restore(doc);
       return true;
     },
 
     redo(): boolean {
-      const world = future.pop();
-      if (!world || state.open.status !== 'ready') return false;
-      past.push(state.open.world);
-      restore(world);
+      const doc = future.pop();
+      if (doc === undefined || state.open.status !== 'ready') return false;
+      past.push(state.open.doc);
+      restore(doc);
       return true;
     },
 
     setTitle(title: string) {
-      store.updateWorld(
-        (world) => {
-          world.title = title;
-        },
-        { group: 'title' },
-      );
+      const engine = openEngine();
+      if (engine) store.updateDoc((doc) => engine.setTitle(doc, title), { group: 'title' });
     },
 
-    /** The open game's `.bitsy` text, for the player. */
+    /** The open game's engine, or null when none is open. */
+    engine: openEngine,
+
+    /** The open game's text, for the player. */
     data(): string {
-      return state.open.status === 'ready' ? serialize(state.open.world) : '';
+      return state.open.status === 'ready' ? openEngine()!.format.serialize(state.open.doc) : '';
     },
 
     flush: () => autosave.flush(),

@@ -1,3 +1,4 @@
+import type { World } from '../../bitsy';
 import { Plus, Trash2, Variable as VariableIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { addVariable, byId, drawingName, referencesTo, removeVariable, renameVariable, setStartingItem, startingItem, type Variable } from '../../bitsy';
@@ -17,7 +18,7 @@ function Row({ variable, uses }: { variable: Variable; uses: number }) {
   function rename() {
     if (name === variable.id) return;
     let done = false;
-    creator.projects.updateWorld((w) => {
+    creator.projects.updateDoc<World>((w) => {
       done = renameVariable(w, variable.id, name);
     });
     if (!done) {
@@ -47,7 +48,7 @@ function Row({ variable, uses }: { variable: Variable; uses: number }) {
           onChange={(event) => {
             const value = event.target.value;
             const id = variable.id;
-            creator.projects.updateWorld(
+            creator.projects.updateDoc<World>(
               (w) => {
                 const target = byId(w.variables, id);
                 if (target) target.value = value;
@@ -62,7 +63,7 @@ function Row({ variable, uses }: { variable: Variable; uses: number }) {
           aria-label={`Delete ${variable.id}`}
           title="Delete"
           className="ml-auto"
-          onClick={() => creator.projects.updateWorld((w) => void removeVariable(w, variable.id))}
+          onClick={() => creator.projects.updateDoc<World>((w) => void removeVariable(w, variable.id))}
         >
           <Trash2 />
         </Button>
@@ -97,7 +98,7 @@ function Variables() {
           ))}
         </ul>
       )}
-      <Button size="sm" variant="primary" className="w-fit" onClick={() => creator.projects.updateWorld((w) => void addVariable(w))}>
+      <Button size="sm" variant="primary" className="w-fit" onClick={() => creator.projects.updateDoc<World>((w) => void addVariable(w))}>
         <Plus />
         New variable
       </Button>
@@ -122,7 +123,7 @@ function Variables() {
                       className="w-20 text-right tabular-nums"
                       onChange={(event) => {
                         const n = Math.max(0, Math.round(Number(event.target.value) || 0));
-                        creator.projects.updateWorld((w) => setStartingItem(w, item.id, n), { group: `start-${item.id}` });
+                        creator.projects.updateDoc<World>((w) => setStartingItem(w, item.id, n), { group: `start-${item.id}` });
                       }}
                     />
                   </label>

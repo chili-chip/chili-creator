@@ -1,3 +1,4 @@
+import type { World } from '../../bitsy';
 import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -11,7 +12,7 @@ const Exits = exits.component;
 async function withMarkers() {
   const view = await renderTool(Exits);
   act(() =>
-    view.creator.projects.updateWorld((w) => {
+    view.creator.projects.updateDoc<World>((w) => {
       addRoom(w);
       addExit(w, '0', 3, 4);
       addEnding(w, '0', 6, 6, 'Bye');
