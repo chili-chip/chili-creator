@@ -134,6 +134,11 @@ export class ChiliBeatPlayer {
     this.buttons = 0;
   }
 
+  /** Turns sound on now. Call it from a click or key press: browsers block sound before one. */
+  enableSound() {
+    this.#startSound();
+  }
+
   // Browsers only allow sound after the player presses something.
   #startSound() {
     if (!this.synth && typeof AudioContext !== "undefined") this.synth = new Synth();

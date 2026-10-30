@@ -282,7 +282,7 @@ function Shell({ creator }: { creator: Creator }) {
 
       <footer className={cn('flex h-6 items-center gap-4 border-t border-line bg-bg-2 px-3 text-[11px] text-muted', !phone && 'col-span-2')}>
         <span>{creator.bridge.embedded ? 'In Chili Platform' : 'Standalone'}</span>
-        <ProblemCount onOpen={() => creator.commands.execute('tool.open.problems')} />
+        <ProblemCount onOpen={() => open(creator.activeEditor.get().tools.find((tool) => tool.title === 'Problems')?.id ?? 'problems')} />
         <button type="button" className="hover:text-text" onClick={() => setHelping((h) => !h)}>
           {t('Help')}
         </button>

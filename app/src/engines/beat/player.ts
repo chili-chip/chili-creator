@@ -24,6 +24,7 @@ export interface BeatPlayer {
   restart(): void;
   step(buttons?: number): void;
   press(button: number, down: boolean): void;
+  enableSound(): void;
   debug(): BeatDebug;
   muted: boolean;
   onStep: ((debug: BeatDebug) => void) | null;
