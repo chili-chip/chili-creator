@@ -11,13 +11,13 @@ Chili Beat tool.
 
 ![Bee Home in Play](../../assets/screenshots/beat-play.png){ .shot }
 
-The finished game is a template: **New game** › Chili Beat › **Bee Home**.
+The finished game is an example: pick **Chili Beat**, then start from **Bee Home**.
 Open it next to yours if you get stuck.
 
 ## 1. Start a blank game
 
 1. Open the creator.
-2. In **Projects**, press **New game**, then **Chili Beat**.
+2. Pick **Chili Beat**, then press **New game** in **Projects**.
 3. Type **Bee Home** as the title, at the top.
 
 The game has a hero (`@`) in a walled room, and one card: *When you press an

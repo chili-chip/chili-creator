@@ -8,6 +8,7 @@ import { Button } from '../ui/button';
 import { cn } from '../ui/cn';
 import { Select } from '../ui/input';
 import { CommandPalette } from './CommandPalette';
+import { EngineChoice } from './EngineChoice';
 import { CreatorProvider, useCreator, useI18nState, useProjects, useT } from './creator-context';
 import { clearLayout } from './layout-storage';
 import { PhoneWorkspace } from './PhoneWorkspace';
@@ -67,6 +68,9 @@ function Shell({ creator }: { creator: Creator }) {
   const { language } = useI18nState();
   const tools = useRegistry(creator.tools);
   const editor = useSyncExternalStore(creator.activeEditor.subscribe, creator.activeEditor.get, creator.activeEditor.get);
+  // No engine picked yet: the engine choice fills the window.
+  const choosing = useProjects().engine === null;
+  const engineTitle = creator.projects.engine()?.title ?? creator.engines.get(creator.projects.getState().engine ?? undefined)?.title;
   const commands = useRegistry(creator.commands);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [touring, setTouring] = useState(() => creator.tour && !tourDone());
@@ -250,6 +254,18 @@ function Shell({ creator }: { creator: Creator }) {
         <span className="hidden rounded border border-amber/40 px-1.5 py-0.5 text-[10px] tracking-widest text-amber sm:inline">
           PREVIEW
         </span>
+        {!choosing && (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label="Change editor"
+            title="Change editor"
+            className="shrink-0 border-l border-line"
+            onClick={() => void creator.projects.chooseEngine(null)}
+          >
+            {engineTitle}
+          </Button>
+        )}
         <ProjectBar />
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <Button
@@ -268,15 +284,20 @@ function Shell({ creator }: { creator: Creator }) {
         </div>
       </header>
 
-      {!phone && toolBar}
+      {!phone && !choosing && toolBar}
 
-      <main className="min-h-0 min-w-0" data-tour="workspace">
-        {phone ? <PhoneWorkspace tools={tools} current={phoneTool} /> : <Workspace
+      <main className={cn('min-h-0 min-w-0', choosing && !phone && 'col-span-2')} data-tour="workspace">
+        {choosing ? <EngineChoice /> : phone ? <PhoneWorkspace tools={tools} current={phoneTool} /> : <Workspace
             // A new editor brings its own tools and layout.
             key={editor.id}
             editor={editor.id}
             tools={tools}
-            onReady={(api) => (dock.current = api)}
+            onReady={(api) => {
+              dock.current = api;
+              // A freshly picked editor starts on its list of games.
+              const list = creator.tools.get('projects');
+              if (list && creator.projects.getState().open.status !== 'ready') openTool(api, list);
+            }}
           />}
       </main>
 
@@ -300,7 +321,7 @@ function Shell({ creator }: { creator: Creator }) {
             ))}
           </Select>
         )}
-        {!phone && (
+        {!phone && !choosing && (
           <>
             <Select
               aria-label="Layout"
@@ -320,7 +341,7 @@ function Shell({ creator }: { creator: Creator }) {
         )}
       </footer>
 
-      {phone && toolBar}
+      {phone && !choosing && toolBar}
 
       {!creator.bridge.embedded && <Toaster theme="dark" position={phone ? 'top-center' : 'bottom-right'} />}
 
@@ -341,7 +362,7 @@ function Shell({ creator }: { creator: Creator }) {
         />
       )}
 
-      {touring && <Tour phone={phone} onOpenTool={open} onClose={() => setTouring(false)} />}
+      {touring && !choosing && <Tour phone={phone} onOpenTool={open} onClose={() => setTouring(false)} />}
 
       {paletteOpen && (
         <CommandPalette

@@ -105,7 +105,7 @@ test('edits to a released game wait for Publish update before buyers get them (#
 });
 
 test('signed out, a new game is kept in this browser', async ({ page }) => {
-  await page.goto('/index.html');
+  await page.goto('/index.html?engine=bitsy');
   await expect(page.getByText(/saved in this browser only/)).toBeVisible();
   await newBitsyGame(page);
   const title = page.getByRole('textbox', { name: 'Game title' });

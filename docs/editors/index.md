@@ -22,11 +22,15 @@ brings its own tools.
 
 ## Which editor a game uses
 
-- **New game** in Projects asks which editor to use. Each editor also offers
-  example games to start from.
+- The creator starts on **Pick an editor**. Picking one opens that editor,
+  with its own list of games in **Projects**. Each card also offers the
+  editor's example games.
+- **New game** makes a game for the editor you are in.
 - A game always opens in the editor that made it. The tool bar shows that
   editor's tools next to **Projects**.
+- **Change editor**, the editor's name at the top left, goes back to the
+  choice.
 - **Import** reads Bitsy files and pages. A `.beat` file opens in the Chili
   Beat editor.
 
-![New game asks which editor to use, with Chili Beat's example games](../assets/screenshots/beat-new-game.png){ .shot }
+![Pick an editor: Bitsy and Chili Beat, with Chili Beat's example games](../assets/screenshots/engine-choice.png){ .shot }

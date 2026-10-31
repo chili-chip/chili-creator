@@ -428,7 +428,61 @@ describe('createProjectStore with more than one engine', () => {
     expect(platform.games[0]!.data).toBe('FAKE\nNew one');
     expect(platform.games[0]!.engine).toBe('fake');
     expect(store.engine()?.id).toBe('fake');
-    await store.create('Bitsy one');
+    await store.create('Bitsy one', undefined, 'bitsy');
     expect(store.engine()?.id).toBe('bitsy');
+  });
+});
+
+describe('createProjectStore: the chosen engine (#59)', () => {
+  function setupEngines() {
+    const transport = createTransport({
+      baseUrl: 'https://api.test/api',
+      tokens: { getToken: async () => 'good-token' },
+      fetch: platform.fetch,
+    });
+    return createProjectStore({
+      engines: createEngineRegistry([bitsyEngine, fakeEngine]),
+      profile: createProfileService(transport),
+      platform: createPlatformProjects(transport),
+      local: createLocalProjects(createMemoryStore()),
+      post: () => {},
+      notify: () => {},
+    });
+  }
+
+  it('starts with no engine chosen, and new games use the chosen one', async () => {
+    const store = setupEngines();
+    await store.start();
+    expect(store.getState().engine).toBeNull();
+    store.chooseEngine('fake');
+    expect(store.getState().engine).toBe('fake');
+    await store.create();
+    expect(platform.games[0]!.data).toBe('FAKE\nUntitled game');
+  });
+
+  it('follows the engine of a game that opens', async () => {
+    const saved = platform.addGame({ title: 'f', data: 'FAKE\nf', engine: 'fake' });
+    const store = setupEngines();
+    await store.start(String(saved.id));
+    expect(store.getState().engine).toBe('fake');
+  });
+
+  it('going back to the engine choice closes the open game', async () => {
+    const saved = platform.addGame({ title: 'f', data: 'FAKE\nf' });
+    const store = setupEngines();
+    await store.start(String(saved.id));
+    await store.chooseEngine(null);
+    expect(store.getState().engine).toBeNull();
+    expect(store.getState().open.status).toBe('none');
+  });
+
+  it('lists the projects of one engine; games with none are Bitsy games', async () => {
+    platform.addGame({ title: 'old' });
+    platform.addGame({ title: 'beat', data: 'FAKE\nbeat', engine: 'fake' });
+    const store = setupEngines();
+    await store.start();
+    expect(store.projectsOf('fake').map((p) => p.title)).toEqual(['beat']);
+    expect(store.projectsOf('bitsy').map((p) => p.title)).toEqual(['old']);
+    expect(store.gamesUsed()).toBe(2);
   });
 });

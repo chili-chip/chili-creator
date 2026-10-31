@@ -26,14 +26,6 @@ function Cover({ project }: { project: ProjectSummary }) {
   );
 }
 
-/** The engine's name, for games that are not Bitsy games. */
-function EngineBadge({ id }: { id?: string }) {
-  const { engines } = useCreator();
-  const engine = engines.get(id);
-  if (!engine || engine === engines.default()) return null;
-  return <span className="ml-2 rounded border border-line px-1 py-0.5 text-[10px] font-normal text-muted">{engine.title}</span>;
-}
-
 interface RowProps {
   project: ProjectSummary;
   open: boolean;
@@ -70,10 +62,7 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, o
       <div className="flex items-center gap-3">
         <Cover project={project} />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium">
-            {project.title}
-            <EngineBadge id={project.engine} />
-          </p>
+          <p className="truncate font-medium">{project.title}</p>
           <p className="text-xs text-muted">
             {project.released ? 'Released' : 'Edited'} {when(project.updatedAt)}
             {project.released && project.releaseNumber ? ` · Release ${project.releaseNumber}` : ''}
@@ -199,8 +188,11 @@ function Projects() {
   const t = useT();
   const state = useProjects();
   const [creating, setCreating] = useState(false);
-  const [picking, setPicking] = useState(false);
-  const offered = creator.engines.offered();
+  // Each editor lists its own games; games with no engine are the default engine's.
+  const engine = creator.engines.get(state.engine ?? undefined) ?? creator.engines.default();
+  const mine = (list: ProjectSummary[]) => list.filter((p) => (p.engine ?? creator.engines.default().id) === engine.id);
+  const projects = mine(state.list.projects);
+  const released = mine(state.list.released);
   const [error, setError] = useState('');
   const openId = state.open.status === 'ready' ? state.open.project.id : null;
   const used = creator.projects.gamesUsed();
@@ -226,10 +218,9 @@ function Projects() {
     setCreating(false);
   }
 
-  async function create(engine?: string, data?: string, title?: string) {
-    setPicking(false);
+  async function create(data?: string, title?: string) {
     setCreating(true);
-    await act(() => creator.projects.create(title, data, engine));
+    await act(() => creator.projects.create(title, data, engine.id));
     setCreating(false);
   }
 
@@ -272,8 +263,7 @@ function Projects() {
           </Button>
           <Button
             variant="primary"
-            onClick={() => (offered.length > 1 ? setPicking((p) => !p) : void create())}
-            aria-expanded={offered.length > 1 ? picking : undefined}
+            onClick={() => void create()}
             disabled={creating || atLimit || state.mode === 'unknown'}
           >
             <Plus />
@@ -281,42 +271,21 @@ function Projects() {
           </Button>
         </div>
 
-        {picking && (
-          <div role="group" aria-label="Pick an engine" className="grid gap-2 sm:grid-cols-2">
-            {offered.map((engine) => {
-              const Icon = engine.icon;
-              return (
-                <div key={engine.id} className="rounded-lg border border-line bg-bg-2 has-[button:hover]:border-chili/60">
-                  <button
-                    type="button"
-                    onClick={() => void create(engine.id)}
-                    className="flex w-full items-start gap-3 p-3 text-left focus-visible:outline-2 focus-visible:outline-phosphor"
-                  >
-                    <Icon className="mt-0.5 size-5 shrink-0 text-chili" aria-hidden />
-                    <span>
-                      <span className="block font-medium">{engine.title}</span>
-                      <span className="block text-sm text-muted">{engine.description}</span>
-                    </span>
-                  </button>
-                  {engine.templates && (
-                    <div className="flex flex-wrap items-center gap-1 px-3 pb-3 text-xs">
-                      <span className="text-muted">Or start from</span>
-                      {engine.templates.map((template) => (
-                        <Button
-                          key={template.title}
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => void create(engine.id, template.make(template.title), template.title)}
-                        >
-                          {template.title}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+        {engine.templates && (
+          <p className="-mt-3 flex flex-wrap items-center gap-1 text-xs text-muted">
+            Or start from
+            {engine.templates.map((template) => (
+              <Button
+                key={template.title}
+                size="sm"
+                variant="ghost"
+                disabled={creating || atLimit || state.mode === 'unknown'}
+                onClick={() => void create(template.make(template.title), template.title)}
+              >
+                {template.title}
+              </Button>
+            ))}
+          </p>
         )}
 
         {atLimit && (
@@ -340,11 +309,11 @@ function Projects() {
 
         <section className="space-y-3">
           <h2 className="text-xs font-semibold tracking-widest text-muted uppercase">Projects</h2>
-          {state.list.status === 'ready' && state.list.projects.length === 0 && (
+          {state.list.status === 'ready' && projects.length === 0 && (
             <p className="text-sm text-muted">No projects yet.</p>
           )}
           <ul aria-label="Projects" className="space-y-2">
-            {state.list.projects.map((project) => (
+            {projects.map((project) => (
               <ProjectRow
                 key={project.id}
                 project={project}
@@ -358,14 +327,14 @@ function Projects() {
           </ul>
         </section>
 
-        {state.list.released.length > 0 && (
+        {released.length > 0 && (
           <section className="space-y-3">
             <h2 className="text-xs font-semibold tracking-widest text-muted uppercase">Released</h2>
             <p className="text-sm text-muted">
               Buyers keep the version you released. Edits stay with you until you publish an update.
             </p>
             <ul aria-label="Released games" className="space-y-2">
-              {state.list.released.map((project) => (
+              {released.map((project) => (
                 <ProjectRow
                   key={project.id}
                   project={project}

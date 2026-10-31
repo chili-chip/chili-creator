@@ -15,7 +15,8 @@ flowchart TB
   subgraph Shell["Shell: the same for every engine"]
     S[Project store: open, autosave, undo]
     T[Tool bar and workspace]
-    P[Projects tool and New game picker]
+    C[Pick an editor: the engine choice]
+    P[Projects tool, one list per engine]
   end
   R[Engine registry] --> B[engines/bitsy]
   R --> F[engines/... next engine]
@@ -29,8 +30,13 @@ flowchart TB
   one whose `detect()` knows its text, else Bitsy.
 - Opening a game shows the tools of its engine's first editor, next to the
   shell's tools (Projects). Each editor keeps its own workspace layout.
-- **New game** asks which engine to use when more than one is turned on.
-  With only Bitsy on, it makes a Bitsy game at once.
+- The creator starts on **Pick an editor** (`shell/EngineChoice.tsx`), one card
+  per turned-on engine. The chosen engine is `state.engine` in the project
+  store; `?engine=<id>` opens an editor at once, and opening a game sets it.
+  **Change editor** sets it back to null.
+- Projects lists the games of the chosen engine (`projectsOf`). Games with no
+  `engine` belong to the default engine. **New game** makes a game of the
+  chosen engine.
 - The shell imports only `engines/types.ts` and `engines/registry.ts`.
   Engines never import each other.
 
@@ -40,7 +46,7 @@ flowchart TB
 export interface EngineModule<Doc> {
   id: string;            // saved with projects, never changes
   title: string;         // "Bitsy"
-  description: string;   // one line for the New game picker
+  description: string;   // one line for the engine choice
   icon: LucideIcon;
   format: {
     extension: string;

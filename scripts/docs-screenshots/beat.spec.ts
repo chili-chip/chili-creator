@@ -13,7 +13,7 @@ const beeHome = readFileSync(join(__dirname, '../../app/src/engines/beat/fixture
 async function open(page: Page) {
   await page.setViewportSize({ width: 1280, height: 800 });
   const platform = createFakePlatform({ token: 'docs' });
-  const saved = platform.addGame({ title: 'Bee Home', data: beeHome });
+  const saved = platform.addGame({ title: 'Bee Home', data: beeHome, engine: 'beat' });
   await servePlatform(page, platform);
   const creator = await openInFakePlatform(page, ['docs'], `/index.html?api=/api&project=${saved.id}`);
   await expect(creator.getByRole('textbox', { name: 'Game title' })).toHaveValue('Bee Home');
@@ -74,8 +74,8 @@ test('chili beat', async ({ page }) => {
   await shot(page, 'beat-play');
   await creator.getByRole('button', { name: 'Stop' }).click();
 
-  // The New game picker with both engines.
-  await tool(creator, 'Projects');
-  await creator.getByRole('button', { name: 'New game' }).click();
-  await shot(group(creator, 'Projects'), 'beat-new-game');
+  // The engine choice the creator starts on.
+  await creator.getByRole('button', { name: 'Change editor' }).click();
+  await creator.getByRole('region', { name: 'Pick an editor' }).waitFor();
+  await shot(page, 'engine-choice');
 });
