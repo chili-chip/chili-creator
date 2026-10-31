@@ -58,7 +58,7 @@ describe('engines in the shell (#59)', () => {
     const { creator } = renderCreator({ platform, ...both, initialProject: String(fake.id) });
     // A game from the platform opens in its editor at once.
     expect(await within(await screen.findByRole('navigation', { name: 'Tools' })).findByRole('button', { name: 'Fake tool' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Change editor' }));
+    await user.click(screen.getByRole('button', { name: /change editor/i }));
     expect(await screen.findByRole('region', { name: 'Pick an editor' })).toBeInTheDocument();
     expect(creator.projects.getState().open.status).toBe('none');
   });

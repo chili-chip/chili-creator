@@ -75,7 +75,7 @@ test('chili beat', async ({ page }) => {
   await creator.getByRole('button', { name: 'Stop' }).click();
 
   // The engine choice the creator starts on.
-  await creator.getByRole('button', { name: 'Change editor' }).click();
+  await creator.getByRole('button', { name: /change editor/i }).click();
   await creator.getByRole('region', { name: 'Pick an editor' }).waitFor();
   await shot(page, 'engine-choice');
 });

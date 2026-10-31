@@ -79,7 +79,7 @@ test('the creator starts on the engine choice; picking Chili Beat lists only its
   const list = creator.getByRole('list', { name: 'Projects' });
   await expect(list.getByText('A Beat game')).toBeVisible();
   await expect(list.getByText('A Bitsy game')).toHaveCount(0);
-  await creator.getByRole('button', { name: 'Change editor' }).click();
+  await creator.getByRole('button', { name: /change editor/i }).click();
   await choice.getByRole('button', { name: /^Bitsy/ }).click();
   await expect(creator.getByRole('list', { name: 'Projects' }).getByText('A Bitsy game')).toBeVisible();
 });

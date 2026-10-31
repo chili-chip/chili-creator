@@ -258,7 +258,7 @@ function Shell({ creator }: { creator: Creator }) {
           <Button
             variant="ghost"
             size="sm"
-            aria-label="Change editor"
+            aria-label={`${engineTitle}, change editor`}
             title="Change editor"
             className="shrink-0 border-l border-line"
             onClick={() => void creator.projects.chooseEngine(null)}
