@@ -19,7 +19,15 @@ The creator runs inside [Chili Platform](https://platform.chilichip.eu). Games y
 
 Sign in and choose **Creator** in the platform menu, or go straight to [platform.chilichip.eu/creator](https://platform.chilichip.eu/creator).
 
-The creator opens on **Projects**, the list of your games.
+The creator opens on **Pick an editor**: one card for each kind of game, with
+how many projects you have in each. Pick one and its editor opens on
+**Projects**, the list of your games for that editor.
+
+![Pick an editor: Bitsy and Chili Beat, with Chili Beat's example games](../assets/screenshots/engine-choice.png){ .shot }
+
+Opening a game from the platform skips this screen and opens the game in its
+editor. To switch editors later, press the editor's name at the top left
+(**Change editor**).
 
 ![The Projects tool: Your games, 2 of 30 games, with Import and New game buttons and two projects](../assets/screenshots/tool-projects.png){ .shot }
 
@@ -27,7 +35,7 @@ The creator opens on **Projects**, the list of your games.
 
 | You want to | Do this |
 |---|---|
-| Start from scratch | Choose **New game**, then pick an editor: [Bitsy](../editors/bitsy/index.md) for story games, [Chili Beat](../editors/beat/index.md) for games on the beat. Or pick one of the example games under an editor. |
+| Start from scratch | In the editor you picked, choose **New game**: [Bitsy](../editors/bitsy/index.md) for story games, [Chili Beat](../editors/beat/index.md) for games on the beat. Or start from one of the editor's example games, on its card or under **New game**. |
 | Keep working on a game | Choose **Open** on it. |
 | Bring in a game from the Bitsy editor | Choose **Import** and pick a `.bitsy` file, or a web page exported from Bitsy (`.html`). It becomes a new game. |
 | Try something without changing a game | Choose **Duplicate** (the copy icon) and open the copy. |

@@ -9,6 +9,11 @@ description: Your games in the Chili Creator. Start a new game, open, import, du
 
 ![Projects: Your games, 2 of 30 games, Import and New game, and a row per project with Open, Release, Duplicate and Delete](../assets/screenshots/tool-projects.png){ .shot }
 
+!!! note "One list per editor"
+    Projects shows the games of the editor you are in. The 30-game limit counts
+    the games of every editor together. Switch editors with **Change editor**,
+    the editor's name at the top left.
+
 ## The list
 
 The heading shows how many games you keep, out of 30. Each row has the game's cover, title and when you last edited it. The game you have open says **open**.
@@ -19,7 +24,7 @@ Below **Projects**, a **Released** section lists the games you released. *Buyers
 
 | Button | Where | Does |
 |---|---|---|
-| **New game** | Top | Asks which editor to use: [Bitsy](../editors/bitsy/index.md) or [Chili Beat](../editors/beat/index.md). Pick the editor for a blank game, or one of its example games. A blank Bitsy game has a room, the avatar, a cat, tea, a key, three tunes and two blips. |
+| **New game** | Top | Starts a blank game in the editor you are in. A blank Bitsy game has a room, the avatar, a cat, tea, a key, three tunes and two blips. Editors with example games list them under it, after **Or start from**. |
 | **Import** | Top | Makes a new game from a `.bitsy` file or a web page exported from the Bitsy editor (`.bitsy`, `.txt`, `.html`) |
 | **Open** | Each row | Opens the game in every tool |
 | **Release** | Project rows | Turns the project into a game you can sell. Asks first. |

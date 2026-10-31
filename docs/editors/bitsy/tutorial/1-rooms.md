@@ -11,7 +11,7 @@ A room is one screen of your game: 16×16 cells, each 8×8 pixels. That is 128×
 
 ## Start a new game
 
-1. Open [Projects](../../../get-started/projects.md) and choose **New game**.
+1. Open the creator, pick **Bitsy**, and choose **New game** in [Projects](../../../get-started/projects.md).
 2. Click the title **Untitled game** in the top bar and type `Chili Garden`.
 
 A new game already has a room with a wall around it, the avatar, a cat, a cup of tea and a key. You change all of them in the next steps.

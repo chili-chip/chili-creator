@@ -6,7 +6,7 @@ import { createFakePlatform, type FakePlatform } from '../app/src/chili-api/fake
  * that answers the creator's token requests like CreatorComponent does, and
  * records every message the creator sends.
  */
-export async function openInFakePlatform(page: Page, tokens: string[], src = '/index.html?api=/api') {
+export async function openInFakePlatform(page: Page, tokens: string[], src = '/index.html?api=/api&engine=bitsy') {
   const html = `<!doctype html>
 <html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Creator</title></head><body style="margin:0">
 <iframe id="creator" title="Chili game creator" src="${src}" style="border:0;width:100vw;height:100vh"></iframe>
