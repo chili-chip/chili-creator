@@ -57,7 +57,8 @@ The console has a 128×128 screen, the same size as a Bitsy room. Dialog uses a 
 Chili Beat games play on the console with **Chili Beat**, the same engine as
 [Play](../editors/beat/tools/beat-play.md) in the creator.
 
-1. Install the player once: download `chili-beat.blit` from the
+1. The player comes with the console. If `.beat` games don't show up, install
+   it: download `chili-beat.blit` from the
    [chili-beat releases](https://github.com/chili-chip/chili-beat/releases),
    copy it to the top of the CHILICHIP drive and eject.
 2. Copy `.beat` games anywhere on the drive. Each one shows up on the home
