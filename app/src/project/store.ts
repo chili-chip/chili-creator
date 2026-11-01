@@ -33,6 +33,8 @@ export interface ProjectsState {
     error?: string;
   };
   open: OpenState;
+  /** The editor's engine the person picked, or the open game's. Null: show the engine choice. */
+  engine: string | null;
   save: SaveStatus;
   history: { canUndo: boolean; canRedo: boolean };
 }
@@ -72,6 +74,7 @@ export function createProjectStore({ engines, profile, platform, local, post, no
     mode: 'unknown',
     list: { status: 'idle', projects: [], released: [] },
     open: { status: 'none' },
+    engine: null,
     save: { state: 'saved', unsaved: false },
     history: { canUndo: false, canRedo: false },
   };
@@ -181,7 +184,7 @@ export function createProjectStore({ engines, profile, platform, local, post, no
     const { doc, issues } = engine.format.parse(project.data);
     autosave.reset();
     forget();
-    set({ open: { status: 'ready', project, engine: engine.id, doc, issues }, history: historyState() });
+    set({ open: { status: 'ready', project, engine: engine.id, doc, issues }, engine: engine.id, history: historyState() });
     if (!isLocal(project.id)) post({ type: 'chili-project', id: project.id });
   }
 
@@ -237,10 +240,25 @@ export function createProjectStore({ engines, profile, platform, local, post, no
       post({ type: 'chili-project-new' });
     },
 
-    /** Starts a new game of an engine (the default one if not given), or from imported data, and opens it. */
+    /** Picks the engine whose editor shows, or null to go back to the engine choice (closing the open game). */
+    async chooseEngine(id: string | null) {
+      if (id === null && state.open.status !== 'none') {
+        await store.close();
+        // Still open: the latest changes did not save, and the person was told.
+        if (store.getState().open.status !== 'none') return;
+      }
+      set({ engine: id });
+    },
+
+    /** Projects (not released games) of one engine. Games with no engine are the default engine's. */
+    projectsOf(engineId: string): ProjectSummary[] {
+      return state.list.projects.filter((p) => (p.engine ?? engines.default().id) === engineId);
+    },
+
+    /** Starts a new game of an engine (the chosen one if not given), or from imported data, and opens it. */
     async create(title = NEW_GAME_TITLE, data?: string, engineId?: string) {
       if (!(await settle())) return;
-      const engine = engines.get(engineId) ?? engines.default();
+      const engine = engines.get(engineId ?? state.engine ?? undefined) ?? engines.default();
       const project = await repo().create({ title, data: data ?? engine.newGame(title), engine: engine.id });
       await refresh();
       show(project);

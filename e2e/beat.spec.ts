@@ -15,9 +15,8 @@ test('makes a Chili Beat game from Blank, adds a rule and wins it', async ({ pag
   // The rule trace needs Rules and Play side by side, which a phone can't show.
   test.skip(info.project.name === 'phone');
   await servePlatform(page, createFakePlatform({ token: 'host-token' }));
-  const creator = await openInFakePlatform(page, ['host-token'], '/index.html?api=/api');
+  const creator = await openInFakePlatform(page, ['host-token'], '/index.html?api=/api&engine=beat');
   await creator.getByRole('button', { name: 'New game' }).click();
-  await creator.getByRole('group', { name: 'Pick an engine' }).getByRole('button', { name: /Chili Beat/ }).click();
   await expect(creator.getByRole('textbox', { name: 'Game title' })).toHaveValue('Untitled game');
 
   const tools = creator.getByRole('navigation', { name: 'Tools' });
@@ -43,9 +42,8 @@ test('makes a Chili Beat game from Blank, adds a rule and wins it', async ({ pag
 test('builds a game from Blank with a recipe: paint the flag, walk into it, win', async ({ page }, info) => {
   test.skip(info.project.name === 'phone');
   await servePlatform(page, createFakePlatform({ token: 'host-token' }));
-  const creator = await openInFakePlatform(page, ['host-token'], '/index.html?api=/api');
+  const creator = await openInFakePlatform(page, ['host-token'], '/index.html?api=/api&engine=beat');
   await creator.getByRole('button', { name: 'New game' }).click();
-  await creator.getByRole('group', { name: 'Pick an engine' }).getByRole('button', { name: /Chili Beat/ }).click();
   await expect(creator.getByRole('textbox', { name: 'Game title' })).toHaveValue('Untitled game');
 
   const tools = creator.getByRole('navigation', { name: 'Tools' });
@@ -68,4 +66,20 @@ test('builds a game from Blank with a recipe: paint the flag, walk into it, win'
     await hold(page, 'ArrowLeft');
     await expect(goal).toHaveAttribute('data-lit', 'true', { timeout: 300 });
   }).toPass({ timeout: 15_000 });
+});
+
+test('the creator starts on the engine choice; picking Chili Beat lists only its games', async ({ page }) => {
+  const platform = createFakePlatform({ token: 'host-token' });
+  platform.addGame({ title: 'A Bitsy game' });
+  platform.addGame({ title: 'A Beat game', data: '{"format": "chili-beat", "version": 1}', engine: 'beat' });
+  await servePlatform(page, platform);
+  const creator = await openInFakePlatform(page, ['host-token'], '/index.html?api=/api');
+  const choice = creator.getByRole('region', { name: 'Pick an editor' });
+  await choice.getByRole('button', { name: /^Chili Beat/ }).click();
+  const list = creator.getByRole('list', { name: 'Projects' });
+  await expect(list.getByText('A Beat game')).toBeVisible();
+  await expect(list.getByText('A Bitsy game')).toHaveCount(0);
+  await creator.getByRole('button', { name: /change editor/i }).click();
+  await choice.getByRole('button', { name: /^Bitsy/ }).click();
+  await expect(creator.getByRole('list', { name: 'Projects' }).getByText('A Bitsy game')).toBeVisible();
 });

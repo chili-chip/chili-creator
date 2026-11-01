@@ -26,10 +26,11 @@ The engine, its file format and every rule are documented in the
 
 ## Start a game
 
-In **Projects**, press **New game**. Pick **Chili Beat** for a blank game, or
-start from **Bee Home**, **Crate Puzzle** or **Garden Toy**.
+Open the creator and pick **Chili Beat**. In **Projects**, press **New game**
+for a blank game, or start from **Bee Home**, **Crate Puzzle** or **Garden Toy**
+(on the Chili Beat card, or under **New game**).
 
-![New game asks which engine to use, with Chili Beat's examples](../../assets/screenshots/beat-new-game.png){ .shot }
+![Pick an editor: Bitsy and Chili Beat, with Chili Beat's example games](../../assets/screenshots/engine-choice.png){ .shot }
 
 A blank game has a hero in a walled room and one rule: *When you press an
 arrow, you move that way.* The [Bee Home tutorial](tutorial.md) builds a whole

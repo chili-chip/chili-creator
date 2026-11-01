@@ -16,7 +16,7 @@ VGC Zero with citsy.
 ## Make your first game in five minutes
 
 1. Open the [Creator](https://platform.chilichip.eu/creator) on Chili Platform and sign in.
-2. In **Projects**, choose **New game**, then **Bitsy**. A new game has one room, an avatar, a cat and two items.
+2. Pick **Bitsy**, then choose **New game** in **Projects**. A new game has one room, an avatar, a cat and two items.
 3. In **Library**, pick a tile, then click in the **Room** to draw walls.
 4. Pick the cat in **Library** and open **Dialog**. Write what the cat says.
 5. Open **Play** and choose **Play game**. Walk with the arrow keys and bump into the cat.

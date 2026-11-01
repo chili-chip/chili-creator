@@ -99,6 +99,8 @@ export function renderCreator({ signedIn = true, platform = createFakePlatform()
     tour: false,
     // One engine, so New game makes a Bitsy game at once; engine tests pass their own.
     enabledEngines: ['bitsy'],
+    // Straight into the Bitsy editor; engine choice tests pass engine: undefined.
+    engine: 'bitsy',
     ...options,
   });
   const view = render(<App creator={creator} />);

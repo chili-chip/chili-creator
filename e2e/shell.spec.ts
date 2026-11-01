@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('the creator opens on its own with the projects dashboard', async ({ page }) => {
-  await page.goto('/index.html');
+  await page.goto('/index.html?engine=bitsy');
   await expect(page.getByRole('banner')).toContainText('Chili Creator');
   await expect(page.getByRole('heading', { name: 'Your games' })).toBeVisible();
   await expect(page.getByRole('banner').getByText('Not signed in')).toBeVisible();
@@ -9,7 +9,7 @@ test('the creator opens on its own with the projects dashboard', async ({ page }
 });
 
 test('the command palette opens with Ctrl+K and resets the layout', async ({ page }) => {
-  await page.goto('/index.html');
+  await page.goto('/index.html?engine=bitsy');
   await expect(page.getByRole('heading', { name: 'Your games' })).toBeVisible();
   await page.keyboard.press('Control+k');
   const palette = page.getByRole('dialog', { name: 'Commands' });
@@ -21,7 +21,7 @@ test('the command palette opens with Ctrl+K and resets the layout', async ({ pag
 });
 
 test('the page fits a phone screen without scrolling sideways', async ({ page }) => {
-  await page.goto('/index.html');
+  await page.goto('/index.html?engine=bitsy');
   await expect(page.getByRole('banner')).toBeVisible();
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -33,7 +33,7 @@ test.describe('a first visit', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test('offers a tour that opens each tool it explains, and then stays away', async ({ page }) => {
-    await page.goto('/index.html');
+    await page.goto('/index.html?engine=bitsy');
     const tour = page.getByRole('dialog', { name: 'Tour' });
     await expect(tour.getByRole('heading', { name: 'Your tools' })).toBeVisible();
     for (let i = 0; i < 4; i++) await tour.getByRole('button', { name: 'Next' }).click();
@@ -49,7 +49,7 @@ test.describe('a first visit', () => {
 
 test('a layout preset sets the tools up for drawing', async ({ page, isMobile }) => {
   test.skip(isMobile, 'Phones show one tool at a time, so they have no layouts.');
-  await page.goto('/index.html');
+  await page.goto('/index.html?engine=bitsy');
   await page.getByRole('combobox', { name: 'Layout' }).selectOption('Drawing');
   const tabs = page.locator('.dv-default-tab');
   await expect(tabs).toHaveText(['Room', 'Paint', 'Library', 'Colors']);
@@ -57,7 +57,7 @@ test('a layout preset sets the tools up for drawing', async ({ page, isMobile })
 
 test('on a phone, one tool fills the screen and the tools are along the bottom', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'Only phones have the bottom tool bar.');
-  await page.goto('/index.html');
+  await page.goto('/index.html?engine=bitsy');
   const tools = page.getByRole('navigation', { name: 'Tools' });
   const bar = (await tools.boundingBox())!;
   expect(bar.y + bar.height).toBeGreaterThan(page.viewportSize()!.height - 4);

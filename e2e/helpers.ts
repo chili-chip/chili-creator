@@ -23,10 +23,9 @@ export async function litPixels(canvas: Locator): Promise<number> {
   });
 }
 
-/** Presses New game and picks the Bitsy engine. */
+/** Presses New game in the Bitsy editor (the page opened with ?engine=bitsy). */
 export async function newBitsyGame(creator: FrameLocator | Page) {
   await creator.getByRole('button', { name: 'New game' }).click();
-  await creator.getByRole('group', { name: 'Pick an engine' }).getByRole('button', { name: /^Bitsy/ }).click();
 }
 
 export async function newGame(page: Page) {

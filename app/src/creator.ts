@@ -47,6 +47,8 @@ export interface CreatorOptions {
   /** Engines offered for new games; more can be turned on with `?engines=` in `search`. */
   enabledEngines?: string[];
   search?: string;
+  /** Opens this engine's editor at once (`?engine=` from the platform) instead of the engine choice. */
+  engine?: string;
 }
 
 /** Everything the shell needs, wired once. Tests build their own. */
@@ -65,6 +67,7 @@ export function createCreator({
   engines: engineModules = [bitsyEngine, beatEngine as EngineModule],
   enabledEngines = ['bitsy', 'beat'],
   search = typeof location === 'undefined' ? '' : location.search,
+  engine: initialEngine,
 }: CreatorOptions) {
   const engines = createEngineRegistry(engineModules, { enabled: enabledEngines, search });
   const i18n = createI18n({ ...(loadCatalog ? { load: loadCatalog } : {}), ...(languages ? { available: languages } : {}) });
@@ -116,11 +119,11 @@ export function createCreator({
     unregisterEditor = next.tools.map((tool) => tools.register(tool));
     activeEditor.set(next);
   }
-  showEditor(engines.default().editors[0]!);
-  projects.subscribe(() => {
-    const engine = projects.engine();
-    if (engine) showEditor(engine.editors[0]!);
-  });
+  // The chosen engine's editor; the default one behind the engine choice.
+  const chosenEditor = () => (engines.get(projects.getState().engine ?? undefined) ?? engines.default()).editors[0]!;
+  if (initialEngine && engines.get(initialEngine)) void projects.chooseEngine(initialEngine);
+  showEditor(chosenEditor());
+  projects.subscribe(() => showEditor(chosenEditor()));
 
   const commands = createCommandRegistry();
   editingCommands({ projects, editor }).forEach((command) => commands.register(command));
