@@ -26,6 +26,8 @@ export interface BeatPlayer {
   press(button: number, down: boolean): void;
   enableSound(): void;
   debug(): BeatDebug;
+  /** The screen as 128 × 128 RGBA pixels. */
+  rgba(): Uint8ClampedArray;
   muted: boolean;
   onStep: ((debug: BeatDebug) => void) | null;
 }

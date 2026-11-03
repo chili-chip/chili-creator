@@ -8,7 +8,9 @@ import {
   createTransport,
   type KeyValueStore,
 } from './chili-api';
+import { connectAgentTools, findModelContext, sharedAgentTools, type ModelContextLike } from './agent';
 import { createEmbedBridge } from './embed/bridge';
+import { download as saveFile } from './export/files';
 import { createI18n, type Catalog } from './i18n';
 import { createCommandRegistry, createToolRegistry } from './plugin-api';
 import { createPlayer, type Player } from './player';
@@ -49,6 +51,12 @@ export interface CreatorOptions {
   search?: string;
   /** Opens this engine's editor at once (`?engine=` from the platform) instead of the engine choice. */
   engine?: string;
+  /** Where to offer tools to AI agents (WebMCP); the browser's when it has one. Null offers none. */
+  modelContext?: ModelContextLike | null;
+  /** Asks the person before an agent releases or deletes a game. */
+  confirm?: (question: string) => Promise<boolean>;
+  /** Hands a file to the browser to save. */
+  download?: (name: string, content: BlobPart, type: string) => void;
 }
 
 /** Everything the shell needs, wired once. Tests build their own. */
@@ -68,6 +76,9 @@ export function createCreator({
   enabledEngines = ['bitsy', 'beat'],
   search = typeof location === 'undefined' ? '' : location.search,
   engine: initialEngine,
+  modelContext = typeof window === 'undefined' ? null : findModelContext(),
+  confirm = async (question) => window.confirm(question),
+  download = saveFile,
 }: CreatorOptions) {
   const engines = createEngineRegistry(engineModules, { enabled: enabledEngines, search });
   const i18n = createI18n({ ...(loadCatalog ? { load: loadCatalog } : {}), ...(languages ? { available: languages } : {}) });
@@ -127,7 +138,11 @@ export function createCreator({
 
   const commands = createCommandRegistry();
   editingCommands({ projects, editor }).forEach((command) => commands.register(command));
-  return {
+
+  // Tools for AI agents: the shared ones and every offered engine's, so an
+  // agent sees one list whichever game is open.
+  const agentTools = [...sharedAgentTools, ...engines.offered().flatMap((engine) => engine.agentTools ?? [])];
+  const creator = {
     engines,
     activeEditor,
     bridge,
@@ -143,7 +158,10 @@ export function createCreator({
     initialProject,
     tools,
     commands,
+    agentTools,
   };
+  if (modelContext) connectAgentTools(modelContext, agentTools, { creator, confirm, download });
+  return creator;
 }
 
 export type Creator = ReturnType<typeof createCreator>;

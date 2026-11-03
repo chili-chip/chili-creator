@@ -97,6 +97,7 @@ nav:
       - The workspace: get-started/workspace.md
       - Projects: get-started/projects.md
       - On a phone: get-started/phone.md
+      - Make games with AI: get-started/ai.md
   - Editors:
       - editors/index.md
   - Bitsy editor:

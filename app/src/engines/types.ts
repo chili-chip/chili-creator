@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import type { AgentTool } from '../agent/types';
 import type { ToolDefinition } from '../plugin-api';
 
 /** Something wrong in a game, for the Problems tool and the count in the footer. */
@@ -41,4 +42,6 @@ export interface EngineModule<Doc = unknown> {
   check(doc: Doc): EngineProblem[];
   /** The first one is the default. */
   editors: EditorDefinition[];
+  /** What AI agents can do in this engine's games, over WebMCP. Names start with the engine's id. */
+  agentTools?: AgentTool[];
 }

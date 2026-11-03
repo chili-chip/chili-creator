@@ -2,6 +2,7 @@ import { Puzzle } from 'lucide-react';
 import { createWorld, parse, serialize, validate, type World } from '../../bitsy';
 import { bitsyTools } from '../../tools';
 import type { EngineModule } from '../types';
+import { bitsyAgentTools } from './agent';
 
 /** Bitsy: rooms, sprites, dialog and tunes. Played by citsy. */
 export const bitsyEngine: EngineModule<World> = {
@@ -25,4 +26,5 @@ export const bitsyEngine: EngineModule<World> = {
   },
   check: (world) => validate(world),
   editors: [{ id: 'bitsy', title: 'Bitsy creator', tools: bitsyTools }],
+  agentTools: bitsyAgentTools,
 };

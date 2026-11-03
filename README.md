@@ -14,6 +14,7 @@ It moved here from `chili-platform-frontend` (`public/creator`), history include
 | `citsy/citsy.js`, `citsy.wasm`, `citsy-player.js` | citsy runtime and web player, also used by the platform's `/play` page |
 | `chili-beat/` | Chili Beat engine (wasm) and web player, from chili-chip/chili-beat, also used by the platform's `/play` page |
 | `app/src/engines/` | One folder per engine and its editor (`bitsy`, `beat`), see [Engines and editors](docs/develop/engines.md) |
+| `app/src/agent/` | Tools for AI agents over WebMCP, see [Make games with AI](docs/get-started/ai.md) |
 | `e2e/` | Playwright tests |
 | `docs/`, `mkdocs.yml` | The docs site (MkDocs Material, deployed to Cloudflare Pages) |
 
