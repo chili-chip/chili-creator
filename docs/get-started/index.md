@@ -1,6 +1,6 @@
 ---
 title: Get started
-description: Open the Chili Creator, pick an editor, learn the workspace and Projects, and use it on a phone.
+description: Open the Chili Creator, pick an editor, learn the workspace and Projects, use it on a phone, and make games with AI.
 ---
 
 # Get started
@@ -14,6 +14,7 @@ every editor. They get you from no account to finding your way around.
 | [The workspace](workspace.md) | The tool bar, docked tools, layouts, the command palette, undo and the tour |
 | [Projects](projects.md) | Start, open, import, copy, delete, release and update games, in any editor |
 | [On a phone](phone.md) | One tool at a time, the tool bar along the bottom, and touch controls in Play |
+| [Make games with AI](ai.md) | Connect Claude or another AI agent and make games by prompting |
 
 Then pick an editor and build your first real game:
 

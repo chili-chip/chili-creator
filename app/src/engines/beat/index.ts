@@ -1,5 +1,6 @@
 import { Music2 } from 'lucide-react';
 import type { EngineModule } from '../types';
+import { beatAgentTools } from './agent';
 import { checkGame } from './check';
 import beeHome from './fixtures/bee-home.beat?raw';
 import cratePuzzle from './fixtures/crate-puzzle.beat?raw';
@@ -46,4 +47,5 @@ export const beatEngine: EngineModule<Game> = {
   },
   check: checkGame,
   editors: [{ id: 'beat', title: 'Chili Beat editor', tools: [screens, things, rules, sounds, play, problems, game] }],
+  agentTools: beatAgentTools,
 };

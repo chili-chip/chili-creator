@@ -57,6 +57,7 @@ New code goes in `app/src`, one folder per module.
 | `shell/` | Frame, workspace with layout presets, one-tool phone view, first-run tour, command palette |
 | `ui/` | Design system, including `PixelCanvas` |
 | `tools/` | One folder per tool, registered in `tools/index.ts` |
+| `agent/` | [Tools for AI agents](engines.md#agent-tools) over WebMCP; each engine adds its own in `engines/<id>/agent.ts` |
 
 ```mermaid
 flowchart TB
