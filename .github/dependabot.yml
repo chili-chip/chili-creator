@@ -1,13 +1,31 @@
 # Dependabot version updates: weekly PRs when a dependency has a new version.
 # Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuring-dependabot-version-updates
+# - Updates go to main, where work lands (the dev branch has not moved since
+#   2026-10-11, so updates aimed at it never reached main).
+# - cooldown: a version update is proposed only once the release is 7 days old,
+#   so a compromised release is usually caught before it reaches us. Security
+#   updates ignore cooldown. https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference#cooldown-
 version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
-    target-branch: "dev"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     groups:
       github-actions:
         patterns:
           - "*"
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      # One PR for safe updates; each major comes on its own.
+      npm-minor-patch:
+        patterns:
+          - "*"
+        update-types: ["minor", "patch"]
