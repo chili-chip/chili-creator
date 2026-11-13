@@ -72,9 +72,11 @@ test('a project is released from the creator, and its game page opens on the pla
   await servePlatform(page, platform);
   const creator = await openInFakePlatform(page, ['host-token']);
   await creator.getByRole('button', { name: 'Release Mossland' }).click();
+  await creator.getByRole('checkbox', { name: 'No AI' }).check();
   await creator.getByRole('button', { name: 'Release it' }).click();
   await expect(creator.getByRole('list', { name: 'Released games' }).getByText('Mossland')).toBeVisible();
   expect(platform.games[0]!.released).toBe(true);
+  expect(platform.games[0]).toMatchObject({ ai_declared: true, ai_use: [] });
   expect(await received(page)).toContainEqual({ type: 'chili-released', id: String(game.id), slug: 'mossland', v: 2 });
 
   await creator.getByRole('button', { name: 'Game page for Mossland' }).click();
@@ -83,7 +85,7 @@ test('a project is released from the creator, and its game page opens on the pla
 
 test('edits to a released game wait for Publish update before buyers get them (#38)', async ({ page }) => {
   const platform = createFakePlatform({ token: 'host-token' });
-  const game = platform.addGame({ title: 'Mossland', data: defaultGame, released: true });
+  const game = platform.addGame({ title: 'Mossland', data: defaultGame, released: true, ai_declared: true });
   await servePlatform(page, platform);
   const creator = await openInFakePlatform(page, ['host-token'], `/index.html?api=/api&project=${game.id}`);
 

@@ -90,7 +90,8 @@ test('desktop', async ({ page }) => {
   await tool(creator, 'Projects');
   await shot(group(creator, 'Projects'), 'tool-projects', 360);
   await creator.getByRole('button', { name: 'Release Chili Garden' }).click();
-  await shot(group(creator, 'Projects'), 'release-confirm', 470);
+  await creator.getByRole('checkbox', { name: 'No AI' }).check();
+  await shot(group(creator, 'Projects'), 'release-confirm', 560);
   await creator.getByRole('button', { name: 'Not yet' }).click();
 
   await tool(creator, 'Room');

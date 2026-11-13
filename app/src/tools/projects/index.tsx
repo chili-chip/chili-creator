@@ -1,6 +1,6 @@
 import { Copy, ExternalLink, FolderOpen, Gamepad2, LayoutGrid, Plus, Rocket, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
-import { MAX_GAMES, type ProjectSummary } from '../../chili-api';
+import { AI_USE_HELP_URL, AI_USE_KINDS, aiUseLabel, type AiUseKind, MAX_GAMES, type ProjectSummary } from '../../chili-api';
 import { defineTool } from '../../plugin-api';
 import { useCreator, useProjects, useT } from '../../shell/creator-context';
 import { gameFromFile } from '../../export/files';
@@ -26,15 +26,65 @@ function Cover({ project }: { project: ProjectSummary }) {
   );
 }
 
+/** The answer being given: null until the person ticks something. */
+type AiAnswer = { none: boolean; kinds: AiUseKind[] };
+
+function answered(answer: AiAnswer): AiUseKind[] | null {
+  if (answer.none) return [];
+  return answer.kinds.length ? answer.kinds : null;
+}
+
+/** "Did you use generative AI?" (chili-platform#179): No AI, or the kinds. The platform needs it to release. */
+function AiQuestion({ answer, onChange }: { answer: AiAnswer; onChange(answer: AiAnswer): void }) {
+  function kind(value: AiUseKind, checked: boolean) {
+    const chosen = new Set(answer.kinds);
+    if (checked) chosen.add(value);
+    else chosen.delete(value);
+    onChange({ none: false, kinds: AI_USE_KINDS.map((k) => k.value).filter((k) => chosen.has(k)) });
+  }
+  return (
+    <fieldset className="w-full space-y-1">
+      <legend className="font-medium">Did you use generative AI?</legend>
+      <p className="text-xs text-muted">
+        Players see your answer and can filter for No AI. Spell check and plain editor tools do not count.{' '}
+        <a className="underline" href={AI_USE_HELP_URL} target="_blank" rel="noreferrer">
+          What counts
+        </a>
+      </p>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        <label className="flex items-center gap-1.5">
+          <input
+            type="checkbox"
+            checked={answer.none}
+            onChange={(event) => onChange({ none: event.target.checked, kinds: [] })}
+          />
+          No AI
+        </label>
+        {AI_USE_KINDS.map((item) => (
+          <label key={item.value} className="flex items-center gap-1.5">
+            <input
+              type="checkbox"
+              checked={answer.kinds.includes(item.value)}
+              onChange={(event) => kind(item.value, event.target.checked)}
+            />
+            {item.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 interface RowProps {
   project: ProjectSummary;
   open: boolean;
   onOpen(): void;
   onDuplicate?(): void;
   onDelete?(): Promise<void>;
-  onRelease?(): Promise<void>;
+  /** `aiUse` is the AI answer when the game has none yet. */
+  onRelease?(aiUse?: AiUseKind[]): Promise<void>;
   /** Releases a released game's unpublished changes as its next release. */
-  onPublish?(): Promise<void>;
+  onPublish?(aiUse?: AiUseKind[]): Promise<void>;
   /** Opens the released game's page on the platform. */
   onGamePage?(): void;
 }
@@ -43,6 +93,12 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, o
   const [confirming, setConfirming] = useState<'delete' | 'release' | 'publish' | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [ai, setAi] = useState<AiAnswer>({ none: false, kinds: [] });
+  // Games released before the question, and new projects, answer it once; then the platform keeps it.
+  const asksAi = !project.aiDeclared;
+  const aiAnswer = asksAi ? answered(ai) : undefined;
+  const aiMissing = asksAi && aiAnswer === null;
+  const declared = aiUseLabel(project.aiDeclared ?? false, project.aiUse ?? []);
 
   async function run(action?: () => Promise<void>) {
     setBusy(true);
@@ -147,10 +203,16 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, o
             the version you last saved; later edits reach them only when you publish an update. Listing it for sale is
             a separate step on the platform.
           </span>
+          {asksAi ? <AiQuestion answer={ai} onChange={setAi} /> : declared && <span className="w-full text-xs text-muted">{declared}</span>}
           <Button size="sm" variant="ghost" onClick={() => setConfirming(null)} disabled={busy}>
             Not yet
           </Button>
-          <Button size="sm" variant="primary" onClick={() => void run(onRelease)} disabled={busy}>
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={() => void run(() => onRelease!(aiAnswer ?? undefined))}
+            disabled={busy || aiMissing}
+          >
             Release it
           </Button>
         </div>
@@ -161,14 +223,15 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, o
             Publish your changes to “{project.title}” as release {(project.releaseNumber ?? 0) + 1}? Buyers and devices
             get this version from now on.
           </span>
+          {asksAi ? <AiQuestion answer={ai} onChange={setAi} /> : declared && <span className="w-full text-xs text-muted">{declared}</span>}
           <Button size="sm" variant="ghost" onClick={() => setConfirming(null)} disabled={busy}>
             Not yet
           </Button>
           <Button
             size="sm"
             variant="primary"
-            onClick={() => void run(onPublish).then(() => setConfirming(null))}
-            disabled={busy}
+            onClick={() => void run(() => onPublish!(aiAnswer ?? undefined)).then(() => setConfirming(null))}
+            disabled={busy || aiMissing}
           >
             Publish it
           </Button>
@@ -321,7 +384,7 @@ function Projects() {
                 onOpen={() => void creator.projects.open(project.id)}
                 onDuplicate={atLimit ? undefined : () => void act(() => creator.projects.duplicate(project.id))}
                 onDelete={() => creator.projects.remove(project.id)}
-                onRelease={state.mode === 'platform' ? () => creator.projects.release(project.id) : undefined}
+                onRelease={state.mode === 'platform' ? (aiUse) => creator.projects.release(project.id, aiUse) : undefined}
               />
             ))}
           </ul>
@@ -340,7 +403,7 @@ function Projects() {
                   project={project}
                   open={project.id === openId}
                   onOpen={() => void creator.projects.open(project.id)}
-                  onPublish={() => creator.projects.release(project.id)}
+                  onPublish={(aiUse) => creator.projects.release(project.id, aiUse)}
                   onGamePage={() => creator.bridge.post({ type: 'chili-navigate', to: `/games/${project.id}` })}
                 />
               ))}

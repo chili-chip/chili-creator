@@ -1,5 +1,6 @@
 import {
   ApiError,
+  type AiUseKind,
   createSaveController,
   type Profile,
   type Project,
@@ -280,17 +281,28 @@ export function createProjectStore({ engines, profile, platform, local, post, no
       set({ list: { ...state.list, projects: state.list.projects.filter((p) => p.id !== id) } });
     },
 
-    /** Releases a project, or a released game's unpublished changes, with its latest edits saved, and tells the platform page. */
-    async release(id: string) {
+    /**
+     * Releases a project, or a released game's unpublished changes, with its latest edits saved, and tells the platform page.
+     * `aiUse` is the answer to "Did you use generative AI?" (chili-platform#179); the platform needs one before release.
+     */
+    async release(id: string, aiUse?: AiUseKind[]) {
       if (openProject()?.id === id) await autosave.flush();
-      const released = await repo(id).release(id);
+      const released = await repo(id).release(id, aiUse);
       const { data: _data, ...summary } = released;
       if (openProject()?.id === id && state.open.status === 'ready') {
-        const { released: isReleased, releaseNumber, hasUnreleasedChanges, updatedAt } = released;
+        const { released: isReleased, releaseNumber, hasUnreleasedChanges, updatedAt, aiDeclared, aiUse: kinds } = released;
         set({
           open: {
             ...state.open,
-            project: { ...state.open.project, released: isReleased, releaseNumber, hasUnreleasedChanges, updatedAt },
+            project: {
+              ...state.open.project,
+              released: isReleased,
+              releaseNumber,
+              hasUnreleasedChanges,
+              updatedAt,
+              aiDeclared,
+              aiUse: kinds,
+            },
           },
         });
       }

@@ -5,6 +5,8 @@
 // ones count), 1.5 MB of data, owner-only writes, email verification,
 // 409 when a bought game is deleted, and numbered releases: after a release,
 // edits stay in the owner's working copy until the next release (#38).
+// Releasing needs the AI answer (chili-platform#179): `ai_use` in the release
+// body or an earlier PATCH, else 400 on ai_use.
 
 export interface FakeGame {
   /** Set by platforms with engines (chili-platform#170). */
@@ -25,6 +27,9 @@ export interface FakeGame {
   in_library: boolean;
   created_at: string;
   updated_at: string;
+  /** The owner's AI answer (chili-platform#179): false until answered; empty ai_use then means No AI. */
+  ai_declared: boolean;
+  ai_use: string[];
 }
 
 export interface FakePlatformOptions {
@@ -39,6 +44,9 @@ export interface FakePlatformOptions {
 export const MAX_PROJECTS = 30;
 export const MAX_DATA_BYTES = 1_500_000;
 const PAGE_SIZE = 20;
+const AI_KINDS = ['art', 'sound', 'text', 'code'];
+const AI_QUESTION =
+  'Say whether you used generative AI before you release: send ai_use with the kinds (art, sound, text, code), or an empty list for No AI.';
 
 export interface FakeRelease {
   number: number;
@@ -98,6 +106,8 @@ export function createFakePlatform({
       in_library: false,
       created_at: now,
       updated_at: now,
+      ai_declared: false,
+      ai_use: [],
       ...partial,
       slug: '',
     };
@@ -148,8 +158,17 @@ export function createFakePlatform({
     };
   }
 
+  function validateAiUse(body: Record<string, unknown>, errors: Record<string, string[]>) {
+    if (!('ai_use' in body)) return;
+    const value = body.ai_use;
+    if (!Array.isArray(value) || value.some((kind) => !AI_KINDS.includes(kind))) {
+      errors.ai_use = ['Choose from art, sound, text and code.'];
+    }
+  }
+
   function validate(body: Record<string, unknown>, partial: boolean): Response | null {
     const errors: Record<string, string[]> = {};
+    validateAiUse(body, errors);
     if (!partial || 'title' in body) {
       if (typeof body.title !== 'string' || !body.title.trim()) errors.title = ['This field may not be blank.'];
     }
@@ -173,6 +192,10 @@ export function createFakePlatform({
       if (!game.released) game.slug = slugify(game.title);
     }
     if (typeof body.data === 'string') game.data = body.data;
+    if (Array.isArray(body.ai_use)) {
+      game.ai_declared = true;
+      game.ai_use = AI_KINDS.filter((kind) => (body.ai_use as string[]).includes(kind));
+    }
     if ('cover' in body) game.cover = body.cover ? `${origin}/media/games/covers/${game.id}/cover.png` : '';
     game.updated_at = stamp();
   }
@@ -245,6 +268,11 @@ export function createFakePlatform({
       }
       if (game.owner !== viewer) return json(403, { detail: 'You do not have permission to perform this action.' });
       if (match[2] && method === 'POST') {
+        const errors: Record<string, string[]> = {};
+        validateAiUse(body, errors);
+        if (errors.ai_use) return json(400, errors);
+        if (Array.isArray(body.ai_use)) write(game, { ai_use: body.ai_use });
+        if (!game.ai_declared) return json(400, { ai_use: [AI_QUESTION] });
         if (!game.released || game.has_unreleased_changes) publish(game);
         return json(200, view(game, viewer));
       }
@@ -275,7 +303,7 @@ export function createFakePlatform({
     /** The release players get now. */
     releaseOf,
     /** The owner changes the working copy, as a PATCH would. */
-    edit: (id: number, changes: { title?: string; data?: string }) => {
+    edit: (id: number, changes: { title?: string; data?: string; ai_use?: string[] }) => {
       const game = games.find((g) => g.id === id);
       if (game) write(game, changes);
     },

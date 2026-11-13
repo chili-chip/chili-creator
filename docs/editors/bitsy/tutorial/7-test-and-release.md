@@ -55,9 +55,9 @@ While the game plays:
 A project cannot be sold. Releasing makes it a game.
 
 1. Open [Projects](../../../get-started/projects.md) and choose **Release** on Chili Garden.
-2. Read the note and choose **Release it**.
+2. Read the note. Under **Did you use generative AI?**, tick **No AI** if you made Chili Garden by hand in this tutorial, or tick what an AI tool made. Then choose **Release it**.
 
-![Projects asking: Release “Chili Garden”? It becomes a game you can sell, and you can keep editing it here.](../../../assets/screenshots/release-confirm.png){ .shot }
+![Projects asking: Release “Chili Garden”? It becomes a game you can sell, and you can keep editing it here. Below, the question Did you use generative AI? with No AI, Art, Sound and music, Text and story and Code.](../../../assets/screenshots/release-confirm.png){ .shot }
 
 The game moves to **Released**, and to the **My games** shelf of your [Library](https://platform.chilichip.eu/library) on the platform. It is not for sale yet.
 

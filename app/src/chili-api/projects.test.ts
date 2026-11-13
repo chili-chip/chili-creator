@@ -18,10 +18,56 @@ beforeEach(() => {
   platform = createFakePlatform();
 });
 
+describe('AI use (chili-platform#179)', () => {
+  it('sends the AI answer with the release and reads it back', async () => {
+    const game = platform.addGame({ title: 'Mossland' });
+    const released = await repository().release(String(game.id), ['text', 'art']);
+    expect(platform.requests.at(-1)).toMatchObject({
+      method: 'POST',
+      path: `/games/${game.id}/release/`,
+      body: { ai_use: ['text', 'art'] },
+    });
+    expect(released).toMatchObject({ aiDeclared: true, aiUse: ['art', 'text'] });
+  });
+
+  it('sends an empty list for No AI', async () => {
+    const game = platform.addGame({ title: 'Mossland' });
+    const released = await repository().release(String(game.id), []);
+    expect(platform.requests.at(-1)!.body).toEqual({ ai_use: [] });
+    expect(released).toMatchObject({ aiDeclared: true, aiUse: [] });
+  });
+
+  it('releases a declared game again without an answer', async () => {
+    const game = platform.addGame({ title: 'Mossland', released: true, ai_declared: true, ai_use: ['code'] });
+    platform.edit(game.id, { data: 'v2' });
+    const again = await repository().release(String(game.id));
+    expect(platform.requests.at(-1)!.body).toBeUndefined();
+    expect(again).toMatchObject({ releaseNumber: 2, aiDeclared: true, aiUse: ['code'] });
+  });
+
+  it('fails with the platform message when the game has no answer', async () => {
+    const game = platform.addGame({ title: 'Mossland' });
+    await expect(repository().release(String(game.id))).rejects.toThrow(/generative AI/);
+    expect(platform.games[0]!.released).toBe(false);
+  });
+
+  it('lists the answer, and treats games from an older platform as not declared', async () => {
+    platform.addGame({ title: 'Mossland', released: true, ai_declared: true, ai_use: [] });
+    const old = platform.addGame({ title: 'Old', released: true });
+    delete (old as Partial<typeof old>).ai_declared;
+    delete (old as Partial<typeof old>).ai_use;
+    const listed = await repository().listReleased('kacper');
+    expect(listed.map((p) => [p.title, p.aiDeclared, p.aiUse])).toEqual([
+      ['Old', false, []],
+      ['Mossland', true, []],
+    ]);
+  });
+});
+
 describe('createPlatformProjects', () => {
   it('releases a project', async () => {
     const game = platform.addGame({ title: 'Mossland' });
-    const released = await repository().release(String(game.id));
+    const released = await repository().release(String(game.id), []);
     expect(released).toMatchObject({ id: String(game.id), released: true, slug: 'mossland' });
     expect(platform.requests.at(-1)).toMatchObject({ method: 'POST', path: `/games/${game.id}/release/` });
   });
@@ -30,7 +76,7 @@ describe('createPlatformProjects', () => {
     const game = platform.addGame({ title: 'Mossland', data: 'v1' });
     const repo = repository();
     expect(await repo.get(String(game.id))).toMatchObject({ releaseNumber: null, hasUnreleasedChanges: false });
-    await repo.release(String(game.id));
+    await repo.release(String(game.id), []);
     const edited = await repo.update(String(game.id), { data: 'v2' });
     expect(edited).toMatchObject({ released: true, releaseNumber: 1, hasUnreleasedChanges: true, data: 'v2' });
     const again = await repo.release(String(game.id));

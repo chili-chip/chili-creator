@@ -59,11 +59,22 @@ describe('createProjectStore', () => {
     expect(state.list.released.map((p) => p.title)).toEqual(['out']);
   });
 
+  it('releases with the AI answer and keeps it on the open game (chili-platform#179)', async () => {
+    const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
+    const { store } = setup();
+    await store.start(String(saved.id));
+    await expect(store.release(String(saved.id))).rejects.toThrow(/generative AI/);
+    await store.release(String(saved.id), ['sound']);
+    const { open, list } = store.getState();
+    expect(open.status === 'ready' && [open.project.aiDeclared, open.project.aiUse]).toEqual([true, ['sound']]);
+    expect(list.released[0]).toMatchObject({ aiDeclared: true, aiUse: ['sound'] });
+  });
+
   it('releases a project: it moves to released games and the platform is told', async () => {
     const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
     const { store, posted } = setup();
     await store.start(String(saved.id));
-    await store.release(String(saved.id));
+    await store.release(String(saved.id), []);
     const state = store.getState();
     expect(platform.games[0]!.released).toBe(true);
     expect(state.list.projects).toEqual([]);
@@ -76,7 +87,7 @@ describe('createProjectStore', () => {
     const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
     const { store } = setup();
     await store.start(String(saved.id));
-    await store.release(String(saved.id));
+    await store.release(String(saved.id), []);
     store.setTitle('Mossland 2');
     await store.flush();
     const state = store.getState();
@@ -89,7 +100,7 @@ describe('createProjectStore', () => {
     const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
     const { store } = setup();
     await store.start(String(saved.id));
-    await store.release(String(saved.id));
+    await store.release(String(saved.id), []);
     await store.setCover('data:image/png;base64,iVBORw0KGgo=');
     const state = store.getState();
     expect(state.list.projects).toEqual([]);
@@ -100,7 +111,7 @@ describe('createProjectStore', () => {
     const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
     const { store, posted } = setup();
     await store.start(String(saved.id));
-    await store.release(String(saved.id));
+    await store.release(String(saved.id), []);
     store.setTitle('Mossland 2');
     await store.flush();
     let state = store.getState();
