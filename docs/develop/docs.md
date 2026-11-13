@@ -78,7 +78,7 @@ Change the game and the tutorial together, and run `npm test`.
 
 ## Deploy
 
-`.github/workflows/docs.yml` builds the site with `mkdocs build --strict` on every pull request and push to `main` that touches the docs. It then uploads `site/` to the Cloudflare Pages project `chili-creator-docs` with [wrangler](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/).
+`.github/workflows/docs.yml` builds the site with `mkdocs build --strict` on every pull request and push to `main` that touches the docs. It then uploads `site/` to the Cloudflare Pages project `chili-creator-docs` with [wrangler](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/). The wrangler version is fixed in the workflow (`wranglerVersion`), so the step that holds the Cloudflare token never installs a version nobody chose. Every action in `.github/workflows` is pinned to a commit SHA with its version in a comment; Dependabot keeps them current, 7 days after each release. `app/src/test/ci-supply-chain.test.ts` checks these rules.
 
 | Branch | Goes to |
 |---|---|
