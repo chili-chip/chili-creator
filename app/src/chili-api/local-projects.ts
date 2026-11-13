@@ -88,6 +88,8 @@ export function createLocalProjects(
         hasUnreleasedChanges: false,
         listingSlug: '',
         updatedAt: now(),
+        aiDeclared: false,
+        aiUse: [],
         data,
       };
       await store.set(prefix + project.id, project);

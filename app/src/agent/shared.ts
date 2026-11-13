@@ -1,4 +1,4 @@
-import { MAX_GAMES, type ProjectSummary } from '../chili-api';
+import { AI_USE_KINDS, aiUseLabel, type AiUseKind, MAX_GAMES, type ProjectSummary } from '../chili-api';
 import { fileName, gameFromFile } from '../export/files';
 import { NEW_GAME_TITLE } from '../project/store';
 import { docOf, editDoc, openGame, replaceDoc, titleOf } from './game';
@@ -185,28 +185,51 @@ export const sharedAgentTools: AgentTool[] = [
     },
   }),
 
-  defineAgentTool<{ id?: string }>({
+  defineAgentTool<{ id?: string; ai_use?: AiUseKind[] }>({
     name: 'release_game',
     title: 'Release game',
     description:
       'Releases a game on the platform so it can be sold, or publishes a released game’s changes as its next release. ' +
-      'Buyers get what was last saved. The person is asked first. Needs the person to be signed in.',
-    inputSchema: { type: 'object', properties: { id: { ...id, description: 'The project id. The open game when left out.' } } },
+      'Buyers get what was last saved. The person is asked first. Needs the person to be signed in. ' +
+      'A game needs an AI answer before its first release (chili-platform#179): pass ai_use. ' +
+      'Players see it on the game page and can filter for games with no AI.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { ...id, description: 'The project id. The open game when left out.' },
+        ai_use: {
+          type: 'array',
+          items: { type: 'string', enum: AI_USE_KINDS.map((kind) => kind.value) },
+          description:
+            'What was made with generative AI: art (sprites, tiles, covers), sound (music, sound effects), ' +
+            'text (story, dialog, descriptions), code. Include everything you made or changed yourself as an AI ' +
+            'agent, plus what the person tells you. An empty list means No AI, so never send it for a game you made. ' +
+            'Needed when the game has no answer yet (aiDeclared false); otherwise it replaces the answer.',
+        },
+      },
+    },
     asksFirst: true,
-    run: async ({ id: given }, { creator, confirm }) => {
+    run: async ({ id: given, ai_use: aiUse }, { creator, confirm }) => {
       const { list, open } = creator.projects.getState();
       const id = given ?? (open.status === 'ready' ? open.project.id : undefined);
       if (id === undefined) throw new Error('Say which game to release, or open it first.');
       const project = open.status === 'ready' && open.project.id === id ? open.project : [...list.projects, ...list.released].find((p) => p.id === id);
       if (!project) throw new Error(`No project has id "${id}". See list_projects.`);
+      if (!project.aiDeclared && aiUse === undefined) {
+        throw new Error(
+          'This game has no AI answer yet. Pass ai_use: the kinds made with generative AI (art, sound, text, code), ' +
+            'including what you made as an AI agent, or [] only when no AI was used.',
+        );
+      }
+      const label = aiUse === undefined ? aiUseLabel(project.aiDeclared ?? false, project.aiUse ?? []) : aiUseLabel(true, aiUse);
       const question = project.released
         ? `Publish your changes to “${project.title}” as release ${(project.releaseNumber ?? 0) + 1}? Buyers and devices get them.`
         : `Release “${project.title}”? It becomes a game you can sell. Buyers get the version you last saved; later changes reach them only when you publish an update.`;
-      if (!(await confirm(question))) throw new Error('The person said no. Nothing changed.');
-      await creator.projects.release(id);
+      if (!(await confirm(label ? `${question} Players will see: ${label}.` : question))) throw new Error('The person said no. Nothing changed.');
+      await creator.projects.release(id, aiUse);
       const after = creator.projects.getState().list;
       const released = [...after.released, ...after.projects].find((p) => p.id === id)!;
-      return { id, released: released.released, releaseNumber: released.releaseNumber, slug: released.slug };
+      return { id, released: released.released, releaseNumber: released.releaseNumber, slug: released.slug, aiUse: released.aiUse ?? [] };
     },
   }),
 

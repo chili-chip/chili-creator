@@ -47,6 +47,12 @@ sequenceDiagram
   the agent did, or ask it to call `undo`.
 - The agent **asks you first** before it releases or deletes a game. Your
   browser shows a yes or no box.
+- Before a first release the agent has to say what it made with AI
+  (`ai_use`: art, sound, text, code). The yes or no box shows the label
+  players will see, such as *Made with AI: art, text, code*. Players can
+  filter the marketplace for games with no AI, so a game an agent made is
+  never released as **No AI**
+  ([AI use labels](https://platform.chilichip.eu/help/ai-use)).
 - The agent can **look** at its work: room and screen pictures, and the game
   played in the real engine (citsy for Bitsy, the Chili Beat engine for Chili
   Beat), the same engines the console uses.
@@ -115,7 +121,7 @@ a short error that says why, like `No room has id "7".` Tools marked
 | `import_game` | Makes a game from `.bitsy` text, a Bitsy web page or `.beat` text. |
 | `copy_project` | Copies a game. |
 | `delete_project` | Deletes a game for good. **Asks you first.** |
-| `release_game` | Releases a game, or publishes a released game's changes. **Asks you first.** |
+| `release_game` | Releases a game, or publishes a released game's changes. Takes `ai_use`, what was made with generative AI. **Asks you first.** |
 | `remove_cover` | Takes the cover off the open game. |
 | `close_game` | Saves and closes the open game. |
 | `set_title` | Changes the open game's title. |

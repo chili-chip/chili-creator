@@ -5,6 +5,27 @@ export const MAX_DATA_BYTES = 1_500_000;
 /** chili-platform's MAX_PROJECTS_PER_USER; released games count too. */
 export const MAX_GAMES = 30;
 
+/** What a creator made with generative AI (chili-platform#179). Empty and declared means No AI. */
+export type AiUseKind = 'art' | 'sound' | 'text' | 'code';
+
+/** The kinds in the platform's order, with the words people see. */
+export const AI_USE_KINDS: readonly { value: AiUseKind; label: string; short: string }[] = [
+  { value: 'art', label: 'Art', short: 'art' },
+  { value: 'sound', label: 'Sound and music', short: 'sound and music' },
+  { value: 'text', label: 'Text and story', short: 'text' },
+  { value: 'code', label: 'Code', short: 'code' },
+];
+
+/** The platform's help article on what counts as AI use. */
+export const AI_USE_HELP_URL = 'https://platform.chilichip.eu/help/ai-use';
+
+/** "No AI" or "Made with AI: art, text"; "" while not declared. */
+export function aiUseLabel(declared: boolean, kinds: readonly AiUseKind[]): string {
+  if (!declared) return '';
+  const used = AI_USE_KINDS.filter((kind) => kinds.includes(kind.value));
+  return used.length ? `Made with AI: ${used.map((kind) => kind.short).join(', ')}` : 'No AI';
+}
+
 export interface ProjectSummary {
   id: string;
   title: string;
@@ -21,6 +42,10 @@ export interface ProjectSummary {
   /** Marketplace listing, or "" when not listed. */
   listingSlug: string;
   updatedAt: string;
+  /** The owner answered "Did you use generative AI?"; false on a platform from before the question. */
+  aiDeclared?: boolean;
+  /** What was made with generative AI; empty and declared means No AI. */
+  aiUse?: AiUseKind[];
 }
 
 export interface Project extends ProjectSummary {
@@ -45,8 +70,11 @@ export interface ProjectRepository {
   update(id: string, changes: ProjectChanges): Promise<Project>;
   remove(id: string): Promise<void>;
   duplicate(id: string): Promise<Project>;
-  /** Releases the version last saved: a project's first release, or a released game's next one. */
-  release(id: string): Promise<Project>;
+  /**
+   * Releases the version last saved: a project's first release, or a released game's next one.
+   * `aiUse` answers the AI question on the way (an empty list is No AI); the platform needs an answer.
+   */
+  release(id: string, aiUse?: AiUseKind[]): Promise<Project>;
 }
 
 /** The game fields this client reads (chili-platform docs/openapi.yaml, Game). */
@@ -64,6 +92,9 @@ interface GameResponse {
   updated_at: string;
   /** Missing on a platform from before engines (chili-platform#170). */
   engine?: string;
+  /** Missing on a platform from before the AI question (chili-platform#179). */
+  ai_declared?: boolean;
+  ai_use?: string[];
 }
 
 interface Page<T> {
@@ -82,6 +113,8 @@ function toProject(game: GameResponse): Project {
     hasUnreleasedChanges: game.has_unreleased_changes ?? false,
     listingSlug: game.listing_slug ?? '',
     updatedAt: game.updated_at,
+    aiDeclared: game.ai_declared ?? false,
+    aiUse: AI_USE_KINDS.map((kind) => kind.value).filter((kind) => game.ai_use?.includes(kind)),
     ...(game.engine ? { engine: game.engine } : {}),
     data: game.data ?? '',
   };
@@ -138,8 +171,9 @@ export function createPlatformProjects(transport: Transport): ProjectRepository 
       const source = await repository.get(id);
       return repository.create({ title: copyTitle(source.title), data: source.data, ...(source.engine ? { engine: source.engine } : {}) });
     },
-    async release(id) {
-      return toProject(await transport.request<GameResponse>(`/games/${id}/release/`, { method: 'POST' }));
+    async release(id, aiUse) {
+      const init = aiUse ? send('POST', { ai_use: aiUse }) : { method: 'POST' };
+      return toProject(await transport.request<GameResponse>(`/games/${id}/release/`, init));
     },
   };
   return repository;

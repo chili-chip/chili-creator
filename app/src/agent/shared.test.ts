@@ -61,9 +61,33 @@ describe('shared agent tools', () => {
     expect(yes.creator.projects.getState().list.projects).toHaveLength(0);
   });
 
+  it('release_game needs the AI answer for a game that has none (chili-platform#179)', async () => {
+    const { call, confirm, creator } = await agentCreator({ data: blankGame });
+    expect(await call('release_game')).toMatchObject({ error: expect.stringMatching(/ai_use/) });
+    expect(confirm).not.toHaveBeenCalled();
+    const { open } = creator.projects.getState();
+    expect(open.status === 'ready' && open.project.released).toBe(false);
+  });
+
+  it('release_game sends the AI answer and says it in the question', async () => {
+    const { call, confirm, platform } = await agentCreator({ data: blankGame });
+    const released = await call('release_game', { ai_use: ['art', 'code'] });
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Made with AI: art, code'));
+    expect(released).toMatchObject({ released: true, aiUse: ['art', 'code'] });
+    expect(platform.requests.at(-1)!.body).toEqual({ ai_use: ['art', 'code'] });
+  });
+
+  it('release_game describes the ai_use input for agents', async () => {
+    const { modelContext } = await agentCreator({ data: blankGame });
+    const tool = modelContext.tools.get('release_game')!;
+    const schema = tool.inputSchema as { properties: Record<string, { items?: { enum?: string[] }; description?: string }> };
+    expect(schema.properties.ai_use!.items!.enum).toEqual(['art', 'sound', 'text', 'code']);
+    expect(schema.properties.ai_use!.description).toMatch(/you made/i);
+  });
+
   it('release_game asks first, then releases the open game', async () => {
     const { call, confirm, creator } = await agentCreator({ data: blankGame });
-    const released = await call('release_game');
+    const released = await call('release_game', { ai_use: [] });
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Release “Test game”?'));
     expect(released).toMatchObject({ released: true, releaseNumber: 1 });
     const { open } = creator.projects.getState();

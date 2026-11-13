@@ -67,6 +67,7 @@ describe('Projects', () => {
     await user.click(await screen.findByRole('button', { name: 'Release Mossland' }));
     expect(platform.games[0]!.released).toBe(false);
     expect(screen.getByText(/Buyers get the version you last saved/)).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: 'No AI' }));
     await user.click(screen.getByRole('button', { name: 'Release it' }));
     const released = await screen.findByRole('list', { name: 'Released games' });
     expect(within(released).getByText('Mossland')).toBeInTheDocument();
@@ -74,10 +75,81 @@ describe('Projects', () => {
     expect(screen.queryByRole('button', { name: 'Release Mossland' })).not.toBeInTheDocument();
   });
 
-  it('shows unpublished changes on a released game and publishes them after asking (#38)', async () => {
+  it('asks whether generative AI was used before releasing, and sends the answer (chili-platform#179)', async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    platform.addGame({ title: 'Mossland' });
+    renderCreator({ platform });
+    await user.click(await screen.findByRole('button', { name: 'Release Mossland' }));
+    const question = screen.getByRole('group', { name: 'Did you use generative AI?' });
+    for (const name of ['No AI', 'Art', 'Sound and music', 'Text and story', 'Code']) {
+      expect(within(question).getByRole('checkbox', { name })).not.toBeChecked();
+    }
+    expect(within(question).getByRole('link', { name: 'What counts' })).toHaveAttribute(
+      'href',
+      'https://platform.chilichip.eu/help/ai-use',
+    );
+    const release = screen.getByRole('button', { name: 'Release it' });
+    expect(release).toBeDisabled();
+    await user.click(within(question).getByRole('checkbox', { name: 'Art' }));
+    await user.click(within(question).getByRole('checkbox', { name: 'Code' }));
+    expect(release).toBeEnabled();
+    await user.click(release);
+    await screen.findByRole('list', { name: 'Released games' });
+    expect(platform.requests.at(-1)).toMatchObject({ method: 'POST', body: { ai_use: ['art', 'code'] } });
+    expect(platform.games[0]).toMatchObject({ released: true, ai_declared: true, ai_use: ['art', 'code'] });
+  });
+
+  it('No AI and the kinds rule each other out', async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    platform.addGame({ title: 'Mossland' });
+    renderCreator({ platform });
+    await user.click(await screen.findByRole('button', { name: 'Release Mossland' }));
+    const none = screen.getByRole('checkbox', { name: 'No AI' });
+    const art = screen.getByRole('checkbox', { name: 'Art' });
+    await user.click(art);
+    await user.click(none);
+    expect(art).not.toBeChecked();
+    expect(none).toBeChecked();
+    await user.click(art);
+    expect(none).not.toBeChecked();
+    await user.click(art);
+    expect(screen.getByRole('button', { name: 'Release it' })).toBeDisabled();
+  });
+
+  it('asks again when a released game without an answer publishes an update', async () => {
     const user = userEvent.setup();
     const platform = createFakePlatform();
     const out = platform.addGame({ title: 'Mossland', data: game('Mossland'), released: true });
+    platform.edit(out.id, { data: game('Mossland') + '\n' });
+    renderCreator({ platform });
+    await user.click(await screen.findByRole('button', { name: 'Publish update for Mossland' }));
+    expect(screen.getByRole('button', { name: 'Publish it' })).toBeDisabled();
+    await user.click(screen.getByRole('checkbox', { name: 'No AI' }));
+    await user.click(screen.getByRole('button', { name: 'Publish it' }));
+    await waitFor(() => expect(platform.releaseOf(out.id)?.number).toBe(2));
+    expect(platform.requests.at(-1)!.body).toEqual({ ai_use: [] });
+  });
+
+  it('does not ask again once the game has an answer, and shows it', async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    const out = platform.addGame({ title: 'Mossland', data: game('Mossland'), released: true, ai_declared: true, ai_use: ['text'] });
+    platform.edit(out.id, { data: game('Mossland') + '\n' });
+    renderCreator({ platform });
+    await user.click(await screen.findByRole('button', { name: 'Publish update for Mossland' }));
+    expect(screen.queryByRole('group', { name: 'Did you use generative AI?' })).not.toBeInTheDocument();
+    expect(screen.getByText('Made with AI: text')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Publish it' }));
+    await waitFor(() => expect(platform.releaseOf(out.id)?.number).toBe(2));
+    expect(platform.requests.at(-1)!.body).toBeUndefined();
+  });
+
+  it('shows unpublished changes on a released game and publishes them after asking (#38)', async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    const out = platform.addGame({ title: 'Mossland', data: game('Mossland'), released: true, ai_declared: true });
     platform.addGame({ title: 'Tea time', released: true });
     platform.edit(out.id, { data: game('Mossland') + '\n' });
     renderCreator({ platform });
