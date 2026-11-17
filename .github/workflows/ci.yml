@@ -15,13 +15,6 @@ on:
 permissions:
   contents: read
 
-# npm 12 blocks dependency install scripts unless package.json's allowScripts
-# permits them, and no Node LTS ships it yet (Node 26 has npm 11), so every job
-# installs this exact version (chili-platform #199).
-# https://github.com/npm/cli/blob/latest/CHANGELOG.md
-env:
-  NPM_VERSION: "12.2.2"
-
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -33,7 +26,10 @@ jobs:
         with:
           # Major only: each run takes the newest security release of the LTS.
           node-version: "26"
-      - run: npm install --global npm@${{ env.NPM_VERSION }} --ignore-scripts
+      - name: npm 12 from .github/npm (lockfile, updated by Dependabot)
+        run: |
+          npm ci --prefix .github/npm --ignore-scripts --no-audit --no-fund
+          echo "$PWD/.github/npm/node_modules/.bin" >> "$GITHUB_PATH"
       - run: npm ci
       # Every installed package must carry a valid npm registry signature
       # (and valid provenance where it has one) (chili-platform #199).
@@ -60,7 +56,10 @@ jobs:
         with:
           # Major only: each run takes the newest security release of the LTS.
           node-version: "26"
-      - run: npm install --global npm@${{ env.NPM_VERSION }} --ignore-scripts
+      - name: npm 12 from .github/npm (lockfile, updated by Dependabot)
+        run: |
+          npm ci --prefix .github/npm --ignore-scripts --no-audit --no-fund
+          echo "$PWD/.github/npm/node_modules/.bin" >> "$GITHUB_PATH"
       - run: npm ci
       - run: npm run test:coverage
       - name: Report coverage (target 80%, information only)
@@ -94,7 +93,10 @@ jobs:
         with:
           # Major only: each run takes the newest security release of the LTS.
           node-version: "26"
-      - run: npm install --global npm@${{ env.NPM_VERSION }} --ignore-scripts
+      - name: npm 12 from .github/npm (lockfile, updated by Dependabot)
+        run: |
+          npm ci --prefix .github/npm --ignore-scripts --no-audit --no-fund
+          echo "$PWD/.github/npm/node_modules/.bin" >> "$GITHUB_PATH"
       - run: npm ci
       - run: npm run test:e2e
       - if: failure()
@@ -117,7 +119,10 @@ jobs:
         with:
           # Major only: each run takes the newest security release of the LTS.
           node-version: "26"
-      - run: npm install --global npm@${{ env.NPM_VERSION }} --ignore-scripts
+      - name: npm 12 from .github/npm (lockfile, updated by Dependabot)
+        run: |
+          npm ci --prefix .github/npm --ignore-scripts --no-audit --no-fund
+          echo "$PWD/.github/npm/node_modules/.bin" >> "$GITHUB_PATH"
       # --ignore-scripts: this job can write releases; no package script runs here.
       - run: npm ci --ignore-scripts && npm run build
       - run: npm pack
@@ -141,7 +146,10 @@ jobs:
         with:
           # Major only: each run takes the newest security release of the LTS.
           node-version: "26"
-      - run: npm install --global npm@${{ env.NPM_VERSION }} --ignore-scripts
+      - name: npm 12 from .github/npm (lockfile, updated by Dependabot)
+        run: |
+          npm ci --prefix .github/npm --ignore-scripts --no-audit --no-fund
+          echo "$PWD/.github/npm/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Tag and release a new version
         run: |
           tag="v$(node -p "require('./package.json').version")"

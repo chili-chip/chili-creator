@@ -11,7 +11,7 @@ The creator is React, TypeScript, Vite, [Dockview](https://dockview.dev) and Tai
 
 ## Set up
 
-You need Node 26 (the current LTS) and npm 12, as CI uses: `npm install --global npm@12`. npm 12 runs no install script of a dependency unless `allowScripts` in `package.json` allows it.
+You need Node 26 (the current LTS) and npm 12, as CI uses: `npm install --global npm@12` (CI takes the exact version from `.github/npm/package-lock.json`, which Dependabot keeps current). npm 12 runs no install script of a dependency unless `allowScripts` in `package.json` allows it.
 
 ```bash
 npm ci
