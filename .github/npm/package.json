@@ -1,0 +1,8 @@
+{
+  "name": "ci-npm",
+  "private": true,
+  "description": "The npm that CI runs, from this lockfile so Dependabot proposes each new release and npm ci checks its hash. npm 12 blocks dependency install scripts unless allowScripts permits them, and no Node LTS ships it yet (Node 26 has npm 11). chili-platform #199.",
+  "dependencies": {
+    "npm": "12.2.2"
+  }
+}

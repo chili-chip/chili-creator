@@ -55,4 +55,26 @@ describe('CI supply chain', () => {
       expect(block).toMatch(/cooldown:\n {6}default-days: 7/);
     }
   });
+
+  it.each(workflows.filter((w) => w.text.includes('actions/setup-node@')))(
+    '$name runs npm 12 from the .github/npm lockfile in every Node job',
+    ({ text }) => {
+      // Dependabot cannot see a version in a workflow variable; it updates a lockfile.
+      expect(text).not.toContain('NPM_VERSION');
+      const nodes = (text.match(/uses: actions\/setup-node@/g) ?? []).length;
+      expect((text.match(/npm ci --prefix \.github\/npm --ignore-scripts/g) ?? []).length).toBe(nodes);
+      expect((text.match(/\.github\/npm\/node_modules\/\.bin" >> "\$GITHUB_PATH"/g) ?? []).length).toBe(nodes);
+    },
+  );
+
+  it('locks an exact npm 12 with its hash, and Dependabot updates it', () => {
+    const folder = join(root, '.github/npm');
+    const pkg = JSON.parse(readFileSync(join(folder, 'package.json'), 'utf8'));
+    const version: string = pkg.dependencies.npm;
+    expect(version).toMatch(/^12\.\d+\.\d+$/);
+    const lock = JSON.parse(readFileSync(join(folder, 'package-lock.json'), 'utf8'));
+    expect(lock.packages['node_modules/npm'].version).toBe(version);
+    expect(lock.packages['node_modules/npm'].integrity).toMatch(/^sha512-/);
+    expect(dependabot).toMatch(/package-ecosystem: "npm"\n {4}directory: "\/\.github\/npm"/);
+  });
 });

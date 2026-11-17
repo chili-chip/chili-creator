@@ -20,9 +20,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "22"
+          # Major only: each run takes the newest security release of the LTS.
+          node-version: "26"
+      - name: npm 12 from .github/npm (lockfile, updated by Dependabot)
+        run: |
+          npm ci --prefix .github/npm --ignore-scripts --no-audit --no-fund
+          echo "$PWD/.github/npm/node_modules/.bin" >> "$GITHUB_PATH"
       - run: npm ci
       # Every installed package must carry a valid npm registry signature
       # (and valid provenance where it has one) (chili-platform #199).
@@ -43,9 +50,16 @@ jobs:
       TARGET: "80"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "22"
+          # Major only: each run takes the newest security release of the LTS.
+          node-version: "26"
+      - name: npm 12 from .github/npm (lockfile, updated by Dependabot)
+        run: |
+          npm ci --prefix .github/npm --ignore-scripts --no-audit --no-fund
+          echo "$PWD/.github/npm/node_modules/.bin" >> "$GITHUB_PATH"
       - run: npm ci
       - run: npm run test:coverage
       - name: Report coverage (target 80%, information only)
@@ -73,9 +87,16 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "22"
+          # Major only: each run takes the newest security release of the LTS.
+          node-version: "26"
+      - name: npm 12 from .github/npm (lockfile, updated by Dependabot)
+        run: |
+          npm ci --prefix .github/npm --ignore-scripts --no-audit --no-fund
+          echo "$PWD/.github/npm/node_modules/.bin" >> "$GITHUB_PATH"
       - run: npm ci
       - run: npm run test:e2e
       - if: failure()
@@ -92,10 +113,18 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "22"
-      - run: npm ci && npm run build
+          # Major only: each run takes the newest security release of the LTS.
+          node-version: "26"
+      - name: npm 12 from .github/npm (lockfile, updated by Dependabot)
+        run: |
+          npm ci --prefix .github/npm --ignore-scripts --no-audit --no-fund
+          echo "$PWD/.github/npm/node_modules/.bin" >> "$GITHUB_PATH"
+      # --ignore-scripts: this job can write releases; no package script runs here.
+      - run: npm ci --ignore-scripts && npm run build
       - run: npm pack
       - run: gh release create "$GITHUB_REF_NAME" chili-chip-creator-*.tgz --generate-notes
         env:
@@ -111,9 +140,16 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "22"
+          # Major only: each run takes the newest security release of the LTS.
+          node-version: "26"
+      - name: npm 12 from .github/npm (lockfile, updated by Dependabot)
+        run: |
+          npm ci --prefix .github/npm --ignore-scripts --no-audit --no-fund
+          echo "$PWD/.github/npm/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Tag and release a new version
         run: |
           tag="v$(node -p "require('./package.json').version")"
@@ -121,7 +157,7 @@ jobs:
             echo "$tag already exists, nothing to release."
             exit 0
           fi
-          npm ci && npm run build
+          npm ci --ignore-scripts && npm run build
           npm pack
           gh release create "$tag" chili-chip-creator-*.tgz --target "$GITHUB_SHA" --generate-notes
         env:

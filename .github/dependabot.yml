@@ -29,3 +29,14 @@ updates:
         patterns:
           - "*"
         update-types: ["minor", "patch"]
+  # The npm that CI runs (.github/npm, chili-platform #199), apart from the app's packages.
+  - package-ecosystem: "npm"
+    directory: "/.github/npm"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      ci-npm:
+        patterns:
+          - "*"
