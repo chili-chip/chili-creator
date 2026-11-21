@@ -6,7 +6,8 @@ import { openInFakePlatform, servePlatform } from '../../e2e/fake-platform';
 import { call, withModelContext } from '../../e2e/model-context';
 
 // Screenshots for docs/get-started/ai.md: a room an agent made through the
-// tools, as the editor shows it and as the agent sees it.
+// tools, as the editor shows it and as the agent sees it, and the release
+// form with what the agent changed ticked (#76).
 
 const out = join(__dirname, '../../docs/assets/screenshots');
 
@@ -33,4 +34,10 @@ test('ai agent', async ({ page }) => {
   await expect(creator.getByRole('textbox', { name: 'Game title' })).toHaveValue('Night Garden');
   await page.waitForTimeout(500);
   await page.screenshot({ path: join(out, 'agent-bitsy.png'), animations: 'disabled', caret: 'hide' });
+
+  await creator.getByRole('navigation', { name: 'Tools' }).getByRole('button', { name: 'Projects' }).click();
+  await creator.getByRole('button', { name: 'Release Night Garden' }).click();
+  const row = creator.getByRole('list', { name: 'Projects' }).getByRole('listitem').filter({ hasText: 'Night Garden' });
+  await expect(row.getByText(/An AI agent changed/)).toBeVisible();
+  await row.screenshot({ path: join(out, 'agent-release-ai.png'), animations: 'disabled', caret: 'hide' });
 });

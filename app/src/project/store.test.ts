@@ -7,6 +7,7 @@ import {
   createPlatformProjects,
   createProfileService,
   createTransport,
+  type KeyValueStore,
 } from '../chili-api';
 import { createFakePlatform, type FakePlatform } from '../chili-api/fake-platform';
 import type { EmbedMessage } from '../embed/bridge';
@@ -19,7 +20,7 @@ const game = (title: string) => `${title}\n\n# BITSY VERSION 8.12\n\n! ROOM_FORM
 
 let platform: FakePlatform;
 
-function setup({ signedIn = true } = {}) {
+function setup({ signedIn = true, records = createMemoryStore() }: { signedIn?: boolean; records?: KeyValueStore } = {}) {
   const transport = createTransport({
     baseUrl: 'https://api.test/api',
     tokens: { getToken: async () => (signedIn ? 'good-token' : null) },
@@ -32,6 +33,7 @@ function setup({ signedIn = true } = {}) {
     profile: createProfileService(transport),
     platform: createPlatformProjects(transport),
     local: createLocalProjects(createMemoryStore()),
+    records,
     post: (message) => posted.push(message),
     notify: (kind, message) => notices.push({ kind, message }),
   });
@@ -495,5 +497,66 @@ describe('createProjectStore: the chosen engine (#59)', () => {
     expect(store.projectsOf('fake').map((p) => p.title)).toEqual(['beat']);
     expect(store.projectsOf('bitsy').map((p) => p.title)).toEqual(['old']);
     expect(store.gamesUsed()).toBe(2);
+  });
+
+  describe('what an AI agent changed (#76)', () => {
+    it('records the kinds on the open game and keeps them after a reload', async () => {
+      const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
+      const records = createMemoryStore();
+      const { store } = setup({ records });
+      await store.start(String(saved.id));
+      expect(store.agentAiOf(String(saved.id))).toEqual([]);
+      await store.recordAgentAi(['text']);
+      await store.recordAgentAi(['art', 'text']);
+      expect(store.agentAiOf(String(saved.id))).toEqual(['art', 'text']);
+
+      const reloaded = setup({ records }).store;
+      await reloaded.start();
+      expect(reloaded.agentAiOf(String(saved.id))).toEqual(['art', 'text']);
+    });
+
+    it('does nothing when no game is open', async () => {
+      const records = createMemoryStore();
+      const { store } = setup({ records });
+      await store.start();
+      await store.recordAgentAi(['art']);
+      expect(await records.keys()).toEqual([]);
+    });
+
+    it('refuses a release whose AI answer leaves out what the agent changed', async () => {
+      const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
+      const { store } = setup();
+      await store.start(String(saved.id));
+      await store.recordAgentAi(['art', 'text']);
+      await expect(store.release(String(saved.id), [])).rejects.toThrow(
+        'An AI agent changed this game’s art and text in the creator, so the AI answer has to include them.',
+      );
+      await expect(store.release(String(saved.id), ['art'])).rejects.toThrow(/game’s text in the creator, so the AI answer has to include it/);
+      expect(platform.games[0]!.released).toBe(false);
+      await store.release(String(saved.id), ['art', 'text', 'code']);
+      expect(platform.games[0]).toMatchObject({ released: true, ai_use: ['art', 'text', 'code'] });
+    });
+
+    it('refuses to publish with an earlier answer that leaves out what the agent changed', async () => {
+      const saved = platform.addGame({ title: 'Mossland', data: game('Mossland'), released: true, ai_declared: true, ai_use: ['sound'] });
+      const { store } = setup();
+      await store.start(String(saved.id));
+      await store.recordAgentAi(['code']);
+      await expect(store.release(String(saved.id))).rejects.toThrow(/code in the creator/);
+      await store.release(String(saved.id), ['sound', 'code']);
+      expect(platform.games[0]!.ai_use).toEqual(['sound', 'code']);
+    });
+
+    it('copies the record to a duplicate and forgets it for a deleted game', async () => {
+      const saved = platform.addGame({ title: 'Mossland', data: game('Mossland') });
+      const { store } = setup();
+      await store.start(String(saved.id));
+      await store.recordAgentAi(['sound']);
+      await store.duplicate(String(saved.id));
+      const copy = store.getState().list.projects.find((p) => p.id !== String(saved.id))!;
+      expect(store.agentAiOf(copy.id)).toEqual(['sound']);
+      await store.remove(String(saved.id));
+      expect(store.agentAiOf(String(saved.id))).toEqual([]);
+    });
   });
 });

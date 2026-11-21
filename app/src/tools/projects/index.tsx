@@ -1,6 +1,7 @@
 import { Copy, ExternalLink, FolderOpen, Gamepad2, LayoutGrid, Plus, Rocket, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { AI_USE_HELP_URL, AI_USE_KINDS, aiUseLabel, type AiUseKind, MAX_GAMES, type ProjectSummary } from '../../chili-api';
+import { agentAiWords, withKinds } from '../../project/agent-ai';
 import { defineTool } from '../../plugin-api';
 import { useCreator, useProjects, useT } from '../../shell/creator-context';
 import { gameFromFile } from '../../export/files';
@@ -29,13 +30,17 @@ function Cover({ project }: { project: ProjectSummary }) {
 /** The answer being given: null until the person ticks something. */
 type AiAnswer = { none: boolean; kinds: AiUseKind[] };
 
-function answered(answer: AiAnswer): AiUseKind[] | null {
+function answered(answer: AiAnswer, locked: readonly AiUseKind[]): AiUseKind[] | null {
+  if (locked.length) return withKinds(answer.kinds, locked);
   if (answer.none) return [];
   return answer.kinds.length ? answer.kinds : null;
 }
 
-/** "Did you use generative AI?" (chili-platform#179): No AI, or the kinds. The platform needs it to release. */
-function AiQuestion({ answer, onChange }: { answer: AiAnswer; onChange(answer: AiAnswer): void }) {
+/**
+ * "Did you use generative AI?" (chili-platform#179): No AI, or the kinds. The platform needs it to release.
+ * `locked` are the kinds an AI agent changed in the creator (#76): ticked, and they cannot be unticked.
+ */
+function AiQuestion({ answer, locked, onChange }: { answer: AiAnswer; locked: readonly AiUseKind[]; onChange(answer: AiAnswer): void }) {
   function kind(value: AiUseKind, checked: boolean) {
     const chosen = new Set(answer.kinds);
     if (checked) chosen.add(value);
@@ -51,11 +56,17 @@ function AiQuestion({ answer, onChange }: { answer: AiAnswer; onChange(answer: A
           What counts
         </a>
       </p>
+      {locked.length > 0 && (
+        <p className="text-xs text-amber">
+          An AI agent changed {agentAiWords(locked)} in the creator, so {locked.length === 1 ? 'it stays' : 'they stay'} ticked.
+        </p>
+      )}
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         <label className="flex items-center gap-1.5">
           <input
             type="checkbox"
-            checked={answer.none}
+            checked={answer.none && !locked.length}
+            disabled={locked.length > 0}
             onChange={(event) => onChange({ none: event.target.checked, kinds: [] })}
           />
           No AI
@@ -64,7 +75,8 @@ function AiQuestion({ answer, onChange }: { answer: AiAnswer; onChange(answer: A
           <label key={item.value} className="flex items-center gap-1.5">
             <input
               type="checkbox"
-              checked={answer.kinds.includes(item.value)}
+              checked={answer.kinds.includes(item.value) || locked.includes(item.value)}
+              disabled={locked.includes(item.value)}
               onChange={(event) => kind(item.value, event.target.checked)}
             />
             {item.label}
@@ -78,6 +90,8 @@ function AiQuestion({ answer, onChange }: { answer: AiAnswer; onChange(answer: A
 interface RowProps {
   project: ProjectSummary;
   open: boolean;
+  /** What an AI agent changed in this game in the creator (#76). */
+  agentAi?: readonly AiUseKind[];
   onOpen(): void;
   onDuplicate?(): void;
   onDelete?(): Promise<void>;
@@ -89,14 +103,15 @@ interface RowProps {
   onGamePage?(): void;
 }
 
-function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, onPublish, onGamePage }: RowProps) {
+function ProjectRow({ project, open, agentAi = [], onOpen, onDuplicate, onDelete, onRelease, onPublish, onGamePage }: RowProps) {
   const [confirming, setConfirming] = useState<'delete' | 'release' | 'publish' | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [ai, setAi] = useState<AiAnswer>({ none: false, kinds: [] });
   // Games released before the question, and new projects, answer it once; then the platform keeps it.
-  const asksAi = !project.aiDeclared;
-  const aiAnswer = asksAi ? answered(ai) : undefined;
+  // It is asked again when the answer leaves out what an AI agent changed (#76), starting from that answer.
+  const asksAi = !project.aiDeclared || agentAi.some((kind) => !(project.aiUse ?? []).includes(kind));
+  const [ai, setAi] = useState<AiAnswer>(() => ({ none: false, kinds: project.aiDeclared ? (project.aiUse ?? []) : [] }));
+  const aiAnswer = asksAi ? answered(ai, agentAi) : undefined;
   const aiMissing = asksAi && aiAnswer === null;
   const declared = aiUseLabel(project.aiDeclared ?? false, project.aiUse ?? []);
 
@@ -203,7 +218,7 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, o
             the version you last saved; later edits reach them only when you publish an update. Listing it for sale is
             a separate step on the platform.
           </span>
-          {asksAi ? <AiQuestion answer={ai} onChange={setAi} /> : declared && <span className="w-full text-xs text-muted">{declared}</span>}
+          {asksAi ? <AiQuestion answer={ai} locked={agentAi} onChange={setAi} /> : declared && <span className="w-full text-xs text-muted">{declared}</span>}
           <Button size="sm" variant="ghost" onClick={() => setConfirming(null)} disabled={busy}>
             Not yet
           </Button>
@@ -223,7 +238,7 @@ function ProjectRow({ project, open, onOpen, onDuplicate, onDelete, onRelease, o
             Publish your changes to “{project.title}” as release {(project.releaseNumber ?? 0) + 1}? Buyers and devices
             get this version from now on.
           </span>
-          {asksAi ? <AiQuestion answer={ai} onChange={setAi} /> : declared && <span className="w-full text-xs text-muted">{declared}</span>}
+          {asksAi ? <AiQuestion answer={ai} locked={agentAi} onChange={setAi} /> : declared && <span className="w-full text-xs text-muted">{declared}</span>}
           <Button size="sm" variant="ghost" onClick={() => setConfirming(null)} disabled={busy}>
             Not yet
           </Button>
@@ -381,6 +396,7 @@ function Projects() {
                 key={project.id}
                 project={project}
                 open={project.id === openId}
+                agentAi={state.agentAi[project.id]}
                 onOpen={() => void creator.projects.open(project.id)}
                 onDuplicate={atLimit ? undefined : () => void act(() => creator.projects.duplicate(project.id))}
                 onDelete={() => creator.projects.remove(project.id)}
@@ -402,6 +418,7 @@ function Projects() {
                   key={project.id}
                   project={project}
                   open={project.id === openId}
+                  agentAi={state.agentAi[project.id]}
                   onOpen={() => void creator.projects.open(project.id)}
                   onPublish={(aiUse) => creator.projects.release(project.id, aiUse)}
                   onGamePage={() => creator.bridge.post({ type: 'chili-navigate', to: `/games/${project.id}` })}

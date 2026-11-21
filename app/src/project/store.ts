@@ -2,6 +2,7 @@ import {
   ApiError,
   type AiUseKind,
   createSaveController,
+  type KeyValueStore,
   type Profile,
   type Project,
   type ProfileService,
@@ -12,6 +13,7 @@ import {
 import type { EmbedMessage } from '../embed/bridge';
 import type { EngineRegistry } from '../engines/registry';
 import type { EngineModule } from '../engines/types';
+import { AGENT_AI_KEY, type AgentAiRecord, agentAiMissing, agentAiProblem, readAgentAi, withKinds } from './agent-ai';
 
 export type NoticeKind = 'success' | 'error' | 'info';
 
@@ -38,6 +40,8 @@ export interface ProjectsState {
   engine: string | null;
   save: SaveStatus;
   history: { canUndo: boolean; canRedo: boolean };
+  /** What an AI agent changed in each game, by project id (#76). */
+  agentAi: AgentAiRecord;
 }
 
 export interface EditOptions {
@@ -51,6 +55,8 @@ export interface ProjectStoreOptions {
   profile: ProfileService;
   platform: ProjectRepository;
   local: ProjectRepository;
+  /** Where the record of what AI agents changed is kept on this device (#76). */
+  records?: KeyValueStore;
   /** Messages for the platform page around the creator. */
   post(message: Exclude<EmbedMessage, { type: 'chili-auth-request' }>): void;
   notify(kind: NoticeKind, message: string): void;
@@ -70,7 +76,7 @@ function isLocal(id: string): boolean {
 }
 
 /** The open project, the project lists and autosave, for every tool to share. */
-export function createProjectStore({ engines, profile, platform, local, post, notify }: ProjectStoreOptions) {
+export function createProjectStore({ engines, profile, platform, local, records, post, notify }: ProjectStoreOptions) {
   let state: ProjectsState = {
     mode: 'unknown',
     list: { status: 'idle', projects: [], released: [] },
@@ -78,6 +84,7 @@ export function createProjectStore({ engines, profile, platform, local, post, no
     engine: null,
     save: { state: 'saved', unsaved: false },
     history: { canUndo: false, canRedo: false },
+    agentAi: {},
   };
   const listeners = new Set<() => void>();
   let reportedFailure = false;
@@ -189,7 +196,40 @@ export function createProjectStore({ engines, profile, platform, local, post, no
     if (!isLocal(project.id)) post({ type: 'chili-project', id: project.id });
   }
 
+  async function loadAgentAi() {
+    try {
+      set({ agentAi: { ...readAgentAi(await records?.get(AGENT_AI_KEY)), ...state.agentAi } });
+    } catch (err) {
+      console.warn('Could not read what AI agents changed:', err);
+    }
+  }
+
+  /** Sets the record for `id` (none when `kinds` is empty) and keeps it on this device. */
+  async function keepAgentAi(id: string, kinds: AiUseKind[]) {
+    const { [id]: _old, ...others } = state.agentAi;
+    const agentAi = kinds.length ? { ...others, [id]: kinds } : others;
+    set({ agentAi });
+    try {
+      await records?.set(AGENT_AI_KEY, agentAi);
+    } catch (err) {
+      console.warn('Could not keep what AI agents changed:', err);
+    }
+  }
+
+  /** Throws when the AI answer a release would carry leaves out what an agent changed. */
+  function checkAgentAi(id: string, aiUse?: AiUseKind[]) {
+    const recorded = state.agentAi[id] ?? [];
+    if (!recorded.length) return;
+    const project = openProject()?.id === id ? openProject() : [...state.list.projects, ...state.list.released].find((p) => p.id === id);
+    const answer = aiUse ?? (project?.aiDeclared ? (project.aiUse ?? []) : undefined);
+    // No answer at all: the platform asks for one.
+    if (answer === undefined) return;
+    const missing = agentAiMissing(recorded, answer);
+    if (missing.length) throw new Error(agentAiProblem(missing));
+  }
+
   async function begin(initialId?: string) {
+    await loadAgentAi();
     try {
       const me = await profile.me();
       set({ mode: 'platform', username: me.username, profile: me });
@@ -266,7 +306,10 @@ export function createProjectStore({ engines, profile, platform, local, post, no
     },
 
     async duplicate(id: string) {
-      await repo(id).duplicate(id);
+      const copy = await repo(id).duplicate(id);
+      // The copy holds what the agent made, so it carries the record too.
+      const recorded = state.agentAi[id];
+      if (recorded) await keepAgentAi(copy.id, recorded);
       await refresh();
     },
 
@@ -279,6 +322,7 @@ export function createProjectStore({ engines, profile, platform, local, post, no
         post({ type: 'chili-project-new' });
       }
       set({ list: { ...state.list, projects: state.list.projects.filter((p) => p.id !== id) } });
+      if (state.agentAi[id]) await keepAgentAi(id, []);
     },
 
     /**
@@ -286,6 +330,7 @@ export function createProjectStore({ engines, profile, platform, local, post, no
      * `aiUse` is the answer to "Did you use generative AI?" (chili-platform#179); the platform needs one before release.
      */
     async release(id: string, aiUse?: AiUseKind[]) {
+      checkAgentAi(id, aiUse);
       if (openProject()?.id === id) await autosave.flush();
       const released = await repo(id).release(id, aiUse);
       const { data: _data, ...summary } = released;
@@ -309,6 +354,23 @@ export function createProjectStore({ engines, profile, platform, local, post, no
       set({ list: listed(summary) });
       post({ type: 'chili-released', id, slug: released.slug });
     },
+
+    /** What an AI agent changed in a game through the creator (#76); empty when nothing. */
+    agentAiOf(id: string): AiUseKind[] {
+      return state.agentAi[id] ?? [];
+    },
+
+    /** Records that an AI agent changed these kinds of the open game (#76). */
+    async recordAgentAi(kinds: readonly AiUseKind[]) {
+      const project = openProject();
+      if (!project || !kinds.length) return;
+      const recorded = withKinds(state.agentAi[project.id], kinds);
+      if (recorded.length === (state.agentAi[project.id] ?? []).length) return;
+      await keepAgentAi(project.id, recorded);
+    },
+
+    /** Throws when an AI answer for `id` leaves out what an AI agent changed (#76). */
+    checkAgentAi,
 
     /** Sets the open game's cover from a PNG data URL, or removes it with null. */
     async setCover(cover: string | null) {

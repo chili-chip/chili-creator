@@ -160,6 +160,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ author?: string; palette?: number[]; tempo?: number; time?: 'beat' | 'turns'; start?: string; seed?: number }>({
     name: 'beat_set_game',
+    aiKinds: ['art', 'sound', 'text', 'code'],
     title: 'Set Chili Beat game',
     description:
       'Game settings: author, the 4 colours (Sweetie 16 indexes 0-15; colour 0 is the background), tempo in beats a second (2-8), ' +
@@ -193,6 +194,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ name?: string; icon?: string; start?: number }>({
     name: 'beat_add_counter',
+    aiKinds: ['code'],
     title: 'Add counter',
     description: 'Adds a counter (up to 4), drawn over the board with a thing as its icon. Rules count, check and react to it. Returns its id.',
     inputSchema: { type: 'object', properties: { name: str(), icon: str('A thing key.'), start: { type: 'integer', minimum: 0, maximum: 999 } } },
@@ -211,6 +213,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string; name?: string; icon?: string; start?: number }>({
     name: 'beat_set_counter',
+    aiKinds: ['code'],
     title: 'Set counter',
     description: 'Changes a counter’s name, icon (a thing key) or starting value.',
     inputSchema: {
@@ -231,6 +234,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string }>({
     name: 'beat_remove_counter',
+    aiKinds: ['code'],
     title: 'Remove counter',
     description: 'Removes a counter. Rules that use it show up in list_problems.',
     inputSchema: { type: 'object', properties: { id: str() }, required: ['id'] },
@@ -247,6 +251,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ name?: string; you?: boolean; frames?: string[][] }>({
     name: 'beat_add_thing',
+    aiKinds: ['art'],
     title: 'Add thing',
     description: 'Adds a thing (up to 64): a hero, wall, coin, enemy… Returns its key, the character screens use for it.',
     inputSchema: { type: 'object', properties: { name: str(), you: { type: 'boolean', description: 'The player controls it.' }, frames } },
@@ -265,6 +270,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ key: string; newKey?: string; name?: string; you?: boolean; frames?: string[][] }>({
     name: 'beat_set_thing',
+    aiKinds: ['art'],
     title: 'Set thing',
     description: 'Changes a thing: its name, picture, whether it is "you", or its key (screens, counters and rules follow).',
     inputSchema: {
@@ -289,6 +295,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ key: string }>({
     name: 'beat_remove_thing',
+    aiKinds: ['art'],
     title: 'Remove thing',
     description: 'Removes a thing and clears it off every screen. Rules that name it show up in list_problems.',
     inputSchema: { type: 'object', properties: { key: str() }, required: ['key'] },
@@ -305,6 +312,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ x: number; y: number }>({
     name: 'beat_add_screen',
+    aiKinds: ['art'],
     title: 'Add screen',
     description: 'Adds an empty screen at a place on the 8x8 world map. Walking off an edge leads to the screen next to it. Returns its id.',
     inputSchema: {
@@ -317,6 +325,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string; newId?: string; things?: string[]; ground?: string[] | null; tune?: string | null; reset?: boolean; map?: number[] }>({
     name: 'beat_set_screen',
+    aiKinds: ['art'],
     title: 'Set screen',
     description:
       'Changes a screen: all its things at once, its ground layer (drawn under things; null clears it), its tune (null for none), ' +
@@ -362,6 +371,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ screen: string; layer?: 'things' | 'ground'; x: number; y: number; key: string }>({
     name: 'beat_paint',
+    aiKinds: ['art'],
     title: 'Paint cell',
     description: 'Puts a thing on one cell of a screen, on the things layer (default) or the ground layer. key "." empties the cell.',
     inputSchema: {
@@ -381,6 +391,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string }>({
     name: 'beat_remove_screen',
+    aiKinds: ['art'],
     title: 'Remove screen',
     description: 'Removes a screen. A game keeps at least one.',
     inputSchema: { type: 'object', properties: { id: str() }, required: ['id'] },
@@ -404,6 +415,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ screen?: string }>({
     name: 'beat_set_cover',
+    aiKinds: ['art'],
     title: 'Set cover',
     description: 'Makes a screen’s picture the game’s cover on the platform. The start screen when none is given.',
     inputSchema: { type: 'object', properties: { screen: str() } },
@@ -419,6 +431,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ rule: Record<string, unknown>; at?: number }>({
     name: 'beat_add_rule',
+    aiKinds: ['code'],
     title: 'Add rule',
     description: 'Adds a rule card, at the end or at a number. Cards run in order. Returns its number.',
     inputSchema: { type: 'object', properties: { rule, at: { type: 'integer', minimum: 1 } }, required: ['rule'] },
@@ -436,6 +449,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ number: number; rule: Record<string, unknown> }>({
     name: 'beat_set_rule',
+    aiKinds: ['code'],
     title: 'Set rule',
     description: 'Replaces a rule card by its number.',
     inputSchema: { type: 'object', properties: { number: { type: 'integer', minimum: 1 }, rule }, required: ['number', 'rule'] },
@@ -450,6 +464,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ number: number; to: number }>({
     name: 'beat_move_rule',
+    aiKinds: ['code'],
     title: 'Move rule',
     description: 'Moves a rule card to another number. Cards run in order.',
     inputSchema: {
@@ -468,6 +483,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ number: number }>({
     name: 'beat_remove_rule',
+    aiKinds: ['code'],
     title: 'Remove rule',
     description: 'Removes a rule card by its number.',
     inputSchema: { type: 'object', properties: { number: { type: 'integer', minimum: 1 } }, required: ['number'] },
@@ -483,6 +499,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id?: string; preset?: Blip['preset']; pitch?: number; length?: number; slide?: number }>({
     name: 'beat_add_sound',
+    aiKinds: ['sound'],
     title: 'Add sound',
     description: 'Adds a sound effect (up to 16) that rules play with {"sound": id}. Returns its id.',
     inputSchema: { type: 'object', properties: { id: str(), ...soundFields } },
@@ -502,6 +519,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string; newId?: string; preset?: Blip['preset']; pitch?: number; length?: number; slide?: number }>({
     name: 'beat_set_sound',
+    aiKinds: ['sound'],
     title: 'Set sound',
     description: 'Changes a sound effect, or renames it (rules follow).',
     inputSchema: { type: 'object', properties: { id: str(), newId: str(), ...soundFields }, required: ['id'] },
@@ -520,6 +538,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string }>({
     name: 'beat_remove_sound',
+    aiKinds: ['sound'],
     title: 'Remove sound',
     description: 'Removes a sound effect. Rules that play it show up in list_problems.',
     inputSchema: { type: 'object', properties: { id: str() }, required: ['id'] },
@@ -534,6 +553,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ scale?: Tune['scale']; lead?: number[]; beat?: number[] }>({
     name: 'beat_add_tune',
+    aiKinds: ['sound'],
     title: 'Add tune',
     description: 'Adds a 16-step tune (up to 8) that plays on the beat of the screens that use it. Returns its id.',
     inputSchema: { type: 'object', properties: { scale, lead, beat: beatSteps } },
@@ -551,6 +571,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string; newId?: string; scale?: Tune['scale']; lead?: number[]; beat?: number[] }>({
     name: 'beat_set_tune',
+    aiKinds: ['sound'],
     title: 'Set tune',
     description:
       'Changes a tune: its scale, the lead (melody) and the beat (bass and drums), or renames it (screens follow).',
@@ -569,6 +590,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string }>({
     name: 'beat_remove_tune',
+    aiKinds: ['sound'],
     title: 'Remove tune',
     description: 'Removes a tune; screens that played it go quiet.',
     inputSchema: { type: 'object', properties: { id: str() }, required: ['id'] },
@@ -586,6 +608,7 @@ export const beatAgentTools: AgentTool[] = [
 
   defineAgentTool<{ buttons?: string[]; stepsAfter?: number }>({
     name: 'beat_play',
+    aiKinds: [],
     title: 'Play',
     description:
       'Plays the open game from the start in the real Chili Beat engine, the one the console uses. It checks the whole game first ' +

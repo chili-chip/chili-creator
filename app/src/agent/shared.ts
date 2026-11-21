@@ -1,5 +1,6 @@
 import { AI_USE_KINDS, aiUseLabel, type AiUseKind, MAX_GAMES, type ProjectSummary } from '../chili-api';
 import { fileName, gameFromFile } from '../export/files';
+import { agentAiMissing, agentAiProblem } from '../project/agent-ai';
 import { NEW_GAME_TITLE } from '../project/store';
 import { docOf, editDoc, openGame, replaceDoc, titleOf } from './game';
 import { defineAgentTool, type AgentTool } from './types';
@@ -84,6 +85,7 @@ export const sharedAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string }>({
     name: 'open_project',
+    aiKinds: [],
     title: 'Open project',
     description: 'Opens a game in the editor, after saving the open one. The editor switches to the game’s engine.',
     inputSchema: { type: 'object', properties: { id }, required: ['id'] },
@@ -99,6 +101,7 @@ export const sharedAgentTools: AgentTool[] = [
 
   defineAgentTool<{ engine?: string; title?: string; template?: string }>({
     name: 'new_game',
+    aiKinds: ({ title }) => (title === undefined ? [] : ['text']),
     title: 'New game',
     description:
       'Makes a new game and opens it: blank, or from one of the engine’s templates (see creator_status). ' +
@@ -133,6 +136,7 @@ export const sharedAgentTools: AgentTool[] = [
 
   defineAgentTool<{ text: string; fileName?: string }>({
     name: 'import_game',
+    aiKinds: ['art', 'sound', 'text', 'code'],
     title: 'Import game',
     description: 'Makes a new project from a game file’s text: .bitsy, a Bitsy web page (.html) or .beat. Then opens it.',
     inputSchema: {
@@ -160,6 +164,7 @@ export const sharedAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string }>({
     name: 'copy_project',
+    aiKinds: [],
     title: 'Copy project',
     description: 'Makes a copy of a game. The copy counts against the 30 games.',
     inputSchema: { type: 'object', properties: { id }, required: ['id'] },
@@ -171,6 +176,7 @@ export const sharedAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string }>({
     name: 'delete_project',
+    aiKinds: [],
     title: 'Delete project',
     description: 'Deletes a game for good. The person is asked first.',
     inputSchema: { type: 'object', properties: { id }, required: ['id'] },
@@ -187,6 +193,7 @@ export const sharedAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id?: string; ai_use?: AiUseKind[] }>({
     name: 'release_game',
+    aiKinds: [],
     title: 'Release game',
     description:
       'Releases a game on the platform so it can be sold, or publishes a released game’s changes as its next release. ' +
@@ -204,6 +211,7 @@ export const sharedAgentTools: AgentTool[] = [
             'What was made with generative AI: art (sprites, tiles, covers), sound (music, sound effects), ' +
             'text (story, dialog, descriptions), code. Include everything you made or changed yourself as an AI ' +
             'agent, plus what the person tells you. An empty list means No AI, so never send it for a game you made. ' +
+            'What you changed with these tools is recorded on the game, and an answer that leaves it out is refused. ' +
             'Needed when the game has no answer yet (aiDeclared false); otherwise it replaces the answer.',
         },
       },
@@ -221,6 +229,9 @@ export const sharedAgentTools: AgentTool[] = [
             'including what you made as an AI agent, or [] only when no AI was used.',
         );
       }
+      const answer = aiUse ?? (project.aiDeclared ? (project.aiUse ?? []) : []);
+      const missing = agentAiMissing(creator.projects.agentAiOf(id), answer);
+      if (missing.length) throw new Error(`${agentAiProblem(missing)} Pass ai_use with ${missing.join(', ')}.`);
       const label = aiUse === undefined ? aiUseLabel(project.aiDeclared ?? false, project.aiUse ?? []) : aiUseLabel(true, aiUse);
       const question = project.released
         ? `Publish your changes to “${project.title}” as release ${(project.releaseNumber ?? 0) + 1}? Buyers and devices get them.`
@@ -235,6 +246,7 @@ export const sharedAgentTools: AgentTool[] = [
 
   defineAgentTool({
     name: 'remove_cover',
+    aiKinds: ['art'],
     title: 'Remove cover',
     description: 'Takes the cover picture off the open game. Each engine has its own tool to set one.',
     inputSchema: none,
@@ -247,6 +259,7 @@ export const sharedAgentTools: AgentTool[] = [
 
   defineAgentTool({
     name: 'close_game',
+    aiKinds: [],
     title: 'Close game',
     description: 'Saves and closes the open game.',
     inputSchema: none,
@@ -259,6 +272,7 @@ export const sharedAgentTools: AgentTool[] = [
 
   defineAgentTool<{ title: string }>({
     name: 'set_title',
+    aiKinds: ['text'],
     title: 'Set title',
     description: 'Changes the open game’s title.',
     inputSchema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] },
@@ -283,6 +297,7 @@ export const sharedAgentTools: AgentTool[] = [
 
   defineAgentTool<{ text: string }>({
     name: 'set_game_text',
+    aiKinds: ['art', 'sound', 'text', 'code'],
     title: 'Set game text',
     description:
       'Replaces the whole open game with new file text of the same engine. Good for big changes. ' +
@@ -299,6 +314,7 @@ export const sharedAgentTools: AgentTool[] = [
 
   defineAgentTool({
     name: 'undo',
+    aiKinds: [],
     title: 'Undo',
     description: 'Takes back the last change to the open game, yours or the person’s.',
     inputSchema: none,
@@ -311,6 +327,7 @@ export const sharedAgentTools: AgentTool[] = [
 
   defineAgentTool({
     name: 'redo',
+    aiKinds: [],
     title: 'Redo',
     description: 'Does the last undone change again.',
     inputSchema: none,
@@ -335,6 +352,7 @@ export const sharedAgentTools: AgentTool[] = [
 
   defineAgentTool({
     name: 'download_game_file',
+    aiKinds: [],
     title: 'Download game file',
     description: 'Gives the person the open game’s file to save (.bitsy or .beat).',
     inputSchema: none,

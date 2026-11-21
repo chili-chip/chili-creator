@@ -60,3 +60,26 @@ test('an agent makes a Chili Beat game and wins it in the real engine', async ({
   expect(played.pictures).toBe(1);
   expect((await call(page, 'list_problems')).data.problems).toEqual([]);
 });
+
+test('what an agent changed stays ticked in the release form, also after a reload (#76)', async ({ page }) => {
+  await withModelContext(page);
+  const platform = await servePlatform(page, createFakePlatform({ token: 'host-token' }));
+  let creator = await openInFakePlatform(page, ['host-token', 'host-token']);
+  await expect(creator.getByRole('button', { name: 'New game' })).toBeVisible();
+
+  await call(page, 'new_game', { engine: 'bitsy', title: 'Agent game' });
+  await call(page, 'bitsy_set_dialog', { kind: 'sprites', drawing: 'a', text: 'Hello from the agent' });
+  await expect.poll(() => platform.games[0]?.data ?? '').toContain('Hello from the agent');
+
+  // A new page load, as when the person comes back later.
+  creator = await openInFakePlatform(page, ['host-token']);
+  await creator.getByRole('button', { name: 'Release Agent game' }).click();
+  const question = creator.getByRole('group', { name: 'Did you use generative AI?' });
+  await expect(question.getByText(/An AI agent changed text in the creator/)).toBeVisible();
+  await expect(question.getByRole('checkbox', { name: 'Text and story' })).toBeChecked();
+  await expect(question.getByRole('checkbox', { name: 'Text and story' })).toBeDisabled();
+  await expect(question.getByRole('checkbox', { name: 'No AI' })).toBeDisabled();
+  await creator.getByRole('button', { name: 'Release it' }).click();
+  await expect(creator.getByRole('list', { name: 'Released games' }).getByText('Agent game')).toBeVisible();
+  expect(platform.games[0]).toMatchObject({ released: true, ai_declared: true, ai_use: ['text'] });
+});

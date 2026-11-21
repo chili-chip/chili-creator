@@ -50,6 +50,8 @@ Players see your answer on the game's page, as **No AI** or, for example, **Made
 
 You answer once per game. Games you released before the question ask for it the next time you publish an update. To change the answer later, use the listing form on the platform.
 
+When an [AI agent](ai.md) changed the game in the creator, the kinds it changed are ticked for you and cannot be unticked, and **No AI** is off. If an earlier answer leaves one of them out, the question comes back when you publish the next update.
+
 ## Publish an update
 
 You can keep editing a released game. While your edits are not published, the top bar says **unpublished changes** next to the release number.

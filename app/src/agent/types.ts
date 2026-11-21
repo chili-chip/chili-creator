@@ -1,3 +1,4 @@
+import type { AiUseKind } from '../chili-api';
 import type { Creator } from '../creator';
 import type { JsonSchema } from './schema';
 
@@ -26,6 +27,12 @@ export interface AgentTool<Input = any> {
   readOnly?: boolean;
   /** Asks the person first (release, delete). */
   asksFirst?: boolean;
+  /**
+   * What a successful run changes in the open game, as AI use kinds (#76): the
+   * release answer then has to include them. Every tool that is not read-only
+   * says it, `[]` when it makes nothing players see, hear, read or run.
+   */
+  aiKinds?: readonly AiUseKind[] | ((input: Input) => readonly AiUseKind[]);
   run(input: Input, context: AgentContext): unknown;
 }
 
