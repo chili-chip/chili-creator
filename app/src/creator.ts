@@ -99,11 +99,14 @@ export function createCreator({
     else toast(message);
   }
 
+  // Signed-out games and the record of what AI agents changed (#76) stay on this device.
+  const deviceStore = localStore ?? createIndexedDbStore();
   const projects = createProjectStore({
     engines,
     profile,
     platform: createPlatformProjects(transport),
-    local: createLocalProjects(localStore ?? createIndexedDbStore()),
+    local: createLocalProjects(deviceStore),
+    records: deviceStore,
     post: (message) => bridge.post(message),
     notify,
   });

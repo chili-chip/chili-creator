@@ -77,6 +77,43 @@ describe('shared agent tools', () => {
     expect(platform.requests.at(-1)!.body).toEqual({ ai_use: ['art', 'code'] });
   });
 
+  it('release_game refuses an ai_use that leaves out what the agent changed, before asking (#76)', async () => {
+    const { call, confirm, creator, platform } = await agentCreator({ data: blankGame });
+    await call('set_title', { title: 'Tea time' });
+    expect(creator.projects.agentAiOf(String(platform.games[0]!.id))).toEqual(['text']);
+    expect(await call('release_game', { ai_use: [] })).toEqual({
+      error: 'An AI agent changed this game’s text in the creator, so the AI answer has to include it. Pass ai_use with text.',
+    });
+    expect(confirm).not.toHaveBeenCalled();
+    expect(await call('release_game', { ai_use: ['text'] })).toMatchObject({ released: true, aiUse: ['text'] });
+  });
+
+  it('every tool that can change a game says which AI kinds it changes (#76)', async () => {
+    const { creator } = await agentCreator();
+    const kinds = ['art', 'sound', 'text', 'code'];
+    const undeclared = creator.agentTools.filter((tool) => !tool.readOnly && tool.aiKinds === undefined).map((tool) => tool.name);
+    expect(undeclared).toEqual([]);
+    for (const tool of creator.agentTools.filter((t) => Array.isArray(t.aiKinds))) {
+      for (const kind of tool.aiKinds as string[]) expect(kinds, tool.name).toContain(kind);
+    }
+  });
+
+  it('tags what the agent made: art, sound, text and code tools, and whole games (#76)', async () => {
+    const { call, creator, platform } = await agentCreator({ data: blankGame });
+    const id = String(platform.games[0]!.id);
+    await call('bitsy_set_dialog', { kind: 'sprites', drawing: 'a', text: 'Hello' });
+    expect(creator.projects.agentAiOf(id)).toEqual(['text']);
+    const { text } = await call('get_game_text');
+    await call('set_game_text', { text });
+    expect(creator.projects.agentAiOf(id)).toEqual(['art', 'sound', 'text', 'code']);
+
+    await call('new_game', { engine: 'beat', template: 'Bee Home' });
+    const beat = creator.projects.getState().open;
+    expect(beat.status === 'ready' && creator.projects.agentAiOf(beat.project.id)).toEqual([]);
+    await call('beat_add_rule', { rule: { when: { bump: ['you', '#'] }, do: [{ win: 'Yes' }] } });
+    expect(beat.status === 'ready' && creator.projects.agentAiOf(beat.project.id)).toEqual(['code']);
+  });
+
   it('release_game describes the ai_use input for agents', async () => {
     const { modelContext } = await agentCreator({ data: blankGame });
     const tool = modelContext.tools.get('release_game')!;

@@ -240,6 +240,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ font?: string; textDirection?: 'LTR' | 'RTL'; textSize?: 'default' | 'chunky'; customFont?: string }>({
     name: 'bitsy_set_game',
+    aiKinds: ['art', 'sound', 'text', 'code'],
     title: 'Set Bitsy game settings',
     description: 'Font, text direction and text size of the open Bitsy game, or a custom font from .bitsyfont text. Use set_title for the title.',
     inputSchema: {
@@ -269,6 +270,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ name?: string; colors?: string[]; copyOf?: string }>({
     name: 'bitsy_add_palette',
+    aiKinds: ['art'],
     title: 'Add palette',
     description: 'Adds a palette: three colours a room uses. Copies another palette when copyOf is given.',
     inputSchema: { type: 'object', properties: { name: str(), colors, copyOf: str('A palette id.') } },
@@ -288,6 +290,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string; name?: string; colors?: string[] }>({
     name: 'bitsy_set_palette',
+    aiKinds: ['art'],
     title: 'Set palette',
     description: 'Renames a palette or changes its colours.',
     inputSchema: { type: 'object', properties: { id: str(), name: str(), colors }, required: ['id'] },
@@ -305,6 +308,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string }>({
     name: 'bitsy_remove_palette',
+    aiKinds: ['art'],
     title: 'Remove palette',
     description: 'Removes a palette. Its rooms take the first palette left.',
     inputSchema: { type: 'object', properties: { id: str() }, required: ['id'] },
@@ -321,6 +325,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ kind: DrawingKind; name?: string; copyOf?: string; frames?: string[][]; wall?: boolean }>({
     name: 'bitsy_add_drawing',
+    aiKinds: ['art'],
     title: 'Add drawing',
     description:
       'Adds a tile, sprite or item, blank or copied from another of the same kind, and returns its id. ' +
@@ -359,6 +364,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ kind: DrawingKind; id: string; name?: string; frames?: string[][]; wall?: boolean; dialog?: string | null; blip?: string | null }>({
     name: 'bitsy_set_drawing',
+    aiKinds: ['art'],
     title: 'Set drawing',
     description:
       'Changes a drawing: its name, pixels (two frames animate it), whether a tile is a wall, ' +
@@ -398,6 +404,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ kind: DrawingKind; id: string; frame?: number; action: string; x?: number; y?: number; value?: number }>({
     name: 'bitsy_paint',
+    aiKinds: ['art'],
     title: 'Paint',
     description: 'Paint tools on one frame of a drawing: set a pixel, flood fill, flip, or clear. value 1 draws, 0 erases.',
     inputSchema: {
@@ -430,6 +437,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ kind: DrawingKind; id: string }>({
     name: 'bitsy_remove_drawing',
+    aiKinds: ['art'],
     title: 'Remove drawing',
     description: 'Removes a tile, sprite or item and every use of it in rooms.',
     inputSchema: { type: 'object', properties: { kind, id: str() }, required: ['kind', 'id'] },
@@ -447,6 +455,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ name?: string; palette?: string; copyOf?: string }>({
     name: 'bitsy_add_room',
+    aiKinds: ['art'],
     title: 'Add room',
     description: 'Adds an empty room, or a copy of one, and returns its id.',
     inputSchema: { type: 'object', properties: { name: str(), palette: str('A palette id.'), copyOf: str('A room id.') } },
@@ -491,6 +500,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string; name?: string; palette?: string; tune?: string | null; tiles?: string[] }>({
     name: 'bitsy_set_room',
+    aiKinds: (input) => ('tune' in input ? ['art', 'sound'] : ['art']),
     title: 'Set room',
     description: 'Changes a room: name, palette, tune (null for none), or all its tiles at once as 16 rows of 16 comma-separated tile ids.',
     inputSchema: {
@@ -532,6 +542,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string }>({
     name: 'bitsy_remove_room',
+    aiKinds: ['art'],
     title: 'Remove room',
     description: 'Removes a room, the exits into it and the sprites in it. The avatar’s room and the last room stay.',
     inputSchema: { type: 'object', properties: { id: str() }, required: ['id'] },
@@ -546,6 +557,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ room: string; x: number; y: number; kind: DrawingKind; id: string }>({
     name: 'bitsy_place',
+    aiKinds: ['art'],
     title: 'Place in room',
     description:
       'Puts a tile, item or sprite on a cell. A sprite is in one place, so placing it moves it; place sprite "A" to move where the avatar starts.',
@@ -564,6 +576,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ room: string; x: number; y: number; marker?: boolean }>({
     name: 'bitsy_erase',
+    aiKinds: ['art'],
     title: 'Erase in room',
     description: 'Takes the top thing off a cell: a sprite (not the avatar), else an item, else the tile. With marker, takes the exit or ending off instead.',
     inputSchema: { type: 'object', properties: { ...at(), marker: { type: 'boolean' } }, required: ['room', 'x', 'y'] },
@@ -591,6 +604,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ room?: string }>({
     name: 'bitsy_set_cover',
+    aiKinds: ['art'],
     title: 'Set cover',
     description: 'Makes a room’s picture the game’s cover on the platform. The avatar’s room when no room is given.',
     inputSchema: { type: 'object', properties: { room: str() } },
@@ -607,6 +621,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ room: string; x: number; y: number; to: { room: string; x: number; y: number }; twoWay?: boolean; transition?: string; dialog?: 'narration' | 'lock' }>({
     name: 'bitsy_add_exit',
+    aiKinds: ['code'],
     title: 'Add exit',
     description:
       'Puts an exit on a cell that takes the avatar to a cell in another room. twoWay (default true) adds the way back. ' +
@@ -639,6 +654,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ room: string; x: number; y: number; to?: { room: string; x: number; y: number }; twoWay?: boolean; transition?: string | null; dialog?: 'narration' | 'lock' | null }>({
     name: 'bitsy_set_exit',
+    aiKinds: ['code'],
     title: 'Set exit',
     description: 'Changes the exit on a cell: where it leads, one-way or two-way, transition (null for none), and lock or narration (null for none).',
     inputSchema: {
@@ -672,6 +688,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ room: string; x: number; y: number }>({
     name: 'bitsy_remove_exit',
+    aiKinds: ['code'],
     title: 'Remove exit',
     description: 'Takes the exit on a cell away, with its way back.',
     inputSchema: { type: 'object', properties: at(), required: ['room', 'x', 'y'] },
@@ -686,6 +703,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ room: string; x: number; y: number; text?: string }>({
     name: 'bitsy_add_ending',
+    aiKinds: ['text', 'code'],
     title: 'Add ending',
     description: 'Puts an ending on a cell: when the avatar steps on it, the text shows and the game ends. Returns the ending’s dialog id.',
     inputSchema: { type: 'object', properties: { ...at(), text: str() }, required: ['room', 'x', 'y'] },
@@ -700,6 +718,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ room: string; x: number; y: number }>({
     name: 'bitsy_remove_ending',
+    aiKinds: ['text', 'code'],
     title: 'Remove ending',
     description: 'Takes the ending on a cell away.',
     inputSchema: { type: 'object', properties: at(), required: ['room', 'x', 'y'] },
@@ -733,6 +752,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ text: string; id?: string; kind?: DrawingKind; drawing?: string; name?: string }>({
     name: 'bitsy_set_dialog',
+    aiKinds: ['text'],
     title: 'Set dialog',
     description:
       'Writes dialog in Bitsy’s script: plain text, or {sequence}, {cycle}, {shuffle}, conditions like {- {item "1"} >= 1 ? ...} ' +
@@ -765,6 +785,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string }>({
     name: 'bitsy_remove_dialog',
+    aiKinds: ['text'],
     title: 'Remove dialog',
     description: 'Removes a dialog; sprites, items and exits that used it lose it.',
     inputSchema: { type: 'object', properties: { id: str() }, required: ['id'] },
@@ -780,6 +801,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ name: string; value: string | number | boolean }>({
     name: 'bitsy_set_variable',
+    aiKinds: ['code'],
     title: 'Set variable',
     description: 'Adds a variable or sets its starting value. Dialog reads and changes it, like {say a} or {a = a + 1}.',
     inputSchema: {
@@ -800,6 +822,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ from: string; to: string }>({
     name: 'bitsy_rename_variable',
+    aiKinds: ['code'],
     title: 'Rename variable',
     description: 'Renames a variable everywhere, dialog included.',
     inputSchema: { type: 'object', properties: { from: str(), to: str() }, required: ['from', 'to'] },
@@ -814,6 +837,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ name: string }>({
     name: 'bitsy_remove_variable',
+    aiKinds: ['code'],
     title: 'Remove variable',
     description: 'Removes a variable.',
     inputSchema: { type: 'object', properties: { name: str() }, required: ['name'] },
@@ -827,6 +851,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ item: string; count: number }>({
     name: 'bitsy_set_starting_item',
+    aiKinds: ['code'],
     title: 'Set starting item',
     description: 'How many of an item the avatar has at the start; 0 takes it out.',
     inputSchema: { type: 'object', properties: { item: str('An item id.'), count: { type: 'integer', minimum: 0, maximum: 999 } }, required: ['item', 'count'] },
@@ -856,6 +881,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ copyOf?: string }>({
     name: 'bitsy_add_tune',
+    aiKinds: ['sound'],
     title: 'Add tune',
     description: 'Adds a tune of four empty bars in a major key, or a copy of one, and returns its id. Rooms play tunes (bitsy_set_room).',
     inputSchema: { type: 'object', properties: { copyOf: str('A tune id.') } },
@@ -882,6 +908,7 @@ export const bitsyAgentTools: AgentTool[] = [
     harmony?: Pitch[][];
   }>({
     name: 'bitsy_set_tune',
+    aiKinds: ['sound'],
     title: 'Set tune',
     description:
       'Changes a tune. key sets the scale (notes are then scale degrees 0-6). Instruments are pulse waves: P2, P4, P8. ' +
@@ -926,6 +953,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string }>({
     name: 'bitsy_remove_tune',
+    aiKinds: ['sound'],
     title: 'Remove tune',
     description: 'Removes a tune; rooms that played it go quiet.',
     inputSchema: { type: 'object', properties: { id: str() }, required: ['id'] },
@@ -941,6 +969,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ kind?: (typeof blipKinds)[number] }>({
     name: 'bitsy_add_blip',
+    aiKinds: ['sound'],
     title: 'Add blip',
     description: 'Makes a short sound of a kind and returns its id. Give it to a sprite or item with bitsy_set_drawing.',
     inputSchema: { type: 'object', properties: { kind: { type: 'string', enum: [...blipKinds] } } },
@@ -972,6 +1001,7 @@ export const bitsyAgentTools: AgentTool[] = [
     repeat?: boolean;
   }>({
     name: 'bitsy_change_blip',
+    aiKinds: ['sound'],
     title: 'Change blip',
     description:
       'Changes a blip like the Blips tool: make it again as a kind, mutate it a little, transpose by semitones, ' +
@@ -1011,6 +1041,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ id: string }>({
     name: 'bitsy_remove_blip',
+    aiKinds: ['sound'],
     title: 'Remove blip',
     description: 'Removes a blip; sprites and items that played it go quiet.',
     inputSchema: { type: 'object', properties: { id: str() }, required: ['id'] },
@@ -1062,6 +1093,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ buttons?: string[]; waitMs?: number }>({
     name: 'bitsy_play',
+    aiKinds: [],
     title: 'Play',
     description:
       'Plays the open game from the start in citsy, the engine the console uses, presses buttons one after another, ' +
@@ -1102,6 +1134,7 @@ export const bitsyAgentTools: AgentTool[] = [
 
   defineAgentTool<{ pageColor?: string; size?: number }>({
     name: 'bitsy_download_web_page',
+    aiKinds: [],
     title: 'Download web page',
     description: 'Gives the person a web page that plays the game anywhere, offline. It fills the window unless a size in pixels is given.',
     inputSchema: {

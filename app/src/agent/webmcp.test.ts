@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fakeModelContext } from '../test/agent';
 import { picture, type AgentContext, type AgentTool } from './types';
-import { connectAgentTools, findModelContext } from './webmcp';
+import { connectAgentTools, findModelContext, runTool } from './webmcp';
 
 const context = {} as AgentContext;
 
@@ -85,6 +85,45 @@ describe('connectAgentTools', () => {
     expect(registerTool).toHaveBeenCalledTimes(2);
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
+  });
+});
+
+describe('runTool and what an AI agent changed (#76)', () => {
+  function recorder() {
+    const recordAgentAi = vi.fn(async () => {});
+    return { recordAgentAi, context: { creator: { projects: { recordAgentAi } } } as unknown as AgentContext };
+  }
+  const paint: AgentTool<{ text?: string }> = {
+    name: 'paint',
+    title: 'Paint',
+    description: 'Changes art.',
+    inputSchema: { type: 'object', properties: { text: { type: 'string' } } },
+    aiKinds: ['art'],
+    run: () => ({ ok: true }),
+  };
+
+  it('records the kinds a tool changed on the open game once it worked', async () => {
+    const { recordAgentAi, context } = recorder();
+    expect(await runTool(paint, {}, context)).toEqual({ content: [{ type: 'text', text: '{"ok":true}' }] });
+    expect(recordAgentAi).toHaveBeenCalledWith(['art']);
+  });
+
+  it('works the kinds out from the input when the tool says so', async () => {
+    const { recordAgentAi, context } = recorder();
+    const named: AgentTool<{ text?: string }> = { ...paint, aiKinds: ({ text }) => (text ? ['text'] : []) };
+    await runTool(named, {}, context);
+    expect(recordAgentAi).not.toHaveBeenCalled();
+    await runTool(named, { text: 'Bees' }, context);
+    expect(recordAgentAi).toHaveBeenCalledWith(['text']);
+  });
+
+  it('records nothing when the tool failed, had bad input or changes nothing', async () => {
+    const { recordAgentAi, context } = recorder();
+    await runTool({ ...paint, run: () => { throw new Error('No game is open.'); } }, {}, context);
+    await runTool(paint, { text: 3 }, context);
+    await runTool({ ...paint, aiKinds: [] }, {}, context);
+    await runTool(echo, { text: 'hi' }, context);
+    expect(recordAgentAi).not.toHaveBeenCalled();
   });
 });
 

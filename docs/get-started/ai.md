@@ -53,6 +53,17 @@ sequenceDiagram
   filter the marketplace for games with no AI, so a game an agent made is
   never released as **No AI**
   ([AI use labels](https://platform.chilichip.eu/help/ai-use)).
+- The creator **tags what the agent changed** on its own. Each tool that
+  changes the game records its kind: drawings, palettes, rooms and covers are
+  **art**; tunes and blips are **sound**; the title, dialog and endings are
+  **text**; exits, endings, variables, items, counters and rules are
+  **code**. Replacing the whole game counts as all four. In the release form
+  those kinds stay ticked and **No AI** is off, and `release_game` refuses an
+  `ai_use` that leaves one out. The record is kept in this browser with the
+  game, so it is still there after a reload, and a copy of the game gets it
+  too. Undo does not take it back.
+
+![The release form for Night Garden: "An AI agent changed art, text, and code in the creator, so they stay ticked." Art, Text and story and Code are ticked; No AI cannot be ticked.](../assets/screenshots/agent-release-ai.png){ .shot }
 - The agent can **look** at its work: room and screen pictures, and the game
   played in the real engine (citsy for Bitsy, the Chili Beat engine for Chili
   Beat), the same engines the console uses.

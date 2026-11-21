@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { createWorld, serialize } from '../../bitsy';
+import { createMemoryStore } from '../../chili-api';
 import { createFakePlatform } from '../../chili-api/fake-platform';
 import { renderCreator } from '../../test/creator';
 
@@ -144,6 +145,48 @@ describe('Projects', () => {
     await user.click(screen.getByRole('button', { name: 'Publish it' }));
     await waitFor(() => expect(platform.releaseOf(out.id)?.number).toBe(2));
     expect(platform.requests.at(-1)!.body).toBeUndefined();
+  });
+
+  it('ticks and locks what an AI agent changed, and No AI is off (#76)', async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    const saved = platform.addGame({ title: 'Mossland' });
+    const localStore = createMemoryStore();
+    await localStore.set('agent-ai', { [String(saved.id)]: ['art', 'text'] });
+    renderCreator({ platform, localStore });
+    await user.click(await screen.findByRole('button', { name: 'Release Mossland' }));
+    const question = screen.getByRole('group', { name: 'Did you use generative AI?' });
+    for (const name of ['Art', 'Text and story']) {
+      const box = within(question).getByRole('checkbox', { name });
+      expect(box).toBeChecked();
+      expect(box).toBeDisabled();
+    }
+    expect(within(question).getByRole('checkbox', { name: 'No AI' })).toBeDisabled();
+    expect(within(question).getByRole('checkbox', { name: 'Code' })).toBeEnabled();
+    expect(within(question).getByText(/An AI agent changed art and text in the creator/)).toBeInTheDocument();
+    const release = screen.getByRole('button', { name: 'Release it' });
+    expect(release).toBeEnabled();
+    await user.click(within(question).getByRole('checkbox', { name: 'Code' }));
+    await user.click(release);
+    await screen.findByRole('list', { name: 'Released games' });
+    expect(platform.requests.at(-1)!.body).toEqual({ ai_use: ['art', 'text', 'code'] });
+  });
+
+  it('asks again when an earlier answer leaves out what an AI agent changed (#76)', async () => {
+    const user = userEvent.setup();
+    const platform = createFakePlatform();
+    const out = platform.addGame({ title: 'Mossland', data: game('Mossland'), released: true, ai_declared: true, ai_use: ['text'] });
+    platform.edit(out.id, { data: game('Mossland') + '\n' });
+    const localStore = createMemoryStore();
+    await localStore.set('agent-ai', { [String(out.id)]: ['sound'] });
+    renderCreator({ platform, localStore });
+    await user.click(await screen.findByRole('button', { name: 'Publish update for Mossland' }));
+    const question = screen.getByRole('group', { name: 'Did you use generative AI?' });
+    expect(within(question).getByRole('checkbox', { name: 'Text and story' })).toBeChecked();
+    expect(within(question).getByRole('checkbox', { name: 'Sound and music' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Publish it' }));
+    await waitFor(() => expect(platform.releaseOf(out.id)?.number).toBe(2));
+    expect(platform.requests.at(-1)!.body).toEqual({ ai_use: ['sound', 'text'] });
   });
 
   it('shows unpublished changes on a released game and publishes them after asking (#38)', async () => {

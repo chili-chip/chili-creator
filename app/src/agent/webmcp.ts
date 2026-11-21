@@ -48,6 +48,8 @@ export async function runTool(tool: AgentTool, input: unknown, context: AgentCon
   if (problem) return { content: [{ type: 'text', text: problem }], isError: true };
   try {
     const value = await tool.run(input ?? {}, context);
+    const kinds = typeof tool.aiKinds === 'function' ? tool.aiKinds(input ?? {}) : tool.aiKinds;
+    if (kinds?.length) await context.creator.projects.recordAgentAi(kinds);
     if (value instanceof PictureResult) {
       return { content: [text(value.data), { type: 'image', data: base64(value.png), mimeType: 'image/png' }] };
     }
