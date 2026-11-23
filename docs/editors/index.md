@@ -33,4 +33,4 @@ brings its own tools.
 - **Import** reads Bitsy files and pages. A `.beat` file opens in the Chili
   Beat editor, and a `.rpg` file in the Chili RPG editor.
 
-![Pick an editor: Bitsy and Chili Beat, with Chili Beat's example games](../assets/screenshots/engine-choice.png){ .shot }
+![Pick an editor: Bitsy, Chili Beat and Chili RPG, with each editor's example games](../assets/screenshots/engine-choice.png){ .shot }

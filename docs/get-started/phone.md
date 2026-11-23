@@ -31,4 +31,4 @@ On a screen narrower than 640 pixels, the creator shows **one tool at a time**. 
 
 ## Next
 
-Start a tutorial: [Chili Garden](../editors/bitsy/tutorial/index.md) in the Bitsy editor or [Bee Home](../editors/beat/tutorial.md) in the Chili Beat editor.
+Start a tutorial: [Chili Garden](../editors/bitsy/tutorial/index.md) in the Bitsy editor, [Bee Home](../editors/beat/tutorial.md) in the Chili Beat editor, or [Lost Ring](../editors/rpg/tutorial.md) in the Chili RPG editor.

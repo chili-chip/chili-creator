@@ -74,7 +74,7 @@ export function createCreator({
   loadCatalog,
   languages,
   engines: engineModules = [bitsyEngine, beatEngine as EngineModule, rpgEngine as EngineModule],
-  enabledEngines = ['bitsy', 'beat'],
+  enabledEngines = ['bitsy', 'beat', 'rpg'],
   search = typeof location === 'undefined' ? '' : location.search,
   engine: initialEngine,
   modelContext = typeof window === 'undefined' ? null : findModelContext(),

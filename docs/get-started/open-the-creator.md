@@ -23,7 +23,7 @@ The creator opens on **Pick an editor**: one card for each kind of game, with
 how many projects you have in each. Pick one and its editor opens on
 **Projects**, the list of your games for that editor.
 
-![Pick an editor: Bitsy and Chili Beat, with Chili Beat's example games](../assets/screenshots/engine-choice.png){ .shot }
+![Pick an editor: Bitsy, Chili Beat and Chili RPG, with each editor's example games](../assets/screenshots/engine-choice.png){ .shot }
 
 Opening a game from the platform skips this screen and opens the game in its
 editor. To switch editors later, press the editor's name at the top left
@@ -35,7 +35,7 @@ editor. To switch editors later, press the editor's name at the top left
 
 | You want to | Do this |
 |---|---|
-| Start from scratch | In the editor you picked, choose **New game**: [Bitsy](../editors/bitsy/index.md) for story games, [Chili Beat](../editors/beat/index.md) for games on the beat. Or start from one of the editor's example games, on its card or under **New game**. |
+| Start from scratch | In the editor you picked, choose **New game**: [Bitsy](../editors/bitsy/index.md) for story games, [Chili Beat](../editors/beat/index.md) for games on the beat, [Chili RPG](../editors/rpg/index.md) for adventures with quests. Or start from one of the editor's example games, on its card or under **New game**. |
 | Keep working on a game | Choose **Open** on it. |
 | Bring in a game from the Bitsy editor | Choose **Import** and pick a `.bitsy` file, or a web page exported from Bitsy (`.html`). It becomes a new game. |
 | Try something without changing a game | Choose **Duplicate** (the copy icon) and open the copy. |

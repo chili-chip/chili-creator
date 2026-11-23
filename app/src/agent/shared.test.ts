@@ -19,7 +19,7 @@ describe('shared agent tools', () => {
       open: { title: 'Test game', engine: 'bitsy', released: false },
       canUndo: false,
     });
-    expect(status.engines.map((e: { id: string }) => e.id)).toEqual(['bitsy', 'beat']);
+    expect(status.engines.map((e: { id: string }) => e.id)).toEqual(['bitsy', 'beat', 'rpg']);
     expect(status.engines[1].templates).toEqual(['Bee Home', 'Crate Puzzle', 'Garden Toy']);
   });
 
@@ -33,7 +33,7 @@ describe('shared agent tools', () => {
     expect(await call('new_game', { engine: 'beat', template: 'Nope' })).toEqual({
       error: 'Chili Beat has no template called "Nope". Templates: Bee Home, Crate Puzzle, Garden Toy.',
     });
-    expect(await call('new_game', { engine: 'zx' })).toEqual({ error: 'No engine is called "zx". Engines: bitsy, beat.' });
+    expect(await call('new_game', { engine: 'zx' })).toEqual({ error: 'No engine is called "zx". Engines: bitsy, beat, rpg.' });
   });
 
   it('list_projects, open_project, copy_project and close_game work on the person’s games', async () => {
