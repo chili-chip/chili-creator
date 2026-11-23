@@ -1,7 +1,9 @@
 # Engines and editors
 
 The creator can host more than one game engine. Bitsy is the first one. Chili
-Beat ([chili-beat](https://github.com/chili-chip/chili-beat)) is the next.
+Beat ([chili-beat](https://github.com/chili-chip/chili-beat)) is the second.
+Chili RPG, the RPG engine of the [chili game SDK](https://github.com/teriyakigod/chili-game-sdk),
+is the third.
 
 | Word | Means | Example |
 |------|-------|---------|
@@ -89,7 +91,7 @@ flowchart LR
   A[AI agent] -- calls --> M["document.modelContext<br/>(navigator.modelContext in Chrome's preview)"]
   M --> W["agent/webmcp.ts<br/>checks input, catches errors,<br/>answers as MCP content"]
   W --> S["agent/shared.ts<br/>projects, game text, undo"]
-  W --> E["engines/&lt;id&gt;/agent.ts<br/>bitsy_*, beat_*"]
+  W --> E["engines/&lt;id&gt;/agent.ts<br/>bitsy_*, beat_*, rpg_*"]
   S --> P[Project store]
   E -- "editDoc → updateDoc" --> P
   P --> U[Editor shows it, undo step, autosave]
@@ -106,7 +108,7 @@ flowchart LR
 
 Rules for tools:
 
-- Name tools `snake_case`. Engine tools start with the engine id: `bitsy_`, `beat_`.
+- Name tools `snake_case`. Engine tools start with the engine id: `bitsy_`, `beat_`, `rpg_`.
 - A tool calls the same edit functions as the editor's tools. Never a second
   way to change a game.
 - Change the game with `editDoc(creator, engineId, recipe)`. It is one undo step,

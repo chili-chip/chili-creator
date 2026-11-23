@@ -94,6 +94,8 @@ and run:
 | "Play it and check you can reach the ending." | `bitsy_play`, `list_problems` |
 | "Start a Chili Beat game from Bee Home and make the bees faster." | `new_game` with `template`, `beat_set_game` |
 | "Add a rule: when you bump a coin, count 1 and play a coin sound." | `beat_add_sound`, `beat_add_counter`, `beat_add_rule` |
+| "Start a Chili RPG game from Pepper Village and add a second quest for Mira." | `new_game` with `template`, `rpg_set_quest`, `rpg_set_dialogue` |
+| "Put a locked door in front of the cave that opens with the key." | `rpg_set_character`, `rpg_place`, `rpg_play` |
 | "Release it." | `release_game` (you confirm first) |
 
 Tips for good results:
@@ -231,6 +233,58 @@ A rule card as the agent writes it:
   "when": { "bump": ["you", "c"] },
   "if": [{ "counter": "coins", "atMost": 9 }],
   "do": [{ "vanish": true, "who": "bumped" }, { "count": "coins", "add": 1 }, { "sound": "ding" }]
+}
+```
+
+### Chili RPG editor
+
+The game is the same JSON as a `.rpg` file
+([format](https://game-sdk.chilichip.eu/rpg/game-file/)). Rooms are rows of
+one-character tile keys, 16 to 64 each way. Pictures are 8 strings of 8
+characters: `0` to `f` is a colour of Sweetie 16, `.` is clear. Characters,
+items, dialogue and quests have ids; the `rpg_set_*` tools take their fields as
+they are in the file, and a field set to `null` is removed.
+
+| Tool | Does | Same as |
+|---|---|---|
+| `rpg_get_game` | The whole game; pictures only when asked. *Reads only.* | |
+| `rpg_set_game` | Author, background, start, rules, hero look and stats, levels, what happens on death. | [Game](../editors/rpg/tools/rpg-game.md), [Hero](../editors/rpg/tools/rpg-hero.md) |
+| `rpg_set_picture` | Draws or adds a picture. | [Art](../editors/rpg/tools/rpg-art.md) |
+| `rpg_set_tile` | Adds or changes a tile type. | [Tiles](../editors/rpg/tools/rpg-tiles.md) |
+| `rpg_remove_tile` | Removes a tile type. | [Tiles](../editors/rpg/tools/rpg-tiles.md) |
+| `rpg_add_room` | Adds a room, 16 × 16 to 64 × 64. | [Rooms](../editors/rpg/tools/rpg-rooms.md) |
+| `rpg_set_room` | Name, ground, top layer, music, or its id. | [Rooms](../editors/rpg/tools/rpg-rooms.md) |
+| `rpg_resize_room` | Changes a room's size. | [Rooms](../editors/rpg/tools/rpg-rooms.md) |
+| `rpg_paint` | Paints a tile on a cell or a block of cells. | [Rooms](../editors/rpg/tools/rpg-rooms.md) |
+| `rpg_place` | Places a character, item, warp, trigger or the start. | [Rooms](../editors/rpg/tools/rpg-rooms.md) |
+| `rpg_clear_cell` | Removes what is placed on a cell. | [Rooms](../editors/rpg/tools/rpg-rooms.md) |
+| `rpg_remove_room` | Removes a room and the warps into it. | [Rooms](../editors/rpg/tools/rpg-rooms.md) |
+| `rpg_room_picture` | A PNG of a whole room. *Reads only.* | |
+| `rpg_set_cover` | Makes a room's picture the cover. | |
+| `rpg_set_character` | Adds or changes a character, or renames it everywhere. | [Characters](../editors/rpg/tools/rpg-characters.md) |
+| `rpg_remove_character` | Removes a character and its people in rooms. | [Characters](../editors/rpg/tools/rpg-characters.md) |
+| `rpg_set_item` | Adds or changes an item, or renames it everywhere. | [Items](../editors/rpg/tools/rpg-items.md) |
+| `rpg_remove_item` | Removes an item, from rooms and drops too. | [Items](../editors/rpg/tools/rpg-items.md) |
+| `rpg_set_slots` | The equipment slots. | [Items](../editors/rpg/tools/rpg-items.md) |
+| `rpg_set_dialogue` | Adds or changes a dialogue with its lines and choices. | [Dialogue](../editors/rpg/tools/rpg-dialogue.md) |
+| `rpg_remove_dialogue` | Removes a dialogue. | [Dialogue](../editors/rpg/tools/rpg-dialogue.md) |
+| `rpg_set_quest` | Adds or changes a quest with its stages. | [Quests](../editors/rpg/tools/rpg-quests.md) |
+| `rpg_remove_quest` | Removes a quest. | [Quests](../editors/rpg/tools/rpg-quests.md) |
+| `rpg_play` | Checks the game in the engine, plays it with button presses, sends back the screen and state. | [Play](../editors/rpg/tools/rpg-play.md) |
+
+A locked door as the agent writes it, with `rpg_set_character`:
+
+```json
+{
+  "id": "door",
+  "character": {
+    "name": "Door", "sprite": 32, "friendly": true,
+    "bump": {
+      "if": [{ "has": "key" }],
+      "do": [{ "take": "key" }, { "sound": "door" }, { "remove": true }],
+      "else": [{ "say": "locked" }]
+    }
+  }
 }
 ```
 

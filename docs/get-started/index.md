@@ -22,5 +22,6 @@ Then pick an editor and build your first real game:
 |---|---|---|
 | [Bitsy editor](../editors/bitsy/index.md) | Story games with rooms, characters, dialog and endings | [Chili Garden](../editors/bitsy/tutorial/index.md) |
 | [Chili Beat editor](../editors/beat/index.md) | Games where things bump, move and change on the beat | [Bee Home](../editors/beat/tutorial.md) |
+| [Chili RPG editor](../editors/rpg/index.md) | Adventures: explore rooms, talk, fight, collect items and finish quests | [Lost Ring](../editors/rpg/tutorial.md) |
 
 Not sure which? See [Editors](../editors/index.md).
