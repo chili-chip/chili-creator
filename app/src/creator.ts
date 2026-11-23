@@ -20,6 +20,7 @@ import { createProjectStore, type NoticeKind } from './project/store';
 import { createSoundPreview, type SoundPreview } from './sound/preview';
 import { beatEngine } from './engines/beat';
 import { bitsyEngine } from './engines/bitsy';
+import { rpgEngine } from './engines/rpg';
 import { createEngineRegistry } from './engines/registry';
 import type { EditorDefinition, EngineModule } from './engines/types';
 import { shellTools } from './tools';
@@ -72,7 +73,7 @@ export function createCreator({
   tour = true,
   loadCatalog,
   languages,
-  engines: engineModules = [bitsyEngine, beatEngine as EngineModule],
+  engines: engineModules = [bitsyEngine, beatEngine as EngineModule, rpgEngine as EngineModule],
   enabledEngines = ['bitsy', 'beat'],
   search = typeof location === 'undefined' ? '' : location.search,
   engine: initialEngine,

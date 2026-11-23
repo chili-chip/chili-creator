@@ -6,6 +6,7 @@
   "repository": "github:chili-chip/chili-creator",
   "files": [
     "chili-beat",
+    "chili-rpg",
     "citsy",
     "dist"
   ],
