@@ -1,5 +1,6 @@
 // Pieces the Chili RPG tools share.
 import { useMemo, useState } from 'react';
+import { Input } from '../../../ui/input';
 import { PixelImage } from '../../../ui/pixel-canvas';
 import type { Game } from '../model';
 import { pictureRGBA } from '../render';
@@ -39,12 +40,15 @@ export function PicturePicker({ game, value, label, onPick }: { game: Game; valu
 export function useEdit() {
   const update = useUpdate();
   const [error, setError] = useState('');
-  function edit(recipe: (game: Game) => void, group?: string) {
+  /** Runs a change; false when it was refused (the error shows). */
+  function edit(recipe: (game: Game) => void, group?: string): boolean {
     setError('');
     try {
       update(recipe, group ? { group } : undefined);
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
+      return false;
     }
   }
   return { edit, error };
@@ -56,5 +60,26 @@ export function ErrorLine({ error }: { error: string }) {
     <p role="alert" className="text-chili">
       {error}
     </p>
+  );
+}
+
+/** An id that changes everywhere it is used when the field loses focus. */
+export function IdField({ value, onRename }: { value: string; onRename(id: string): void }) {
+  return (
+    <label className="flex flex-col gap-1">
+      Id
+      <Input
+        aria-label="Id"
+        key={value}
+        defaultValue={value}
+        className="w-32 font-mono"
+        title="Used in the file. Changing it changes everything that names it."
+        onBlur={(event) => {
+          const id = event.target.value.trim();
+          if (id === value) return;
+          onRename(id);
+        }}
+      />
+    </label>
   );
 }

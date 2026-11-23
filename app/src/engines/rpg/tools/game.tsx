@@ -1,8 +1,7 @@
-import { Plus, Settings2, Trash2 } from 'lucide-react';
+import { Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { defineTool } from '../../../plugin-api';
 import { Empty } from '../../../tools/shared';
-import { Button } from '../../../ui/button';
 import { Checkbox, Input, Select } from '../../../ui/input';
 import { setRule, whole } from '../edit';
 import { SWEETIE_16, type Game } from '../model';
@@ -15,7 +14,7 @@ const RULES = [
   { key: 'crit', label: 'Critical hits (%)', fallback: 0, min: 0, max: 100, help: 'Chance of double damage.' },
 ] as const;
 
-function NumberField({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange(n: number): void }) {
+export function NumberField({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange(n: number): void }) {
   return (
     <label className="flex flex-col gap-1">
       {label}
@@ -40,15 +39,6 @@ function GameSettings() {
   }
 
   const startRoom = game.rooms.find((r) => r.id === game.start.room) ?? game.rooms[0]!;
-  const xp = game.levels?.xp ?? [];
-  const gain = game.levels?.gain ?? {};
-  const setLevels = (g: Game, levels: NonNullable<Game['levels']>) => {
-    if (levels.gain && !Object.keys(levels.gain).length) delete levels.gain;
-    if (levels.xp && !levels.xp.length) delete levels.xp;
-    if (Object.keys(levels).length) g.levels = levels;
-    else delete g.levels;
-  };
-
   return (
     <div className="flex h-full flex-col gap-4 overflow-auto p-3 text-xs">
       <label className="flex flex-col gap-1">
@@ -107,69 +97,6 @@ function GameSettings() {
         <Checkbox label="Diagonal steps" checked={game.rules?.diagonal ?? false} onChange={(event) => edit((g) => setRule(g, 'diagonal', event.target.checked, false))} />
       </section>
 
-      <section className="space-y-2">
-        <h3 className="font-semibold">Hero stats</h3>
-        <p className="text-muted">HP is health now, MAX the most it can be. ATK adds to hits, DEF takes from hits you get.</p>
-        <div className="flex flex-wrap gap-3">
-          {game.stats.map((stat, i) => (
-            <NumberField
-              key={stat.id}
-              label={`${stat.label ?? stat.id} at the start`}
-              value={stat.start ?? 0}
-              min={-9999}
-              max={9999}
-              onChange={(n) => edit((g) => void (g.stats[i]!.start = n), `stat-${stat.id}`)}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-2">
-        <h3 className="font-semibold">Levels</h3>
-        <p className="text-muted">The XP the hero needs for each level, and what it gains each time.</p>
-        <ol aria-label="Levels" className="flex flex-wrap gap-2">
-          {xp.map((need, i) => (
-            <li key={i} className="flex items-end gap-1">
-              <NumberField
-                label={`XP for level ${i + 2}`}
-                value={need}
-                min={1}
-                max={99999}
-                onChange={(n) => edit((g) => setLevels(g, { ...g.levels, xp: xp.map((v, j) => (j === i ? n : v)) }), `xp-${i}`)}
-              />
-              <Button size="icon" variant="ghost" aria-label={`Delete level ${i + 2}`} onClick={() => edit((g) => setLevels(g, { ...g.levels, xp: xp.filter((_, j) => j !== i) }))}>
-                <Trash2 />
-              </Button>
-            </li>
-          ))}
-        </ol>
-        {xp.length < 99 && (
-          <Button size="sm" onClick={() => edit((g) => setLevels(g, { ...g.levels, xp: [...xp, (xp.at(-1) ?? 0) * 2 || 10] }))}>
-            <Plus /> Add level
-          </Button>
-        )}
-        <div className="flex flex-wrap gap-3">
-          {game.stats
-            .filter((stat) => stat.id !== 'hp')
-            .map((stat) => (
-              <NumberField
-                key={stat.id}
-                label={`${stat.label ?? stat.id} gained each level`}
-                value={gain[stat.id] ?? 0}
-                min={-9999}
-                max={9999}
-                onChange={(n) =>
-                  edit((g) => {
-                    const next = { ...g.levels?.gain };
-                    if (n) next[stat.id] = n;
-                    else delete next[stat.id];
-                    setLevels(g, { ...g.levels, gain: next });
-                  }, `gain-${stat.id}`)
-                }
-              />
-            ))}
-        </div>
-      </section>
       {error && (
         <p role="alert" className="text-chili">
           {error}
@@ -183,6 +110,6 @@ export default defineTool({
   id: 'rpg-game',
   title: 'Game',
   icon: Settings2,
-  help: 'The whole game: author, background, where it starts, rules, the hero stats and levels.',
+  help: 'The whole game: author, background, where it starts, and the rules for steps, the bag and damage.',
   component: GameSettings,
 });

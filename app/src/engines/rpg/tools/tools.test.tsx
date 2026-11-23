@@ -1,13 +1,18 @@
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { placeOnScreen } from '../../../test/canvas';
 import { renderTool } from '../../../test/creator';
 import { blankGame, parseGame, type Game } from '../model';
 import art from './art';
+import characters from './characters';
+import dialogue from './dialogue';
 import game from './game';
+import hero from './hero';
+import items from './items';
 import play from './play';
 import problems from './problems';
+import quests from './quests';
 import rooms from './rooms';
 import tiles from './tiles';
 
@@ -34,6 +39,13 @@ vi.mock('../player', () => ({
 }));
 
 const data = blankGame('Test');
+
+/** The blank game with one item, a gem. */
+function withItem() {
+  const g = parseGame(data).doc;
+  g.items = [{ id: 'gem', name: 'Gem', icon: 1 }];
+  return JSON.stringify(g);
+}
 
 async function open(Tool: { component: React.ComponentType }, text = data) {
   const view = await renderTool(Tool.component, { data: text });
@@ -119,9 +131,11 @@ describe('Chili RPG tools', () => {
     expect(doc().rules).toEqual({ bag: 8, diagonal: true });
   });
 
-  it('Game: sets the hero stats and the XP for each level', async () => {
+  it('Hero: sets the look, the stats, the XP for each level and what happens on death', async () => {
     const user = userEvent.setup();
-    const { doc } = await open(game);
+    const { doc } = await open(hero);
+    await user.click(screen.getByRole('button', { name: 'Use picture 1' }));
+    expect(doc().player).toEqual({ sprite: 1 });
     fireEvent.change(screen.getByRole('spinbutton', { name: 'ATK at the start' }), { target: { value: '4' } });
     expect(doc().stats.find((s) => s.id === 'atk')!.start).toBe(4);
     await user.click(screen.getByRole('button', { name: 'Add level' }));
@@ -129,6 +143,97 @@ describe('Chili RPG tools', () => {
     fireEvent.change(screen.getByRole('spinbutton', { name: 'XP for level 2' }), { target: { value: '12' } });
     fireEvent.change(screen.getByRole('spinbutton', { name: 'MAX gained each level' }), { target: { value: '3' } });
     expect(doc().levels).toEqual({ xp: [12], gain: { max_hp: 3 } });
+    const death = screen.getByRole('group', { name: 'When the hero dies' });
+    await user.click(within(death).getByRole('button', { name: 'Add action' }));
+    await user.selectOptions(within(death).getByRole('combobox', { name: 'When the hero dies action 1 type' }), 'end');
+    await user.selectOptions(within(death).getByRole('combobox', { name: 'When the hero dies action 1 ending' }), 'lose');
+    expect(doc().lose).toEqual([{ end: 'lose' }]);
+  });
+
+  it('Characters: adds an enemy that chases, with stats, a drop and a death event', async () => {
+    const user = userEvent.setup();
+    const { doc } = await open(characters, withItem());
+    await user.click(screen.getByRole('button', { name: 'Add character' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Friendly' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Brain' }), 'chase');
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'HP' }), { target: { value: '5' } });
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'XP' }), { target: { value: '3' } });
+    await user.click(screen.getByRole('button', { name: 'Add drop' }));
+    const death = screen.getByRole('group', { name: 'When it dies' });
+    await user.click(within(death).getByRole('button', { name: 'Add action' }));
+    await user.selectOptions(within(death).getByRole('combobox', { name: 'When it dies action 1 type' }), 'set');
+    await user.clear(within(death).getByRole('combobox', { name: 'When it dies action 1 flag' }));
+    await user.type(within(death).getByRole('combobox', { name: 'When it dies action 1 flag' }), 'won-fight');
+    expect(doc().kinds![0]).toEqual({
+      id: 'character-1',
+      name: 'Character 1',
+      sprite: 2,
+      brain: 'chase',
+      stats: { hp: 5 },
+      xp: 3,
+      drops: [{ item: 'gem' }],
+      death: [{ set: 'won-fight' }],
+    });
+  });
+
+  it('Items: adds a potion that heals, and a sword worn in a slot', async () => {
+    const user = userEvent.setup();
+    const { doc } = await open(items);
+    await user.click(screen.getByRole('button', { name: 'Add item' }));
+    const use = screen.getByRole('group', { name: 'When it is used' });
+    await user.click(within(use).getByRole('button', { name: 'Add action' }));
+    await user.selectOptions(within(use).getByRole('combobox', { name: 'When it is used action 1 type' }), 'heal');
+    expect(doc().items![0]!.use).toEqual([{ heal: 5 }]);
+    await user.click(screen.getByRole('button', { name: 'Add slot' }));
+    await user.click(screen.getByRole('button', { name: 'Add item' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Kind of item' }), 'equip');
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'ATK bonus' }), { target: { value: '2' } });
+    expect(doc().slots).toEqual(['slot-1']);
+    expect(doc().items![1]).toEqual({ id: 'item-2', name: 'Item 2', icon: 2, kind: 'equip', slot: 'slot-1', bonus: { atk: 2 } });
+  });
+
+  it('Dialogue: writes lines, a choice that jumps, and a line that only shows with a flag', async () => {
+    const user = userEvent.setup();
+    const { doc } = await open(dialogue);
+    await user.click(screen.getByRole('button', { name: 'Add dialogue' }));
+    await user.clear(screen.getByRole('textbox', { name: 'Line 1 text' }));
+    await user.type(screen.getByRole('textbox', { name: 'Line 1 text' }), 'Will you help?');
+    await user.click(screen.getByRole('button', { name: 'Add line' }));
+    await user.type(screen.getByRole('textbox', { name: 'Line 2 id' }), 'yes');
+    await user.click(screen.getByRole('button', { name: 'Add choice to line 1' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Line 1 choice 1 goes to' }), 'yes');
+    const line2 = screen.getByRole('group', { name: 'Line 2' });
+    await user.click(within(line2).getByRole('button', { name: 'Add condition' }));
+    expect(doc().dialogue![0]).toEqual({
+      id: 'talk-1',
+      lines: [
+        { text: 'Will you help?', choices: [{ text: 'OK', goto: 'yes' }] },
+        { id: 'yes', text: '...', if: [{ flag: 'flag' }] },
+      ],
+    });
+  });
+
+  it('Quests: adds a quest whose stage wants an item, and finishes with a win', async () => {
+    const user = userEvent.setup();
+    const { doc } = await open(quests, withItem());
+    await user.click(screen.getByRole('button', { name: 'Add quest' }));
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Stage 1 goal' }), 'collect');
+    const done = screen.getByRole('group', { name: 'When stage 1 is done' });
+    await user.click(within(done).getByRole('button', { name: 'Add action' }));
+    await user.selectOptions(within(done).getByRole('combobox', { name: 'When stage 1 is done action 1 type' }), 'end');
+    expect(doc().quests![0]).toEqual({ id: 'quest-1', title: 'Quest 1', stages: [{ log: 'What to do.', goal: { collect: 'gem' }, done: [{ end: 'win' }] }] });
+  });
+
+  it('Rooms: a trigger runs an event', async () => {
+    const user = userEvent.setup();
+    const { doc } = await open(rooms);
+    await user.click(screen.getByRole('radio', { name: 'Place' }));
+    await user.click(screen.getByRole('radio', { name: 'Trigger' }));
+    click(/^Room start/, 3, 3, 16);
+    const trigger = screen.getByRole('group', { name: 'Trigger' });
+    await user.click(within(trigger).getByRole('button', { name: 'Add action' }));
+    await user.selectOptions(within(trigger).getByRole('combobox', { name: 'Trigger action 1 type' }), 'hurt');
+    expect(doc().rooms[0]!.triggers).toEqual([{ x: 3, y: 3, do: [{ hurt: 1 }] }]);
   });
 
   it('Problems: lists what is wrong', async () => {

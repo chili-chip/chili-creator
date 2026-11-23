@@ -83,4 +83,10 @@ describe('checking a Chili RPG game', () => {
     game.rooms[0]!.warps = [{ x: 4, y: 4, to: 'far', tx: 1, ty: 1 }];
     expect(messages(game)).not.toContain('info: Room "far" can\'t be reached.');
   });
+
+  it('says when a line or choice has no text', () => {
+    const game = blank();
+    game.dialogue = [{ id: 'chat', lines: [{ text: 'Hi' }, { text: '', choices: [{ text: '' }] }] }];
+    expect(messages(game)).toEqual(expect.arrayContaining(['error: Dialogue "chat" line 2 has no text.', 'error: Dialogue "chat" line 2 has a choice with no text.']));
+  });
 });

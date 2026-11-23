@@ -132,13 +132,15 @@ export function checkGame(game: Game): EngineProblem[] {
   for (const dialogue of game.dialogue ?? []) {
     const owner = `Dialogue "${dialogue.id}"`;
     ids.line = new Set(dialogue.lines.flatMap((l) => (l.id ? [l.id] : [])));
-    for (const line of dialogue.lines) {
+    dialogue.lines.forEach((line, i) => {
+      if (!line.text.trim()) error(`${owner} line ${i + 1} has no text.`);
+      if (line.choices?.some((c) => !c.text.trim())) error(`${owner} line ${i + 1} has a choice with no text.`);
       check(owner, eventRefs(line));
       for (const choice of line.choices ?? []) {
         check(owner, eventRefs(choice));
         if (choice.goto) check(owner, [['line', choice.goto]]);
       }
-    }
+    });
   }
 
   for (const quest of game.quests ?? []) {

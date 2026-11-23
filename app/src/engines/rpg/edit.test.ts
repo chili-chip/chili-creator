@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addDialogue,
+  addItem,
+  addKind,
+  addQuest,
+  deleteDialogue,
+  deleteItem,
+  deleteKind,
+  deleteQuest,
+  renameId,
   addPicture,
   addRoom,
   addTile,
@@ -8,6 +17,7 @@ import {
   freshId,
   objectsAt,
   paintCell,
+  parsePatrol,
   place,
   removeAt,
   renameRoom,
@@ -153,5 +163,63 @@ describe('editing a Chili RPG game', () => {
     expect(game.quests[0]!.stages[0]!.goal!.reach).toBe('home');
     expect(() => renameRoom(game, 'home', 'room-1')).toThrow('already');
     expect(() => renameRoom(game, 'home', 'Big Room')).toThrow('lower case');
+  });
+
+  it('adds and deletes characters; deleting one takes its people out of rooms', () => {
+    const game = blank();
+    const kind = addKind(game);
+    expect(kind).toEqual({ id: 'character-1', name: 'Character 1', sprite: 2, friendly: true });
+    place(game, 'start', { kind: kind.id }, 2, 2);
+    deleteKind(game, kind.id);
+    expect(game.kinds).toBeUndefined();
+    expect(game.rooms[0]!.actors).toBeUndefined();
+  });
+
+  it('adds and deletes items; deleting one takes it out of rooms and drops', () => {
+    const game = blank();
+    const item = addItem(game);
+    expect(item).toEqual({ id: 'item-1', name: 'Item 1', icon: 2 });
+    place(game, 'start', { item: item.id }, 2, 2);
+    game.kinds = [{ id: 'slime', drops: [{ item: 'item-1' }] }];
+    deleteItem(game, 'item-1');
+    expect(game.items).toBeUndefined();
+    expect(game.rooms[0]!.items).toBeUndefined();
+    expect(game.kinds[0]!.drops).toBeUndefined();
+  });
+
+  it('adds dialogue and quests with one line and one stage', () => {
+    const game = blank();
+    expect(addDialogue(game)).toEqual({ id: 'talk-1', lines: [{ text: 'Hello!' }] });
+    expect(addQuest(game)).toEqual({ id: 'quest-1', title: 'Quest 1', stages: [{ log: 'What to do.' }] });
+    deleteDialogue(game, 'talk-1');
+    deleteQuest(game, 'quest-1');
+    expect(game.dialogue).toBeUndefined();
+    expect(game.quests).toBeUndefined();
+  });
+
+  it('renames characters, items, dialogue and quests everywhere they are named', () => {
+    const game = blank();
+    game.kinds = [{ id: 'elder', talk: 'hi', drops: [{ item: 'gem' }] }];
+    game.items = [{ id: 'gem', use: { if: [{ has: 'gem' }, { quest: 'q', stage: 1 }], do: [{ say: 'hi' }, { give: 'gem' }] } }];
+    game.dialogue = [{ id: 'hi', who: 'elder', lines: [{ text: 'Hi' }] }];
+    game.quests = [{ id: 'q', stages: [{ goal: { talk: 'elder' } }, { goal: { collect: 'gem' } }] }];
+    game.rooms[0]!.actors = [{ kind: 'elder', x: 1, y: 1, talk: 'hi' }];
+    game.rooms[0]!.items = [{ item: 'gem', x: 2, y: 2 }];
+    renameId(game, 'kind', 'elder', 'ana');
+    renameId(game, 'item', 'gem', 'ruby');
+    renameId(game, 'dialogue', 'hi', 'hello');
+    renameId(game, 'quest', 'q', 'main');
+    expect(game.kinds[0]).toEqual({ id: 'ana', talk: 'hello', drops: [{ item: 'ruby' }] });
+    expect(game.items[0]).toEqual({ id: 'ruby', use: { if: [{ has: 'ruby' }, { quest: 'main', stage: 1 }], do: [{ say: 'hello' }, { give: 'ruby' }] } });
+    expect(game.dialogue[0]).toMatchObject({ id: 'hello', who: 'ana' });
+    expect(game.quests[0]).toEqual({ id: 'main', stages: [{ goal: { talk: 'ana' } }, { goal: { collect: 'ruby' } }] });
+    expect(game.rooms[0]!.actors).toEqual([{ kind: 'ana', x: 1, y: 1, talk: 'hello' }]);
+    expect(game.rooms[0]!.items).toEqual([{ item: 'ruby', x: 2, y: 2 }]);
+    expect(() => renameId(game, 'item', 'ruby', 'Ruby!')).toThrow('lower case');
+  });
+
+  it('reads patrol points from text', () => {
+    expect(parsePatrol('6,10 16, 10;99,1')).toEqual([[6, 10], [16, 10], [63, 1]]);
+    expect(parsePatrol('')).toEqual([]);
   });
 });

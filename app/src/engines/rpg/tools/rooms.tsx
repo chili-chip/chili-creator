@@ -7,10 +7,12 @@ import { Button } from '../../../ui/button';
 import { Checkbox, Input, Select } from '../../../ui/input';
 import { PixelCanvas } from '../../../ui/pixel-canvas';
 import { Segmented } from '../../../ui/segmented';
-import { addRoom, deleteRoom, objectsAt, paintCell, place, removeAt, renameRoom, resizeRoom, roomById, whole, type Placeable } from '../edit';
+import { addRoom, deleteRoom, objectsAt, parsePatrol, paintCell, place, removeAt, renameRoom, resizeRoom, roomById, whole, type Placeable } from '../edit';
+import { eventParts, setInline } from '../events';
 import { LIMITS, type Game, type Room } from '../model';
 import { lookSprite, roomRGBA, tileSprite } from '../render';
 import { useGame, useSelection } from '../state';
+import { EventForm } from './event-form';
 import { ErrorLine, Sprite, useEdit } from './shared';
 
 type Mode = 'ground' | 'top' | 'place';
@@ -89,7 +91,7 @@ function Brushes({ game, mode, tile, onTile, placeBrush, onPlace }: {
 }
 
 /** What stands on the picked cell, with its settings. */
-function Picked({ game, room, x, y, edit }: { game: Game; room: Room; x: number; y: number; edit(recipe: (g: Game) => void, group?: string): void }) {
+function Picked({ game, room, x, y, edit }: { game: Game; room: Room; x: number; y: number; edit(recipe: (g: Game) => void, group?: string): boolean }) {
   const objects = objectsAt(room, x, y);
   const isStart = game.start.room === room.id && game.start.x === x && game.start.y === y;
   const inRoom = (g: Game) => roomById(g, room.id);
@@ -103,7 +105,31 @@ function Picked({ game, room, x, y, edit }: { game: Game; room: Room; x: number;
       {objects.map(({ type, index }) => {
         if (type === 'actor') {
           const actor = room.actors![index]!;
-          return <p key={`a${index}`}>Character: {game.kinds?.find((k) => k.id === actor.kind)?.name ?? actor.kind}</p>;
+          const kind = game.kinds?.find((k) => k.id === actor.kind);
+          return (
+            <div key={`a${index}`} className="space-y-1">
+              <p>Character: {kind?.name ?? actor.kind}</p>
+              {kind?.brain === 'patrol' && (
+                <label className="flex flex-col gap-1">
+                  Patrol points
+                  <Input
+                    aria-label="Patrol points"
+                    placeholder="6,10 16,10 16,14"
+                    key={JSON.stringify(actor.patrol ?? [])}
+                    defaultValue={(actor.patrol ?? []).map(([px, py]) => `${px},${py}`).join(' ')}
+                    onBlur={(event) =>
+                      edit((g) => {
+                        const a = inRoom(g).actors![index]!;
+                        const points = parsePatrol(event.target.value);
+                        if (points.length) a.patrol = points;
+                        else delete a.patrol;
+                      })
+                    }
+                  />
+                </label>
+              )}
+            </div>
+          );
         }
         if (type === 'item') {
           const item = room.items![index]!;
@@ -167,6 +193,7 @@ function Picked({ game, room, x, y, edit }: { game: Game; room: Room; x: number;
         return (
           <div key={`t${index}`} className="space-y-1">
             <p>Trigger: runs when the hero steps here.</p>
+            <EventForm game={game} label="Trigger" parts={eventParts(trigger)} onChange={(parts) => edit((g) => setInline(inRoom(g).triggers![index]!, parts))} />
             <Checkbox
               label="Only once"
               checked={trigger.once ?? true}

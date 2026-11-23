@@ -1,5 +1,5 @@
 // Small changes to a Chili RPG game, shared by the tools and the agent tools.
-import { LIMITS, type Action, type Game, type GameEvent, type Room, type Tile } from './model';
+import { LIMITS, type Action, type Condition, type Dialogue, type Game, type GameEvent, type Item, type Kind, type Quest, type Room, type Tile } from './model';
 
 /** A whole number from a field, kept between `min` and `max`. */
 export function whole(value: string | number, min: number, max: number): number {
@@ -229,4 +229,131 @@ export function renameRoom(game: Game, from: string, to: string) {
   for (const room of game.rooms) for (const warp of room.warps ?? []) if (warp.to === from) warp.to = to;
   for (const list of allActions(game)) for (const action of list) if ('warp' in action && action.warp === from) action.warp = to;
   for (const quest of game.quests ?? []) for (const stage of quest.stages) if (stage.goal?.reach === from) stage.goal.reach = to;
+}
+
+/** Every list of conditions in the game. */
+export function allConditions(game: Game): Condition[][] {
+  const lists: Condition[][] = [];
+  const event = (e: GameEvent | { if?: Condition[] } | undefined) => {
+    if (e && !Array.isArray(e) && e.if) lists.push(e.if);
+  };
+  for (const room of game.rooms) {
+    room.actors?.forEach((a) => event(a.bump));
+    room.triggers?.forEach((t) => event(t));
+  }
+  game.kinds?.forEach((k) => (event(k.bump), event(k.death)));
+  game.items?.forEach((i) => event(i.use));
+  game.dialogue?.forEach((d) => d.lines.forEach((l) => (event(l), l.choices?.forEach(event))));
+  game.quests?.forEach((q) => q.stages.forEach((s) => event(s.done)));
+  event(game.lose);
+  return lists;
+}
+
+function checkId(id: string, taken: { id: string }[] | undefined, what: string) {
+  if (!/^[a-z0-9_-]{1,24}$/.test(id)) throw new Error(`An id is 1 to 24 lower case letters, digits, - or _.`);
+  if (taken?.some((x) => x.id === id)) throw new Error(`There is ${what} "${id}" already.`);
+}
+
+/** Gives a character, item, dialogue or quest a new id, and changes everything that names it. */
+export function renameId(game: Game, type: 'kind' | 'item' | 'dialogue' | 'quest', from: string, to: string) {
+  const list = { kind: game.kinds, item: game.items, dialogue: game.dialogue, quest: game.quests }[type];
+  checkId(to, list, type === 'item' ? 'an item' : `a ${type === 'kind' ? 'character' : type}`);
+  const own = list?.find((x) => x.id === from);
+  if (!own) throw new Error(`No ${type} has id ${from}`);
+  own.id = to;
+  const swap = <T extends object>(o: T | undefined, key: keyof T) => {
+    if (o && o[key] === (from as T[keyof T])) o[key] = to as T[keyof T];
+  };
+  const actions = allActions(game).flat();
+  const conditions = allConditions(game).flat();
+  const goals = (game.quests ?? []).flatMap((q) => q.stages.map((s) => s.goal));
+  const actors = game.rooms.flatMap((r) => r.actors ?? []);
+  if (type === 'kind') {
+    actors.forEach((a) => swap(a, 'kind'));
+    goals.forEach((g) => (swap(g, 'talk'), swap(g, 'defeat')));
+    game.dialogue?.forEach((d) => (swap(d, 'who'), d.lines.forEach((l) => swap(l, 'who'))));
+  } else if (type === 'item') {
+    game.rooms.forEach((r) => r.items?.forEach((i) => swap(i, 'item')));
+    game.kinds?.forEach((k) => k.drops?.forEach((d) => swap(d, 'item')));
+    actions.forEach((a) => (swap(a as { give?: string }, 'give'), swap(a as { take?: string }, 'take')));
+    conditions.forEach((c) => swap(c as { has?: string }, 'has'));
+    goals.forEach((g) => swap(g, 'collect'));
+  } else if (type === 'dialogue') {
+    game.kinds?.forEach((k) => swap(k, 'talk'));
+    actors.forEach((a) => swap(a, 'talk'));
+    actions.forEach((a) => swap(a as { say?: string }, 'say'));
+  } else {
+    actions.forEach((a) => swap(a as { quest?: string }, 'quest'));
+    conditions.forEach((c) => swap(c as { quest?: string }, 'quest'));
+  }
+}
+
+export function addKind(game: Game): Kind {
+  if ((game.kinds?.length ?? 0) >= LIMITS.kinds) throw new Error(`A game can have ${LIMITS.kinds} characters.`);
+  const id = freshId('character', (game.kinds ?? []).map((k) => k.id));
+  const kind: Kind = { id, name: `Character ${id.slice(10)}`, sprite: game.player.sprite ?? 0, friendly: true };
+  (game.kinds ??= []).push(kind);
+  return kind;
+}
+
+/** Deletes a character and its people in every room. */
+export function deleteKind(game: Game, id: string) {
+  game.kinds = game.kinds?.filter((k) => k.id !== id);
+  if (!game.kinds?.length) delete game.kinds;
+  for (const room of game.rooms) {
+    room.actors = room.actors?.filter((a) => a.kind !== id);
+    tidy(room);
+  }
+}
+
+export function addItem(game: Game): Item {
+  if ((game.items?.length ?? 0) >= LIMITS.items) throw new Error(`A game can have ${LIMITS.items} items.`);
+  const id = freshId('item', (game.items ?? []).map((i) => i.id));
+  const item: Item = { id, name: `Item ${id.slice(5)}`, icon: game.player.sprite ?? 0 };
+  (game.items ??= []).push(item);
+  return item;
+}
+
+/** Deletes an item, the ones lying in rooms, and drops of it. */
+export function deleteItem(game: Game, id: string) {
+  game.items = game.items?.filter((i) => i.id !== id);
+  if (!game.items?.length) delete game.items;
+  for (const room of game.rooms) {
+    room.items = room.items?.filter((i) => i.item !== id);
+    tidy(room);
+  }
+  for (const kind of game.kinds ?? []) {
+    kind.drops = kind.drops?.filter((d) => d.item !== id);
+    if (!kind.drops?.length) delete kind.drops;
+  }
+}
+
+export function addDialogue(game: Game): Dialogue {
+  if ((game.dialogue?.length ?? 0) >= LIMITS.dialogue) throw new Error(`A game can have ${LIMITS.dialogue} dialogues.`);
+  const dialogue: Dialogue = { id: freshId('talk', (game.dialogue ?? []).map((d) => d.id)), lines: [{ text: 'Hello!' }] };
+  (game.dialogue ??= []).push(dialogue);
+  return dialogue;
+}
+
+export function deleteDialogue(game: Game, id: string) {
+  game.dialogue = game.dialogue?.filter((d) => d.id !== id);
+  if (!game.dialogue?.length) delete game.dialogue;
+}
+
+export function addQuest(game: Game): Quest {
+  if ((game.quests?.length ?? 0) >= LIMITS.quests) throw new Error(`A game can have ${LIMITS.quests} quests.`);
+  const id = freshId('quest', (game.quests ?? []).map((q) => q.id));
+  const quest: Quest = { id, title: `Quest ${id.slice(6)}`, stages: [{ log: 'What to do.' }] };
+  (game.quests ??= []).push(quest);
+  return quest;
+}
+
+export function deleteQuest(game: Game, id: string) {
+  game.quests = game.quests?.filter((q) => q.id !== id);
+  if (!game.quests?.length) delete game.quests;
+}
+
+/** "6,10 16,10" to [[6, 10], [16, 10]]: up to 16 points, each 0 to 63. */
+export function parsePatrol(text: string): [number, number][] {
+  return [...text.matchAll(/(\d+)\s*,\s*(\d+)/g)].slice(0, 16).map((m) => [Math.min(63, Number(m[1])), Math.min(63, Number(m[2]))]);
 }
