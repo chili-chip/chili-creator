@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import { cn } from './cn';
 
 /** Puts RGBA pixels on a canvas at its own resolution; CSS scales it up. */
@@ -76,6 +76,8 @@ interface PixelCanvasProps extends PixelImageProps {
   /** The stroke is over: the pointer was let go or the key press painted. */
   onStrokeEnd?(): void;
   onHover?(cell: Cell | null): void;
+  /** For a canvas that is not square: `{ aspectRatio: '3 / 2' }`. */
+  style?: CSSProperties;
 }
 
 /**
@@ -94,6 +96,7 @@ export function PixelCanvas({
   onStrokeEnd,
   onHover,
   className,
+  style,
 }: PixelCanvasProps) {
   const surface = useRef<HTMLDivElement | null>(null);
   const stroke = useRef<{ pointer: number; last: Cell } | null>(null);
@@ -176,6 +179,7 @@ export function PixelCanvas({
       aria-label={label}
       aria-roledescription="pixel canvas"
       tabIndex={0}
+      style={style}
       className={cn(
         'group relative aspect-square touch-none overflow-hidden rounded-md border border-line bg-black select-none focus-visible:outline-2 focus-visible:outline-phosphor',
         className,

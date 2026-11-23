@@ -1,11 +1,15 @@
 import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { placeOnScreen } from '../../../test/canvas';
 import { renderTool } from '../../../test/creator';
 import { blankGame, parseGame, type Game } from '../model';
+import art from './art';
 import game from './game';
 import play from './play';
 import problems from './problems';
+import rooms from './rooms';
+import tiles from './tiles';
 
 const engine = vi.hoisted(() => ({
   onStep: null as ((debug: unknown) => void) | null,
@@ -41,7 +45,65 @@ async function open(Tool: { component: React.ComponentType }, text = data) {
   return { ...view, doc };
 }
 
+/** Clicks cell (x, y) of a canvas shown `size` pixels wide with `cells` cells. */
+function click(name: RegExp, x: number, y: number, cells: number, size = 160) {
+  const surface = screen.getByRole('application', { name });
+  placeOnScreen(surface, size, size);
+  const cell = size / cells;
+  fireEvent.pointerDown(surface, { clientX: x * cell + 1, clientY: y * cell + 1, button: 0, pointerId: 1 });
+  fireEvent.pointerUp(surface, { pointerId: 1 });
+}
+
 describe('Chili RPG tools', () => {
+  it('Art: draws a pixel, clears one, and adds a picture', async () => {
+    const user = userEvent.setup();
+    const { doc } = await open(art);
+    await user.click(screen.getByRole('button', { name: 'Picture 1' }));
+    await user.click(screen.getByRole('radio', { name: 'Sweetie 12 #f4f4f4' }));
+    click(/^Drawing of picture 1/, 2, 1, 8);
+    expect(doc().art!.pictures[1]![1]).toBe('ddcdddd.');
+    await user.click(screen.getByRole('radio', { name: 'Clear' }));
+    click(/^Drawing of picture 1/, 0, 0, 8);
+    expect(doc().art!.pictures[1]![0]![0]).toBe('.');
+    await user.click(screen.getByRole('button', { name: 'Add picture' }));
+    expect(doc().art!.pictures).toHaveLength(4);
+    expect(screen.getByRole('button', { name: 'Picture 3' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('Tiles: adds a tile, picks its picture and makes it water', async () => {
+    const user = userEvent.setup();
+    const { doc } = await open(tiles);
+    await user.click(screen.getByRole('button', { name: 'Add tile' }));
+    expect(doc().tiles).toHaveLength(3);
+    await user.click(screen.getByRole('button', { name: 'Use picture 2' }));
+    await user.click(screen.getByRole('checkbox', { name: 'Water' }));
+    expect(doc().tiles[2]).toEqual({ key: 'a', sprite: 2, water: true });
+    await user.click(screen.getByRole('button', { name: 'Add frame' }));
+    expect(doc().tiles[2]!.sprite).toEqual([2, 2]);
+  });
+
+  it('Rooms: paints tiles, places a warp, and adds a room', async () => {
+    const user = userEvent.setup();
+    const { doc } = await open(rooms);
+    await user.click(screen.getByRole('radio', { name: 'Tile #' }));
+    click(/^Room start/, 5, 5, 16);
+    expect(doc().rooms[0]!.ground[5]![5]).toBe('#');
+    await user.click(screen.getByRole('radio', { name: 'Top' }));
+    click(/^Room start/, 6, 6, 16);
+    expect(doc().rooms[0]!.top![6]![6]).toBe('#');
+    await user.click(screen.getByRole('radio', { name: 'Place' }));
+    await user.click(screen.getByRole('radio', { name: 'Warp' }));
+    click(/^Room start/, 3, 3, 16);
+    expect(doc().rooms[0]!.warps).toEqual([{ x: 3, y: 3, to: 'start', tx: 7, ty: 7 }]);
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Warp to x' }), { target: { value: '2' } });
+    expect(doc().rooms[0]!.warps![0]!.tx).toBe(2);
+    await user.click(screen.getByRole('button', { name: 'Add room' }));
+    expect(doc().rooms.map((r) => r.id)).toEqual(['start', 'room-1']);
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Width' }), { target: { value: '20' } });
+    await user.click(screen.getByRole('button', { name: 'Resize' }));
+    expect(doc().rooms[1]!.ground[0]).toHaveLength(20);
+  });
+
   it('Game: changes the author, background, start and rules', async () => {
     const user = userEvent.setup();
     const { doc } = await open(game);
