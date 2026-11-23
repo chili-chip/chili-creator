@@ -1,5 +1,6 @@
 import { Swords } from 'lucide-react';
 import type { EngineModule } from '../types';
+import { rpgAgentTools } from './agent';
 import { checkGame } from './check';
 import pepperVillage from './fixtures/pepper-village.rpg?raw';
 import { blankGame, parseGame, serializeGame, type Game } from './model';
@@ -44,4 +45,5 @@ export const rpgEngine: EngineModule<Game> = {
   },
   check: checkGame,
   editors: [{ id: 'rpg', title: 'Chili RPG editor', tools: [rooms, art, tiles, hero, characters, items, dialogue, quests, play, problems, game] }],
+  agentTools: rpgAgentTools,
 };

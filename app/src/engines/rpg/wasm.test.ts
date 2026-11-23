@@ -7,6 +7,7 @@ import { blankGame } from './model';
 import { loadEngine, RPG_BUTTONS } from './player';
 
 const village = readFileSync(new URL('./fixtures/pepper-village.rpg', import.meta.url), 'utf8');
+const lostRing = readFileSync(new URL('./fixtures/lost-ring.rpg', import.meta.url), 'utf8');
 
 describe('the Chili RPG engine', () => {
   it('gives a clear error for a broken game', async () => {
@@ -39,5 +40,38 @@ describe('the Chili RPG engine', () => {
     for (let i = 0; i < 120; i++) player.step(0);
     expect(player.debug()).toMatchObject({ talking: true, speaker: 'Elder Ana' });
     expect(player.rgba()).toHaveLength(128 * 128 * 4);
+  });
+
+  it('plays the Lost Ring tutorial game to the end', async () => {
+    const player = await loadEngine();
+    expect(player.load(lostRing)).toBeNull();
+    const press = (button: number, times = 1) => {
+      for (let t = 0; t < times; t++) {
+        for (let i = 0; i < 6; i++) player.step(button);
+        for (let i = 0; i < 20; i++) player.step(0);
+      }
+    };
+    const talkThrough = () => {
+      for (let i = 0; i < 60 && player.debug().talking; i++) press(RPG_BUTTONS.a);
+      expect(player.debug().talking).toBe(false);
+    };
+    // Gran stands at 7, 4 and the hero starts at 7, 7.
+    press(RPG_BUTTONS.up, 3);
+    expect(player.debug()).toMatchObject({ talking: true, speaker: 'Gran' });
+    talkThrough();
+    expect(player.debug().quests).toEqual({ ring: 1 });
+    // The ring lies at 13, 13.
+    press(RPG_BUTTONS.right, 6);
+    press(RPG_BUTTONS.down, 8);
+    expect(player.debug()).toMatchObject({ x: 13, y: 13 });
+    press(RPG_BUTTONS.a);
+    press(RPG_BUTTONS.b);
+    expect(player.debug()).toMatchObject({ bag: [{ item: 'ring', count: 1 }], quests: { ring: 2 } });
+    press(RPG_BUTTONS.left, 6);
+    press(RPG_BUTTONS.up, 9);
+    expect(player.debug()).toMatchObject({ talking: true, text: expect.stringContaining('My ring') });
+    talkThrough();
+    press(RPG_BUTTONS.b);
+    expect(player.debug()).toMatchObject({ state: 'won', bag: [] });
   });
 });

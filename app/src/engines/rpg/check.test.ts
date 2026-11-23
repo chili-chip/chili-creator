@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { checkGame } from './check';
 import { blankGame, parseGame, type Game } from './model';
+import lostRing from './fixtures/lost-ring.rpg?raw';
 import village from './fixtures/pepper-village.rpg?raw';
 
 const blank = (): Game => parseGame(blankGame('Test')).doc;
@@ -9,6 +10,10 @@ const messages = (game: Game) => checkGame(game).map((p) => `${p.severity}: ${p.
 describe('checking a Chili RPG game', () => {
   it('finds nothing wrong with Pepper Village', () => {
     expect(checkGame(parseGame(village).doc)).toEqual([]);
+  });
+
+  it('finds nothing wrong with the Lost Ring tutorial game', () => {
+    expect(checkGame(parseGame(lostRing).doc)).toEqual([]);
   });
 
   it('says when the start is not in a room, or is in a wall', () => {

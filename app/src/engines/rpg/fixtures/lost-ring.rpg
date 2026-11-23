@@ -1,0 +1,82 @@
+{
+  "format": "chili-rpg",
+  "version": 1,
+  "title": "Lost Ring",
+  "art": {
+    "palette": "sweetie16",
+    "pictures": [
+      ["........", "........", "........", "........", "........", "........", "........", "........"],
+      ["dddddddd", "ddddddd.", ".......e", "eeeeeeee", "eeeeeeee", "eeeeeeee", "eeeeeeee", "eeeeeee."],
+      ["...44...", "...44...", ".224422.", "22222222", "2.2222.2", "4.2222.4", "..2..2..", "..2..2.."],
+      ["........", "...44...", "..4..4..", "..4..4..", "...44...", "........", "........", "........"],
+      ["..cccc..", "..c88c..", "..8888..", ".777777.", "77777777", "8.7777.8", "..7777..", "..8..8.."]
+    ]
+  },
+  "background": "#1a1c2c",
+  "start": { "room": "start", "x": 7, "y": 7 },
+  "player": { "sprite": 2 },
+  "stats": [
+    { "id": "hp", "label": "HP", "start": 10 },
+    { "id": "max_hp", "label": "MAX", "start": 10 },
+    { "id": "atk", "label": "ATK", "start": 1 },
+    { "id": "def", "label": "DEF", "start": 0 }
+  ],
+  "tiles": [{ "key": ".", "sprite": 0 }, { "key": "#", "sprite": 1, "solid": true }],
+  "rooms": [
+    {
+      "id": "start",
+      "name": "Start",
+      "ground": [
+        "################",
+        "#..............#",
+        "#..............#",
+        "#..............#",
+        "#..............#",
+        "#..............#",
+        "#..............#",
+        "#..............#",
+        "#..............#",
+        "#..............#",
+        "#..............#",
+        "#..............#",
+        "#..............#",
+        "#..............#",
+        "#..............#",
+        "################"
+      ],
+      "actors": [{ "kind": "gran", "x": 7, "y": 4 }],
+      "items": [{ "item": "ring", "x": 13, "y": 13 }]
+    }
+  ],
+  "kinds": [{ "id": "gran", "name": "Gran", "sprite": 4, "friendly": true, "talk": "gran" }],
+  "items": [{ "id": "ring", "name": "Ring", "text": "Gran's gold ring.", "icon": 3, "kind": "quest" }],
+  "dialogue": [
+    {
+      "id": "gran",
+      "who": "gran",
+      "lines": [
+        {
+          "text": "Oh dear, I lost my ring. Can you find it?",
+          "if": [{ "quest": "ring", "stage": 0 }],
+          "do": [{ "quest": "ring", "stage": 1 }]
+        },
+        { "text": "Did you look in the far corner?", "if": [{ "quest": "ring", "stage": 1 }] },
+        { "text": "My ring! Thank you, dear.", "if": [{ "quest": "ring", "stage": 2 }] }
+      ]
+    }
+  ],
+  "quests": [
+    {
+      "id": "ring",
+      "title": "Lost ring",
+      "stages": [
+        { "log": "Find Gran's ring.", "goal": { "collect": "ring" } },
+        {
+          "log": "Bring the ring to Gran.",
+          "goal": { "talk": "gran" },
+          "done": [{ "take": "ring" }, { "end": "win" }]
+        }
+      ]
+    }
+  ]
+}

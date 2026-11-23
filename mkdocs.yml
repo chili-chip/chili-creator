@@ -1,5 +1,5 @@
 site_name: Chili Creator docs
-site_description: The Chili Creator is a collection of game editors. Make Bitsy and Chili Beat games, release them on Chili Platform and play them on VGC Zero.
+site_description: The Chili Creator is a collection of game editors. Make Bitsy, Chili Beat and Chili RPG games, release them on Chili Platform and play them on the chilichip console.
 site_url: https://creator.chilichip.eu/
 repo_url: https://github.com/chili-chip/chili-creator
 repo_name: chili-chip/chili-creator
@@ -141,6 +141,23 @@ nav:
           - Play: editors/beat/tools/beat-play.md
           - Problems: editors/beat/tools/beat-problems.md
           - Game: editors/beat/tools/beat-game.md
+  - Chili RPG editor:
+      - editors/rpg/index.md
+      - Lost Ring tutorial: editors/rpg/tutorial.md
+      - Events: editors/rpg/events.md
+      - Tools:
+          - editors/rpg/tools/index.md
+          - Rooms: editors/rpg/tools/rpg-rooms.md
+          - Art: editors/rpg/tools/rpg-art.md
+          - Tiles: editors/rpg/tools/rpg-tiles.md
+          - Hero: editors/rpg/tools/rpg-hero.md
+          - Characters: editors/rpg/tools/rpg-characters.md
+          - Items: editors/rpg/tools/rpg-items.md
+          - Dialogue: editors/rpg/tools/rpg-dialogue.md
+          - Quests: editors/rpg/tools/rpg-quests.md
+          - Play: editors/rpg/tools/rpg-play.md
+          - Problems: editors/rpg/tools/rpg-problems.md
+          - Game: editors/rpg/tools/rpg-game.md
   - Reference:
       - reference/index.md
       - Keyboard shortcuts: reference/keyboard-shortcuts.md
